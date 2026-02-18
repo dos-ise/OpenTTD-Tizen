@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <title>Doom</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: monospace;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            will-change: contents;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        #status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f0;
+            font-size: 20px;
+            text-align: center;
+            z-index: 100;
+            text-shadow: 0 0 10px #0f0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" tabindex="1"></canvas>
+    <div id="status">Loading Doom...</div>
+
+    <script src="input.js"></script>
+
+    <script>
+        'use strict';
+
+        const statusElement = document.getElementById('status');
+        const canvasElement = document.getElementById('canvas');
+
+        var Module = {
+            arguments: [
+                "-iwad", "doom1.wad",
+                "-window",
+                "-nogui",
+                "-nomusic",
+                "-config", "default.cfg",
+                "-width", window.innerWidth.toString(),
+                "-height", window.innerHeight.toString()
+            ],
+
+            preRun: [
+                function () {
+                    console.log('preRun: Loading game files...');
+                    try {
+                        Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
+                        Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
+                        Module.FS_createPreloadedFile('/', 'chocolate-doom.cfg', 'chocolate-doom.cfg', true, false);
+                        console.log('Files loaded successfully');
+                    } catch (e) {
+                        console.error('Error loading files:', e);
+                        Module.setStatus('Error loading game files');
+                    }
+                }
+            ],
+
+            postRun: [],
+
+            print: function (text) {
+                console.log('[stdout]', text);
+            },
+
+            printErr: function (text) {
+                console.error('[stderr]', text);
+            },
+
+            canvas: (function () {
+                canvasElement.addEventListener("webglcontextlost", function (e) {
+                    alert('WebGL context lost. You will need to reload the page.');
+                    e.preventDefault();
+                }, false);
+
+                canvasElement.addEventListener("webglcontextrestored", function (e) {
+                    console.log('WebGL context restored');
+                }, false);
+
+                return canvasElement;
+            })(),
+
+            setStatus: function (text) {
+                if (text) {
+                    console.log('Status:', text);
+                    statusElement.textContent = text;
+                    statusElement.style.display = 'block';
+                } else {
+                    statusElement.style.display = 'none';
+                }
+            },
+
+            totalDependencies: 0,
+
+            monitorRunDependencies: function (left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(
+                    left
+                        ? 'Loading... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')'
+                        : 'Starting game...'
+                );
+            },
+
+            onRuntimeInitialized: function () {
+                console.log('Runtime initialized successfully');
+                Module.setStatus('');
+                canvasElement.focus();
+                setupRemoteControl();
+            },
+
+            onAbort: function (what) {
+                console.error('Abort:', what);
+                Module.setStatus('Game crashed: ' + what);
+            },
+
+            onExit: function (code) {
+                console.log('Game exited with code:', code);
+                Module.setStatus('Game exited');
+                try {
+                    if (window.tizen && tizen.application) {
+                        tizen.application.getCurrentApplication().exit();
+                    }
+                } catch (e) {
+                    console.log('Tizen exit failed:', e);
+                }
+            }
+        };
+
+        window.onerror = function (message, source, lineno, colno, error) {
+            console.error('Global error:', message, 'at', source, lineno, colno);
+            Module.setStatus('Error: ' + message);
+            return false;
+        };
+
+        canvasElement.addEventListener('click', function () {
+            canvasElement.focus();
+        });
+
+        canvasElement.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            return false;
+        });
+
+        window.addEventListener('load', function () {
+            canvasElement.focus();
+        });
+    </script>
+
+    <script async src="chocolate-doom.js"></script>
+</body>
+</html>
