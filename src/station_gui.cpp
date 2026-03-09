@@ -443,6 +443,7 @@ public:
 		this->GetWidget<NWidgetCore>(WID_STL_SORTDROPBTN)->SetString(CompanyStationsWindow::sorter_names[this->stations.SortType()]);
 	}
 
+	/** Save the last sorting state. */
 	~CompanyStationsWindow() override
 	{
 		/* Save filter state. */
@@ -662,10 +663,12 @@ public:
 				ShowDropDownMenu(this, CompanyStationsWindow::sorter_names, this->stations.SortType(), WID_STL_SORTDROPBTN, 0, 0);
 				break;
 
-			case WID_STL_CARGODROPDOWN:
+			case WID_STL_CARGODROPDOWN: {
+				static std::string cargo_filter;
 				this->filter_expanded = false;
-				ShowDropDownList(this, this->BuildCargoDropDownList(this->filter_expanded), -1, widget, 0, DropDownOption::Persist);
+				ShowDropDownList(this, this->BuildCargoDropDownList(this->filter_expanded), -1, widget, 0, {DropDownOption::Persist, DropDownOption::Filterable}, &cargo_filter);
 				break;
+			}
 		}
 	}
 
@@ -1088,6 +1091,7 @@ CargoDataEntry::CargoDataEntry(CargoType cargo) :
 	children(nullptr)
 {}
 
+/** Remove ourselves from our parent. */
 CargoDataEntry::~CargoDataEntry()
 {
 	this->Clear();

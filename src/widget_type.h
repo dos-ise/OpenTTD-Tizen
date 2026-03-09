@@ -136,6 +136,7 @@ using WidgetLookup = std::map<WidgetID, class NWidgetBase *>;
 class NWidgetBase {
 public:
 	NWidgetBase(WidgetType tp, WidgetID index = INVALID_WIDGET) : type(tp), index(index) {}
+	/** Ensure the destructor of the sub classes are called as well. */
 	virtual ~NWidgetBase() = default;
 
 	void ApplyAspectRatio();
@@ -625,6 +626,8 @@ public:
 
 	void SetupSmallestSize(Window *w) override;
 	void AssignSizePosition(SizingType sizing, int x, int y, uint given_width, uint given_height, bool rtl) override;
+
+	bool bottom_up = false; ///< Set to flow the widget from bottom-to-top instead of top-to-bottom.
 };
 
 /**

@@ -2485,15 +2485,13 @@ STR_NETWORK_CONNECTING_WAITING                                  :{BLACK}{NUM} pe
 STR_NETWORK_CONNECTING_DOWNLOADING_1                            :{BLACK}{BYTES} ladattu
 STR_NETWORK_CONNECTING_DOWNLOADING_2                            :{BLACK}{BYTES} / {BYTES} ladattu
 
-###length 8
+###length 6
 STR_NETWORK_CONNECTING_1                                        :{BLACK}(1/6) Yhdistetään...
 STR_NETWORK_CONNECTING_2                                        :{BLACK}(2/6) Valtuutetaan...
 STR_NETWORK_CONNECTING_3                                        :{BLACK}(3/6) Odotetaan...
 STR_NETWORK_CONNECTING_4                                        :{BLACK}(4/6) Ladataan karttaa...
 STR_NETWORK_CONNECTING_5                                        :{BLACK}(5/6) Käsitellään dataa...
 STR_NETWORK_CONNECTING_6                                        :{BLACK}(6/6) Rekisteröidään...
-STR_NETWORK_CONNECTING_SPECIAL_1                                :{BLACK}Haetaan pelitiedot...
-STR_NETWORK_CONNECTING_SPECIAL_2                                :{BLACK}Haetaan yhtiötiedot...
 
 STR_NETWORK_CONNECTION_DISCONNECT                               :{BLACK}Pura yhteys
 
@@ -4759,6 +4757,7 @@ STR_ORDERS_SKIP_BUTTON                                          :{BLACK}Ohita
 STR_ORDERS_SKIP_TOOLTIP                                         :{BLACK}Ohita nykyinen käsky ja aloita seuraava. Ctrl+napsautus hyppää valittuun käskyyn
 
 STR_ORDERS_DELETE_BUTTON                                        :{BLACK}Poista
+STR_ORDERS_DELETE_ALL_BUTTON                                    :{BLACK}Poista kaikki
 STR_ORDERS_DELETE_TOOLTIP                                       :{BLACK}Poista korostettu käsky
 STR_ORDERS_DELETE_ALL_TOOLTIP                                   :{BLACK}Poista kaikki käskyt
 STR_ORDERS_STOP_SHARING_BUTTON                                  :{BLACK}Lopeta jakaminen
@@ -5171,8 +5170,8 @@ STR_ERROR_CAN_ONLY_BE_BUILT_BELOW_SNOW_LINE                     :voidaan rakenta
 
 STR_ERROR_PROSPECTING_WAS_UNLUCKY                               :rahoittamasi koekaivaus epäonnistui; yritä uudelleen
 STR_ERROR_NO_SUITABLE_PLACES_FOR_PROSPECTING                    :ei ollut sopivia paikkoja tämän teollisuuslaitoksen koekaivauksille
-STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES                     :ei ollut sopivia paikkoja ”{STRING}”-teollisuuslaitoksille
-STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES_EXPLANATION         :muuta kartan parametreja saadaksesi paremman kartan
+STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES                     :Ei sopivia paikkoja ”{STRING}”-teollisuuslaitoksille
+STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES_EXPLANATION         :Muuta kartan parametreja saadaksesi paremman kartan
 
 # Station construction related errors
 STR_ERROR_CAN_T_BUILD_RAILROAD_STATION                          :Tähän ei voi rakentaa rautatieasemaa…
@@ -5494,7 +5493,7 @@ STR_ERROR_NO_DOCK                                               :Tässä ei ole 
 STR_ERROR_NO_AIRPORT                                            :Tässä ei ole lento- tai helikopterikenttää
 STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :Ei ole pysäkkejä sopivalla tien tyypillä
 STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :Ei ole pysäkkejä sopivalla raitiotien tyypillä
-STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :Ei ole nivelajoneuvoille sopivia pysäkkejä.{}Nivelletyt ajoneuvot vaativat pysäkin, joka ei ole kääntöpysäkki vaan läpiajettava
+STR_ERROR_NO_STOP_ARTICULATED_VEHICLE                           :Ei nivelajoneuvoille sopivia pysäkkejä.{}Nivelletyt ajoneuvot vaativat pysäkin, joka ei ole kääntöpysäkki vaan läpiajettava
 STR_ERROR_AIRPORT_NO_PLANES                                     :Tämä lentokone ei voi laskeutua tälle helikopterikentälle
 STR_ERROR_AIRPORT_NO_HELICOPTERS                                :Tämä helikopteri ei voi laskeutua tälle lentokentälle
 STR_ERROR_NO_RAIL_WAYPOINT                                      :Tässä ei ole rautatien reittipistettä
