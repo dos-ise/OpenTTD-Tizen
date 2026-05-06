@@ -1136,8 +1136,8 @@ STR_CONFIG_SETTING_CONSTRUCTION_COSTS_HELPTEXT                  :การตั
 STR_CONFIG_SETTING_RECESSIONS                                   :เศรษฐกิจถดถอย: {STRING}
 STR_CONFIG_SETTING_RECESSIONS_HELPTEXT                          :หากเปิดใช้งาน การถดถอย อาจเกิดขึ้นทุก 2 - 3 ปี ในช่วงเศรษฐกิจตกต่ำในการผลิตทั้งหมด อย่างมีนัยสำคัญต่ำกว่า (มันจะกลับไปที่ระดับก่อนหน้านี้เมื่อภาวะถดถอยจบลง)
 
-STR_CONFIG_SETTING_TRAIN_REVERSING                              :ไม่อนุญาตให้รถไฟกลับขบวนในสถานี: {STRING}
-STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :หากเปิดใช้งานรถไฟจะไม่ย้อนกลับในสถานีที่ไม่ใช่ปลายทางถ้ามีเส้นทางที่สั้นไปยังปลายทางต่อไปของพวกเขา จะย้อนกลับ
+
+###length 3
 
 STR_CONFIG_SETTING_DISASTERS                                    :ภัยพิบัติ: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :ภัยพิบัติซึ่งบางครั้งสลับอาจปิดกั้นหรือทำลายยานพาหนะหรือโครงสร้างพื้นฐาน
@@ -1598,6 +1598,7 @@ STR_CONFIG_SETTING_NOSERVICE_HELPTEXT                           :เมื่อ
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS                             :จำกัดความเร็วของรถจักร/รถพ่วง: {STRING}
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS_HELPTEXT                    :เมื่อเปิดใช้งาน จะทำให้มีจำกัดความเร็วสูงสุดของยานพาหนะและรถพ่วงต่างๆ
 
+
 STR_CONFIG_SETTING_DISABLE_ELRAILS                              :ปิดระบบสายส่งไฟฟ้า(Electricfield): {STRING}
 STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :เมื่อเปิดการใช้งาน จะทำการปิดความต้องการการใช้งานระบบ Electrifield ของรถจักรหรือรถไฟฟ้า
 
@@ -1877,7 +1878,7 @@ STR_CONFIG_ERROR_INVALID_BASE_GRAPHICS_NOT_FOUND                :{WHITE}... ไ�
 STR_CONFIG_ERROR_INVALID_BASE_SOUNDS_NOT_FOUND                  :{WHITE}... ไม่สนใน Base Sounds set '{STRING}': หาไม่พบ
 STR_CONFIG_ERROR_INVALID_BASE_MUSIC_NOT_FOUND                   :{WHITE}... ไม่สนใจ Base Music set '{STRING}': หาไม่พบ
 
-# Video initalization errors
+# Video initialization errors
 STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION                 :{WHITE}... ไม่พบ GPU ที่รองรับ การเร่งฮาร์ดแวร์ถูกยกเลิกแล้ว
 
 # Intro window
@@ -3791,7 +3792,6 @@ STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED                         :{BLACK}น้�
 STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED_MAX_TE                  :{BLACK}น้ำหนัก: {LTBLUE}{WEIGHT_SHORT} {BLACK}พลังขับเคลื่อน: {LTBLUE}{POWER}{BLACK} ความเร็วสูงสุด: {LTBLUE}{VELOCITY} {BLACK}กำลังลากจูงสูงสุด: {LTBLUE}{FORCE}
 
 STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR                     :{BLACK}ผลประกอบการปีนี้: {LTBLUE}{CURRENCY_LONG} (ปีที่แล้ว: {CURRENCY_LONG})
-STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}ประสิทธิภาพ: {LTBLUE}{COMMA}%  {BLACK}เกิดการชำรุดหลังจากเข้าซ่อมบำรุงครั้งที่แล้ว: {LTBLUE}{COMMA} {BLACK}ครั้ง
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}สร้างเมื่อ: {LTBLUE}{NUM}{BLACK} มูลค่า: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}บรรทุก: {LTBLUE}ไม่มี{STRING}
@@ -3913,7 +3913,7 @@ STR_ORDER_DROP_HALT_DEPOT                                       :หยุด
 STR_ORDER_CONDITIONAL_VARIABLE_TOOLTIP                          :{BLACK}ข้อมูลยานพาหนะที่จะข้ามไป
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 STR_ORDER_CONDITIONAL_LOAD_PERCENTAGE                           :ปริมาณการบรรทุกรวม
 STR_ORDER_CONDITIONAL_RELIABILITY                               :ประสิทธิภาพของพาหนะ
 STR_ORDER_CONDITIONAL_MAX_SPEED                                 :ความเร็วสูงสุด

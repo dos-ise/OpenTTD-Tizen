@@ -744,8 +744,9 @@ STR_GRAPH_INDUSTRY_RANGE_DELIVERED                              :Παραδόθ�
 STR_GRAPH_INDUSTRY_RANGE_WAITING                                :Αναμονή
 
 STR_GRAPH_TOWN_CARGO_CAPTION                                    :{WHITE}{TOWN} - Ιστορικό Εμπορευμάτων
-STR_GRAPH_TOWN_RANGE_PRODUCED                                   :Προσφορά
+STR_GRAPH_TOWN_RANGE_PRODUCED                                   :Παράχθηκε/αν
 STR_GRAPH_TOWN_RANGE_TRANSPORTED                                :Μεταφέρθηκε/αν
+STR_GRAPH_TOWN_RANGE_DELIVERED                                  :Παραδόθηκε
 
 STR_GRAPH_PERFORMANCE_DETAIL_TOOLTIP                            :{BLACK}Εμφάνιση λεπτομεριών αποδόσεων
 
@@ -1444,8 +1445,13 @@ STR_CONFIG_SETTING_CONSTRUCTION_COSTS_HIGH                      :Υψηλό
 STR_CONFIG_SETTING_RECESSIONS                                   :Υφέσεις: {STRING}
 STR_CONFIG_SETTING_RECESSIONS_HELPTEXT                          :Όταν είναι ενεργοποιημένο, ενδέχεται περιοδικά να υπάρχουν υφέσεις. Κατά τη διάρκεια μιας ύφεσης, όλη η παραγωγή είναι πολύ χαμηλότερη (επιστρέφει στο προηγούμενο επίπεδο όταν τελειώσει η ύφεση)
 
-STR_CONFIG_SETTING_TRAIN_REVERSING                              :Απαγορεύεται η αντιστροφή τρένων στους σταθμούς: {STRING}
-STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :Όταν είναι ενεργοποιημένο, τα τρένα δεν θα κάνουν όπισθεν σε μη-τελικούς σταθμούς, ακόμα και εάν υπάρχει κοντινότερη διαδρομή προς τον επόμενή τους προορισμό όταν κάνουν όπισθεν
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE                           :Να επιτρέπεται η αναστροφή των τρένων κατά την οπισθοπορεία: {STRING}
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_HELPTEXT                  :Επιλέξτε πού μπορούν να κάνουν στροφή προς τα πίσω τα τρένα. Με την επιλογή "Όλα" τα τρένα μπορούν να κάνουν στροφή οπουδήποτε. Με την επιλογή "Μόνο στο τέλος της γραμμής" τα τρένα δεν θα κάνουν στροφή σε σταθμούς εάν είναι δυνατή μια διαδρομή προς τα εμπρός. Με την επιλογή "Καμία" τα τρένα δεν μπορούν να κάνουν στροφή και θα κινούνται προς τα πίσω εάν χρειαστεί, αλλά με μειωμένη ταχύτητα εάν το πίσω όχημα δεν διαθέτει καμπίνα οδήγησης
+
+###length 3
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_ALL                       :Όλα
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_END_OF_LINE_ONLY          :Τέλος της γραμμής μόνο
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_NONE                      :Κανένα
 
 STR_CONFIG_SETTING_DISASTERS                                    :Καταστροφές: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :Εναλλαγή καταστροφών που μπορούν περιστασιακά να εμποδίσουν ή να καταστρέψουν οχήματα ή υποδομές
@@ -1997,6 +2003,9 @@ STR_CONFIG_SETTING_STATION_LENGTH_LOADING_PENALTY_HELPTEXT      :Όταν είν
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS                             :Ενεργοποίηση ορίων ταχύτητας βαγονιών: {STRING}
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS_HELPTEXT                    :Όταν είναι ενεργοποιημένο, χρησιμοποιούνται και τα όρια ταχύτητας των βαγονιών όταν αποφασίζεται η μέγιστη ταχύτητα ενός τρένου
 
+STR_CONFIG_SETTING_AIRCRAFT_RANGE                               :Ενεργοποίηση μέγιστης εμβέλειας αεροσκάφους: {STRING}
+STR_CONFIG_SETTING_AIRCRAFT_RANGE_HELPTEXT                      :Όταν είναι ενεργοποιημένο, τα NewGRF θα μπορούν να περιορίσουν τη μέγιστη εμβέλεια αεροσκαφών
+
 STR_CONFIG_SETTING_DISABLE_ELRAILS                              :Απενεργοποίηση ηλεκτρικών σιδηροτροχιών: {STRING}
 STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :Ενεργοποιώντας αυτήν την ρύθμιση απενεργοποιείται η ανάγκη ηλεκτροδότησης των σιδηροτροχιών για να μπορέσουν σε αυτές να λειτουργήσουν οι ηλεκτρικές μηχανές
 
@@ -2320,7 +2329,7 @@ STR_CONFIG_ERROR_INVALID_BASE_GRAPHICS_NOT_FOUND                :αγνόηση 
 STR_CONFIG_ERROR_INVALID_BASE_SOUNDS_NOT_FOUND                  :αγνόηση Βασικού Σετ Ήχων «{STRING}»: δεν βρέθηκε
 STR_CONFIG_ERROR_INVALID_BASE_MUSIC_NOT_FOUND                   :αγνόηση Βασικού Σετ Μουσικής «{STRING}»: δεν βρέθηκε
 
-# Video initalization errors
+# Video initialization errors
 STR_VIDEO_DRIVER_ERROR                                          :Πρόβλημα με τις ρυθμίσεις της κάρτας οθόνης...
 STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION                 :δεν βρέθηκε συμβατή GPU. Η επιτάχυνση υλικού έχει απενεργοποιηθεί
 STR_VIDEO_DRIVER_ERROR_HARDWARE_ACCELERATION_CRASH              :Το πρόγραμμα οδήγησης της κάρτας γραφικών προκάλεσε πρόβλημα στο παιχνίδι. Η επιτάχυνση υλικού απενεργοποιήθηκε
@@ -4675,8 +4684,8 @@ STR_VEHICLE_DETAILS_ROAD_VEHICLE_RENAME                         :{BLACK}Ονομ
 STR_VEHICLE_DETAILS_SHIP_RENAME                                 :{BLACK}Ονομασία πλοίου
 STR_VEHICLE_DETAILS_AIRCRAFT_RENAME                             :{BLACK}Ονομασία αεροσκάφους
 
-STR_VEHICLE_INFO_AGE                                            :{COMMA} χρόν{P ος ια} ({COMMA})
-STR_VEHICLE_INFO_AGE_RED                                        :{RED}{COMMA} χρόν{P ος ια} ({COMMA})
+STR_VEHICLE_INFO_AGE                                            :{COMMA} χρόν{P ος ια} (ζωής: {COMMA} έτ{P "ος" η})
+STR_VEHICLE_INFO_AGE_RED                                        :{RED}{COMMA} χρόν{P ος ια} (ζωής: {COMMA} έτ{P "ος" η})
 STR_VEHICLE_INFO_AGE_RUNNING_COST_YR                            :{BLACK}Ηλικία: {LTBLUE}{STRING}{BLACK}   Λειτουργικό Κόστος: {LTBLUE}{CURRENCY_LONG}/έτος
 STR_VEHICLE_INFO_AGE_RUNNING_COST_PERIOD                        :{BLACK}Ηλικία: {LTBLUE}{STRING}{BLACK}   Λειτουργικό Κόστος: {LTBLUE}{CURRENCY_LONG}/περίοδο
 
@@ -4690,7 +4699,7 @@ STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR                     :{BLACK}Φετι
 STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR_MIN_PERFORMANCE     :{BLACK}Φετινό κέρδος: {LTBLUE}{CURRENCY_LONG} (Περσινό: {CURRENCY_LONG}) {BLACK}Ελάχ. απόδοση: {LTBLUE}{POWER_TO_WEIGHT}
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD                 :{BLACK}Κέρδος αυτή την περίοδο: {LTBLUE}{CURRENCY_LONG} (τελευταίας περιόδου: {CURRENCY_LONG})
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD_MIN_PERFORMANCE :{BLACK}Κέρδος αυτή την περίοδο: {LTBLUE}{CURRENCY_LONG} (τελευταίας περιόδου: {CURRENCY_LONG}) {BLACK}Ελάχ. απόδοση: {LTBLUE}{POWER_TO_WEIGHT}
-STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}Αξιοπιστία: {LTBLUE}{COMMA}%  {BLACK}Βλάβες μετά από την τελευταία επισκευή: {LTBLUE}{COMMA}
+STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}Αξιοπιστία: {LTBLUE}{COMMA}%  (μέγιστο: {COMMA}%) {BLACK}Βλάβες μετά από την τελευταία επισκευή: {LTBLUE}{COMMA}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}Κατασκευή: {LTBLUE}{NUM}{BLACK} Αξία: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Χωρητικότητα: {LTBLUE}Τίποτα{STRING}
@@ -4830,7 +4839,7 @@ STR_ORDER_HANGAR_ACTION_TOOLTIP                                 :{BLACK}Επιλ
 STR_ORDER_CONDITIONAL_VARIABLE_TOOLTIP                          :{BLACK}Δεδομένα οχήματος για να βασιστεί το άλμα
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 STR_ORDER_CONDITIONAL_LOAD_PERCENTAGE                           :{G=n}Ποσοστό φόρτωσης
 STR_ORDER_CONDITIONAL_RELIABILITY                               :{G=f}Αξιοπιστία
 STR_ORDER_CONDITIONAL_MAX_SPEED                                 :Μέγιστη ταχύτητα
@@ -4839,6 +4848,7 @@ STR_ORDER_CONDITIONAL_REQUIRES_SERVICE                          :Απαιτεί 
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :Πάντα
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :Υπόλοιπη διάρκεια ζωής (χρόνια)
 STR_ORDER_CONDITIONAL_MAX_RELIABILITY                           :Μέγιστη αξιοπιστία
+STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :Οδήγηση προς τα πίσω
 ###next-name-looks-similar
 
 STR_ORDER_CONDITIONAL_COMPARATOR_TOOLTIP                        :{BLACK}Πως να συγκρίνετε τα δεδομένα του οχήματος με την δοσμένη τιμή
@@ -5358,6 +5368,7 @@ STR_ERROR_CAN_T_MOVE_VEHICLE                                    :Δεν μπορ
 STR_ERROR_REAR_ENGINE_FOLLOW_FRONT                              :η πίσω μηχανή θα ακολουθεί πάντα την αντίστοιχη μπροστινή
 STR_ERROR_UNABLE_TO_FIND_ROUTE_TO                               :αδύνατο να βρεθεί διαδρομή προς το τοπικό αμαξοστάσιο
 STR_ERROR_UNABLE_TO_FIND_LOCAL_DEPOT                            :αδύνατο να βρεθεί τοπικό αμαξοστάσιο
+STR_ERROR_UNABLE_TO_FIND_LOCAL_HANGAR                           :αδύνατο να βρεθεί τοπικό υπόστεγο
 
 STR_ERROR_DEPOT_WRONG_DEPOT_TYPE                                :λάθος τύπος αμαξοστάσιου
 

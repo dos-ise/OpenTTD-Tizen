@@ -861,6 +861,8 @@ STR_CONFIG_SETTING_REALISTIC                                    :Реален
 
 
 
+###length 3
+
 
 
 ###setting-zero-is-special
@@ -1041,6 +1043,7 @@ STR_CONFIG_SETTING_SCRIPT_MAX_OPCODES                           :#ОПкодов
 
 
 
+
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN               :Пристигнување на првото возило на станицата на играчот: {STRING}
 
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER             :Пристигнување на прво возило на конкурентска станица: {STRING}
@@ -1158,7 +1161,7 @@ STR_CONFIG_ERROR_INVALID_GRF_UNKNOWN                            :непозна�
 STR_CONFIG_ERROR_INVALID_SAVEGAME_COMPRESSION_LEVEL             :{WHITE}... ниво на компресија '{STRING}' не е валидна
 STR_CONFIG_ERROR_INVALID_SAVEGAME_COMPRESSION_ALGORITHM         :{WHITE}... спаси играта формат '{STRING}' не е достапен. се врати на '{STRING}'
 
-# Video initalization errors
+# Video initialization errors
 
 # Intro window
 
@@ -1905,7 +1908,7 @@ STR_ORDER_INDEX                                                 :{COMMA}:{NBSP}
 
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 ###next-name-looks-similar
 
 

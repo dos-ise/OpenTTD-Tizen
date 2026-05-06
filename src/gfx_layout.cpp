@@ -38,7 +38,7 @@
 std::unique_ptr<Layouter::LineCache> Layouter::linecache;
 
 /** Cache of Font instances. */
-Layouter::FontColourMap Layouter::fonts[FS_END];
+EnumIndexArray<Layouter::FontColourMap, FontSize, FontSize::End> Layouter::fonts;
 
 
 /**
@@ -49,7 +49,7 @@ Layouter::FontColourMap Layouter::fonts[FS_END];
 Font::Font(FontSize size, TextColour colour) :
 		fc(FontCache::Get(size)), colour(colour)
 {
-	assert(size < FS_END);
+	assert(size < FontSize::End);
 }
 
 /**

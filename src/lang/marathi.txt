@@ -797,6 +797,8 @@ STR_CONFIG_SETTING_REALISTIC                                    :खरेखु
 
 
 
+###length 3
+
 
 
 ###setting-zero-is-special
@@ -989,6 +991,7 @@ STR_CONFIG_SETTING_COMMAND_PAUSE_LEVEL_ALL_ACTIONS              :सर्व �
 
 
 
+
 ###length 3
 
 
@@ -1051,7 +1054,7 @@ STR_CONFIG_SETTING_STATUSBAR_POS                                :स्टेट
 
 # Config errors
 
-# Video initalization errors
+# Video initialization errors
 
 # Intro window
 
@@ -1694,7 +1697,7 @@ STR_ORDER_INDEX                                                 :{COMMA}:{NBSP}
 
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 ###next-name-looks-similar
 
 

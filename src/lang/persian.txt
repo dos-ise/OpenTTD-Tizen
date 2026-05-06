@@ -1195,6 +1195,8 @@ STR_CONFIG_SETTING_CONSTRUCTION_COSTS                           :هزینه ها
 
 
 
+###length 3
+
 
 
 ###setting-zero-is-special
@@ -1569,6 +1571,7 @@ STR_CONFIG_SETTING_NOSERVICE                                    :غیرفعال 
 
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS                             :فعال کردن حد برای سرعت واگن: {STRING}
 
+
 STR_CONFIG_SETTING_DISABLE_ELRAILS                              :غیر فعال کردن ریل برقی: {STRING}
 
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN               :رسیدن اولین وسیله نقلیه به یکی ازایستگاه های بازیکن: {STRING}
@@ -1772,7 +1775,7 @@ STR_CONFIG_ERROR_INVALID_GRF_UNKNOWN                            :ناشناخت�
 STR_CONFIG_ERROR_INVALID_SAVEGAME_COMPRESSION_LEVEL             :{WHITE}... سطح فشردگی'{STRING}' معتبر نیست
 STR_CONFIG_ERROR_INVALID_SAVEGAME_COMPRESSION_ALGORITHM         :{WHITE}... قالب ذخیره بازی '{STRING}' در دسترس نیست.برگردان به '{STRING}'
 
-# Video initalization errors
+# Video initialization errors
 
 # Intro window
 STR_INTRO_CAPTION                                               :{WHITE}OpenTTD
@@ -3672,7 +3675,7 @@ STR_ORDER_TRAIN_DEPOT_ACTION_TOOLTIP                            :ایستگاه 
 
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :عمر مفید باقی مانده (سال)
 ###next-name-looks-similar
 

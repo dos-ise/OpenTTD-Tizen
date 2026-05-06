@@ -1237,8 +1237,8 @@ STR_CONFIG_SETTING_CONSTRUCTION_COSTS_HELPTEXT                  :קבע את ר�
 STR_CONFIG_SETTING_RECESSIONS                                   :מיתונים: {STRING}
 STR_CONFIG_SETTING_RECESSIONS_HELPTEXT                          :אם מאופשר מיתונים עלולים להתרחש מדי כמה שנים. בתקופת מיתון כל הייצור קטן יותר באופן משמעותי (הוא חוזר לרמתו הקודמת בסוף המיתון)
 
-STR_CONFIG_SETTING_TRAIN_REVERSING                              :מנע החלפת כיוון רכבות בתחנות: {STRING}
-STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :אם מאופשר רכבות לא יחליפו כיוון בתחנות שאינן סופיות, גם אם עקב החלפת כיוון יש נתיב קצר יותר אל היעד הבא
+
+###length 3
 
 STR_CONFIG_SETTING_DISASTERS                                    :אסונות: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :אפשר/מנע אסונות אשר עלולים מדי פעם לחסום או להרוס כלי רכב או תשתיות
@@ -1735,6 +1735,7 @@ STR_CONFIG_SETTING_NOSERVICE_HELPTEXT                           :כאשר מאו
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS                             :{STRING} :אפשר הגבלת מהירות עבור קרונות רכבת
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS_HELPTEXT                    :כאשר מאופשר, השתמש גם במגבלות מהירות של קרונות לצורך קביעות המהירות המירבית של רכבת
 
+
 STR_CONFIG_SETTING_DISABLE_ELRAILS                              :{STRING} : בטל פסים חשמליים
 STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :אפשור הגדרה זו מבטל את הדרישה לחשמל מסילות כדי שקטרים חשמליים יוכלו לנסוע עליהן
 
@@ -2024,7 +2025,7 @@ STR_CONFIG_ERROR_INVALID_BASE_GRAPHICS_NOT_FOUND                :{WHITE}... מת
 STR_CONFIG_ERROR_INVALID_BASE_SOUNDS_NOT_FOUND                  :{WHITE}... מתעלם מערכת צלילים בסיסית '{STRING}': לא נמצאה
 STR_CONFIG_ERROR_INVALID_BASE_MUSIC_NOT_FOUND                   :{WHITE}... מתעלם מערכת מוסיקה בסיסית '{STRING}': לא נמצאה
 
-# Video initalization errors
+# Video initialization errors
 STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION                 :{WHITE}... לא נמצא כרטיס מסך תואם, האצת חומרה מושבתת
 
 # Intro window
@@ -4083,7 +4084,6 @@ STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED                         :{BLACK}משקל
 STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED_MAX_TE                  :{BLACK}משקל: {LTBLUE}{WEIGHT_SHORT} {BLACK}הספק: {LTBLUE}{POWER}{BLACK} מהירות מקסימלית: {LTBLUE}{VELOCITY} {BLACK}T.E. מקסימלי: {LTBLUE}{FORCE}
 
 STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR                     :{BLACK}רווח בשנה הנוכחת: {LTBLUE}{CURRENCY_LONG} (שנה שעברה: {CURRENCY_LONG})
-STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}מהימנות: {LTBLUE}{COMMA}%  {BLACK}קלקול מאז טיפול אחרון: {LTBLUE}{COMMA}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}נבנה: {LTBLUE}{NUM}{BLACK} ערך: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}קיבולת: {LTBLUE}אין{STRING}
@@ -4211,7 +4211,7 @@ STR_ORDER_DROP_HALT_DEPOT                                       :עצור
 STR_ORDER_CONDITIONAL_VARIABLE_TOOLTIP                          :{BLACK}נתוני כלי הרכב עליהם יתבסס הדילוג
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 STR_ORDER_CONDITIONAL_LOAD_PERCENTAGE                           :אחוז טעינה
 STR_ORDER_CONDITIONAL_RELIABILITY                               :אמינות
 STR_ORDER_CONDITIONAL_MAX_SPEED                                 :מהירות מירבית

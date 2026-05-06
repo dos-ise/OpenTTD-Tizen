@@ -167,7 +167,7 @@ bool VideoDriver_SDL_Base::CreateMainWindow(uint w, uint h, uint flags)
 		return false;
 	}
 
-	std::string icon_path = FioFindFullPath(BASESET_DIR, "openttd.32.bmp");
+	std::string icon_path = FioFindFullPath(Subdirectory::Baseset, "openttd.32.bmp");
 	if (!icon_path.empty()) {
 		/* Give the application an icon */
 		SDL_Surface *icon = SDL_LoadBMP(icon_path.c_str());
@@ -627,11 +627,10 @@ void VideoDriver_SDL_Base::InputLoop()
 	this->fast_forward_key_pressed = keys[SDL_SCANCODE_TAB] && (mod & KMOD_ALT) == 0;
 
 	/* Determine which directional keys are down. */
-	_dirkeys =
-		(keys[SDL_SCANCODE_LEFT]  ? 1 : 0) |
-		(keys[SDL_SCANCODE_UP]    ? 2 : 0) |
-		(keys[SDL_SCANCODE_RIGHT] ? 4 : 0) |
-		(keys[SDL_SCANCODE_DOWN]  ? 8 : 0);
+	_dirkeys.Set(DirectionKey::Left, keys[SDL_SCANCODE_LEFT]);
+	_dirkeys.Set(DirectionKey::Up, keys[SDL_SCANCODE_UP]);
+	_dirkeys.Set(DirectionKey::Right, keys[SDL_SCANCODE_RIGHT]);
+	_dirkeys.Set(DirectionKey::Down, keys[SDL_SCANCODE_DOWN]);
 
 	if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();
 }

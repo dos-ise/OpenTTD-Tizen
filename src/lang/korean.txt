@@ -652,8 +652,9 @@ STR_GRAPH_INDUSTRY_RANGE_DELIVERED                              :수송됨
 STR_GRAPH_INDUSTRY_RANGE_WAITING                                :대기 중
 
 STR_GRAPH_TOWN_CARGO_CAPTION                                    :{WHITE}{TOWN} - 화물 이력
-STR_GRAPH_TOWN_RANGE_PRODUCED                                   :공급
+STR_GRAPH_TOWN_RANGE_PRODUCED                                   :생산
 STR_GRAPH_TOWN_RANGE_TRANSPORTED                                :수송됨
+STR_GRAPH_TOWN_RANGE_DELIVERED                                  :수송됨
 
 STR_GRAPH_PERFORMANCE_DETAIL_TOOLTIP                            :{BLACK}상세 성취도를 봅니다.
 
@@ -1352,8 +1353,13 @@ STR_CONFIG_SETTING_CONSTRUCTION_COSTS_HIGH                      :높음
 STR_CONFIG_SETTING_RECESSIONS                                   :경제 불황: {STRING}
 STR_CONFIG_SETTING_RECESSIONS_HELPTEXT                          :이 설정을 켜면, 주기적으로 경제 불황이 발생할 수 있습니다. 불황 기간 동안에는 모든 화물의 생산량이 확연하게 줄어듭니다. (불황이 끝나면 이전 수준으로 회복됩니다.)
 
-STR_CONFIG_SETTING_TRAIN_REVERSING                              :열차가 역 내에서 회차하는 것을 금지: {STRING}
-STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :이 설정을 켜면. 열차가 뒤로 돌면 다음 목적지까지 더 짧은 경로로 갈 수 있다고 해도 열차가 비두단식 역에서 뒤로 돌 수 없게 됩니다.
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE                           :열차가 회차할 때 열차 전체가 뒤집히는 것을 허용: {STRING}
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_HELPTEXT                  :열차가 뒤로 이동할 때 열차 전체가 뒤집혀도 되는지를 선택합니다. "어디서나"를 선택하면 어디에서든 열차가 뒤집힐 수 있습니다. "선로 끝에서만"을 선택하면 역 안에서 전방에 진행 경로가 있다면 열차가 뒤집히지 않습니다. "불가능"을 선택하면 열차는 뒤집히지 않으며 필요한 경우에만 후진하여 운행하지만, 후방 기관차가 없으면 속도가 감소합니다
+
+###length 3
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_ALL                       :어디에서든
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_END_OF_LINE_ONLY          :선로 끝에서만
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_NONE                      :불가능
 
 STR_CONFIG_SETTING_DISASTERS                                    :재앙: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :일정 구역이나 차량, 기반시설을 간혹 파괴할 수도 있는 재앙을 켜거나 끕니다.
@@ -1905,6 +1911,9 @@ STR_CONFIG_SETTING_STATION_LENGTH_LOADING_PENALTY_HELPTEXT      :이 설정을 �
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS                             :화물차 속력 제한 적용: {STRING}
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS_HELPTEXT                    :이 설정을 켜면, 화물차의 속력 제한값에 따라 열차의 최대 속력을 제한합니다.
 
+STR_CONFIG_SETTING_AIRCRAFT_RANGE                               :항공기 최대 항속 거리 사용: {STRING}
+STR_CONFIG_SETTING_AIRCRAFT_RANGE_HELPTEXT                      :이 설정을 켜면, NewGRF가 항공기의 최대 항속 거리를 제한할 수 있습니다
+
 STR_CONFIG_SETTING_DISABLE_ELRAILS                              :전기 철도를 사용하지 않음: {STRING}
 STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :이 설정을 켜면, 전기 기관차가 일반 철도에서도 달릴 수 있도록 만듭니다
 
@@ -2228,7 +2237,7 @@ STR_CONFIG_ERROR_INVALID_BASE_GRAPHICS_NOT_FOUND                :기본 그래�
 STR_CONFIG_ERROR_INVALID_BASE_SOUNDS_NOT_FOUND                  :기본 효과음 세트({STRING})가 무시되었습니다 - 파일을 찾을 수 없습니다
 STR_CONFIG_ERROR_INVALID_BASE_MUSIC_NOT_FOUND                   :기본 배경음 세트({STRING})가 무시되었습니다 - 파일을 찾을 수 없습니다
 
-# Video initalization errors
+# Video initialization errors
 STR_VIDEO_DRIVER_ERROR                                          :비디오 설정 오류 발생...
 STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION                 :호환되는 GPU를 찾지 못했습니다. 하드웨어 가속이 비활성화됩니다
 STR_VIDEO_DRIVER_ERROR_HARDWARE_ACCELERATION_CRASH              :GPU 드라이버가 게임을 종료시켰습니다. 하드웨어 가속이 비활성화됩니다
@@ -4575,8 +4584,8 @@ STR_VEHICLE_DETAILS_ROAD_VEHICLE_RENAME                         :{BLACK}차량 �
 STR_VEHICLE_DETAILS_SHIP_RENAME                                 :{BLACK}선박 이름 변경
 STR_VEHICLE_DETAILS_AIRCRAFT_RENAME                             :{BLACK}항공기 이름 변경
 
-STR_VEHICLE_INFO_AGE                                            :{COMMA}년 ({COMMA})
-STR_VEHICLE_INFO_AGE_RED                                        :{RED}{COMMA}년 ({COMMA})
+STR_VEHICLE_INFO_AGE                                            :{COMMA}년 (수명: {COMMA}년)
+STR_VEHICLE_INFO_AGE_RED                                        :{RED}{COMMA}년 (수명: {COMMA}년)
 STR_VEHICLE_INFO_AGE_RUNNING_COST_YR                            :{BLACK}연령: {LTBLUE}{STRING}{BLACK}   유지비: {LTBLUE}{CURRENCY_LONG}/년
 STR_VEHICLE_INFO_AGE_RUNNING_COST_PERIOD                        :{BLACK}연령: {LTBLUE}{STRING}{BLACK}   유지비: {LTBLUE}{CURRENCY_LONG}/기간
 
@@ -4590,7 +4599,7 @@ STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR                     :{BLACK}올해 �
 STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR_MIN_PERFORMANCE     :{BLACK}올해 이익: {LTBLUE}{CURRENCY_LONG} (작년: {CURRENCY_LONG}) {BLACK}최소 성능: {LTBLUE}{POWER_TO_WEIGHT}
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD                 :{BLACK}지난 기간 이익: {LTBLUE}{CURRENCY_LONG} (지난 기간: {CURRENCY_LONG})
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD_MIN_PERFORMANCE :{BLACK}이번 기간 이익: {LTBLUE}{CURRENCY_LONG} (지난 기간: {CURRENCY_LONG}) {BLACK}최소 성능: {LTBLUE}{POWER_TO_WEIGHT}
-STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}신뢰도: {LTBLUE}{COMMA}%  {BLACK}최근 점검 이후 고장 횟수: {LTBLUE}{COMMA}
+STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}신뢰도: {LTBLUE}{COMMA}% (최대: {COMMA}%) {BLACK}최근 점검 이후 고장 횟수: {LTBLUE}{COMMA}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}생산: {LTBLUE}{NUM}{BLACK} 가격: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}수송량: {LTBLUE}없음{STRING}
@@ -4730,7 +4739,7 @@ STR_ORDER_HANGAR_ACTION_TOOLTIP                                 :{BLACK}격납�
 STR_ORDER_CONDITIONAL_VARIABLE_TOOLTIP                          :{BLACK}경로를 건너뛰기 위한 비교 조건을 선택합니다
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 STR_ORDER_CONDITIONAL_LOAD_PERCENTAGE                           :적재율
 STR_ORDER_CONDITIONAL_RELIABILITY                               :신뢰도
 STR_ORDER_CONDITIONAL_MAX_SPEED                                 :최고 속력
@@ -4739,6 +4748,7 @@ STR_ORDER_CONDITIONAL_REQUIRES_SERVICE                          :점검 필요�
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :항상
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :남은 수명 (년)
 STR_ORDER_CONDITIONAL_MAX_RELIABILITY                           :최대 신뢰도
+STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :뒤로 이동할 때
 ###next-name-looks-similar
 
 STR_ORDER_CONDITIONAL_COMPARATOR_TOOLTIP                        :{BLACK}왼쪽의 비교조건과 오른쪽의 입력값을 비교할 연산자를 선택합니다
@@ -5258,6 +5268,7 @@ STR_ERROR_CAN_T_MOVE_VEHICLE                                    :차량을 옮�
 STR_ERROR_REAR_ENGINE_FOLLOW_FRONT                              :뒷쪽 기관차는 앞쪽 기관차와 항상 붙어있어야 합니다
 STR_ERROR_UNABLE_TO_FIND_ROUTE_TO                               :근처에 있는 차량기지로 가는 길을 찾을 수 없습니다
 STR_ERROR_UNABLE_TO_FIND_LOCAL_DEPOT                            :근처에 있는 차고지를 찾을 수 없습니다
+STR_ERROR_UNABLE_TO_FIND_LOCAL_HANGAR                           :근처에 있는 격납고를 찾을 수 없습니다
 
 STR_ERROR_DEPOT_WRONG_DEPOT_TYPE                                :잘못된 차량기지 종류입니다
 

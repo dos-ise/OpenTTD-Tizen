@@ -434,7 +434,8 @@ STR_CONFIG_SETTING_COMPANIES_OFF                                :बन्द
 ###length 3
 
 
-STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :यदि सक्षम किया गया है, तो ट्रेनें गैर-टर्मिनस स्टेशनों पर रिवर्स नहीं होंगी, भले ही रिवर्स करते समय उनके अगले गंतव्य के लिए छोटा रास्ता हो।
+
+###length 3
 
 
 
@@ -641,6 +642,7 @@ STR_CONFIG_SETTING_AI_BUILDS_AIRCRAFT                           :कंप्य
 
 
 
+
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :दुर्घटनायें / आपदायें : {STRING}
 
 
@@ -732,7 +734,7 @@ STR_CONFIG_SETTING_REVERSE_AT_SIGNALS_HELPTEXT                  :यदि ट�
 
 # Config errors
 
-# Video initalization errors
+# Video initialization errors
 STR_VIDEO_DRIVER_ERROR                                          :{WHITE}वीडियो विन्यास में त्रुटि...
 STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION                 :{WHITE}...कोई संगत जीपीयू नहीं मिला। हार्डवेयर त्वरण अक्षम किया गया
 STR_VIDEO_DRIVER_ERROR_HARDWARE_ACCELERATION_CRASH              :{WHITE}... GPU ड्राइवर ने गेम को क्रैश कर दिया। हार्डवेयर त्वरण अक्षम किया गया
@@ -1377,7 +1379,7 @@ STR_ORDER_REFIT_TOOLTIP                                         :{BLACK}इस �
 
 
 # Conditional order variables, must follow order of OrderConditionVariable enum
-###length 8
+###length 9
 STR_ORDER_CONDITIONAL_RELIABILITY                               :विश्वसनीयता
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :हमेशा
 ###next-name-looks-similar
