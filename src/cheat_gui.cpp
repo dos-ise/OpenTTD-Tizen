@@ -12,8 +12,7 @@
 #include "cheat_type.h"
 #include "company_base.h"
 #include "company_func.h"
-#include "currency.h"
-#include "saveload/saveload.h"
+#include "currency_func.h"
 #include "vehicle_base.h"
 #include "textbuf_gui.h"
 #include "window_gui.h"
@@ -92,7 +91,7 @@ static int32_t ClickChangeCompanyCheat(int32_t new_value, int32_t change_directi
 static int32_t ClickSetProdCheat(int32_t new_value, int32_t)
 {
 	_cheats.setup_prod.value = (new_value != 0);
-	InvalidateWindowClassesData(WC_INDUSTRY_VIEW);
+	InvalidateWindowClassesData(WindowClass::IndustryView);
 	return _cheats.setup_prod.value;
 }
 
@@ -128,12 +127,12 @@ static int32_t ClickChangeDateCheat(int32_t new_value, int32_t)
 	}
 
 	CalendarEnginesMonthlyLoop();
-	SetWindowDirty(WC_STATUS_BAR, 0);
-	InvalidateWindowClassesData(WC_BUILD_STATION, 0);
-	InvalidateWindowClassesData(WC_BUS_STATION, 0);
-	InvalidateWindowClassesData(WC_TRUCK_STATION, 0);
-	InvalidateWindowClassesData(WC_BUILD_OBJECT, 0);
-	InvalidateWindowClassesData(WC_FINANCES, 0);
+	SetWindowDirty(WindowClass::Statusbar, 0);
+	InvalidateWindowClassesData(WindowClass::BuildStation, 0);
+	InvalidateWindowClassesData(WindowClass::BuildBusStation, 0);
+	InvalidateWindowClassesData(WindowClass::BuildTruckStation, 0);
+	InvalidateWindowClassesData(WindowClass::BuildObject, 0);
+	InvalidateWindowClassesData(WindowClass::Finances, 0);
 	ResetSignalVariant();
 	return TimerGameCalendar::year.base();
 }
@@ -152,7 +151,7 @@ static int32_t ClickChangeMaxHlCheat(int32_t new_value, int32_t)
 	 * If yes, disallow the change. */
 	for (const auto t : Map::Iterate()) {
 		if ((int32_t)TileHeight(t) > new_value) {
-			ShowErrorMessage(GetEncodedString(STR_CONFIG_SETTING_TOO_HIGH_MOUNTAIN), {}, WL_ERROR);
+			ShowErrorMessage(GetEncodedString(STR_CONFIG_SETTING_TOO_HIGH_MOUNTAIN), {}, WarningLevel::Error);
 			/* Return old, unchanged value */
 			return _settings_game.construction.map_height_limit;
 		}
@@ -163,7 +162,7 @@ static int32_t ClickChangeMaxHlCheat(int32_t new_value, int32_t)
 	ReloadNewGRFData();
 
 	/* The smallmap uses an index from heightlevels to colours. Trigger rebuilding it. */
-	InvalidateWindowClassesData(WC_SMALLMAP, 2);
+	InvalidateWindowClassesData(WindowClass::SmallMap, 2);
 
 	return _settings_game.construction.map_height_limit;
 }
@@ -192,7 +191,7 @@ typedef int32_t CheckButtonClick(int32_t new_value, int32_t change_direction);
 
 /** Information of a cheat. */
 struct CheatEntry {
-	VarType type;          ///< type of selector
+	VarMemType type; ///< type of selector
 	StringID str;          ///< string with descriptive text
 	void *variable;        ///< pointer to the variable
 	bool *been_used;       ///< has this cheat been used before?
@@ -204,15 +203,15 @@ struct CheatEntry {
  * Order matches with the values of #CheatNumbers
  */
 static const CheatEntry _cheats_ui[] = {
-	{SLE_INT32, STR_CHEAT_MONEY,           &_money_cheat_amount,                          &_cheats.money.been_used,            &ClickMoneyCheat         },
-	{SLE_UINT8, STR_CHEAT_CHANGE_COMPANY,  &_local_company,                               &_cheats.switch_company.been_used,   &ClickChangeCompanyCheat },
-	{SLE_BOOL,  STR_CHEAT_EXTRA_DYNAMITE,  &_cheats.magic_bulldozer.value,                &_cheats.magic_bulldozer.been_used,  nullptr                  },
-	{SLE_BOOL,  STR_CHEAT_CROSSINGTUNNELS, &_cheats.crossing_tunnels.value,               &_cheats.crossing_tunnels.been_used, nullptr                  },
-	{SLE_BOOL,  STR_CHEAT_NO_JETCRASH,     &_cheats.no_jetcrash.value,                    &_cheats.no_jetcrash.been_used,      nullptr                  },
-	{SLE_BOOL,  STR_CHEAT_SETUP_PROD,      &_cheats.setup_prod.value,                     &_cheats.setup_prod.been_used,       &ClickSetProdCheat       },
-	{SLE_BOOL,  STR_CHEAT_STATION_RATING,  &_cheats.station_rating.value,                 &_cheats.station_rating.been_used,   nullptr                  },
-	{SLE_UINT8, STR_CHEAT_EDIT_MAX_HL,     &_settings_game.construction.map_height_limit, &_cheats.edit_max_hl.been_used,      &ClickChangeMaxHlCheat   },
-	{SLE_INT32, STR_CHEAT_CHANGE_DATE,     &TimerGameCalendar::year,                      &_cheats.change_date.been_used,      &ClickChangeDateCheat    },
+	{ VarMemType::I32, STR_CHEAT_MONEY, &_money_cheat_amount, &_cheats.money.been_used, &ClickMoneyCheat },
+	{ VarMemType::U8, STR_CHEAT_CHANGE_COMPANY, &_local_company, &_cheats.switch_company.been_used, &ClickChangeCompanyCheat },
+	{ VarMemType::Bool, STR_CHEAT_EXTRA_DYNAMITE, &_cheats.magic_bulldozer.value, &_cheats.magic_bulldozer.been_used, nullptr },
+	{ VarMemType::Bool, STR_CHEAT_CROSSINGTUNNELS, &_cheats.crossing_tunnels.value, &_cheats.crossing_tunnels.been_used, nullptr },
+	{ VarMemType::Bool, STR_CHEAT_NO_JETCRASH, &_cheats.no_jetcrash.value, &_cheats.no_jetcrash.been_used, nullptr },
+	{ VarMemType::Bool, STR_CHEAT_SETUP_PROD, &_cheats.setup_prod.value, &_cheats.setup_prod.been_used, &ClickSetProdCheat },
+	{ VarMemType::Bool, STR_CHEAT_STATION_RATING, &_cheats.station_rating.value, &_cheats.station_rating.been_used, nullptr },
+	{ VarMemType::U8, STR_CHEAT_EDIT_MAX_HL, &_settings_game.construction.map_height_limit, &_cheats.edit_max_hl.been_used, &ClickChangeMaxHlCheat },
+	{ VarMemType::I32, STR_CHEAT_CHANGE_DATE, &TimerGameCalendar::year, &_cheats.change_date.been_used, &ClickChangeDateCheat },
 };
 
 static_assert(CHT_NUM_CHEATS == lengthof(_cheats_ui));
@@ -283,7 +282,7 @@ struct CheatWindow : Window {
 
 			std::string str;
 			switch (ce->type) {
-				case SLE_BOOL: {
+				case VarMemType::Bool: {
 					bool on = (*(bool*)ce->variable);
 
 					DrawBoolButton(button_left, y + button_y_offset, Colours::Yellow, Colours::Grey, on, true);
@@ -297,14 +296,14 @@ struct CheatWindow : Window {
 					/* Draw [<][>] boxes for settings of an integer-type */
 					DrawArrowButtons(button_left, y + button_y_offset, Colours::Yellow, clicked - (i * 2), true, true);
 
-					switch (ce->str) {
+					switch (ce->str.base()) {
 						/* Display date for change date cheat */
-						case STR_CHEAT_CHANGE_DATE:
+						case STR_CHEAT_CHANGE_DATE.base():
 							str = GetString(ce->str, TimerGameCalendar::date);
 							break;
 
 						/* Draw coloured flag for change company cheat */
-						case STR_CHEAT_CHANGE_COMPANY: {
+						case STR_CHEAT_CHANGE_COMPANY.base(): {
 							str = GetString(ce->str, val + 1);
 							uint offset = WidgetDimensions::scaled.hsep_indent + GetStringBoundingBox(str).width;
 							DrawCompanyIcon(_local_company, rtl ? text_right - offset - WidgetDimensions::scaled.hsep_indent : text_left + offset, y + icon_y_offset);
@@ -364,7 +363,7 @@ struct CheatWindow : Window {
 					editable && value != (sd->flags.Test(SettingFlag::GuiZeroIsSpecial) ? 0 : min_val), editable && static_cast<uint32_t>(value) != max_val);
 		}
 		auto [param1, param2] = sd->GetValueParams(value);
-		DrawString(text.left, text.right, text.top, GetString(sd->GetTitle(), STR_CONFIG_SETTING_VALUE, param1, param2), TC_LIGHT_BLUE);
+		DrawString(text.left, text.right, text.top, GetString(sd->GetTitle(), STR_CONFIG_SETTING_VALUE, param1, param2), TextColour::LightBlue);
 	}
 
 	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize) override
@@ -380,20 +379,20 @@ struct CheatWindow : Window {
 		uint width = 0;
 		for (const auto &ce : _cheats_ui) {
 			switch (ce.type) {
-				case SLE_BOOL:
+				case VarMemType::Bool:
 					width = std::max(width, GetStringBoundingBox(GetString(ce.str, STR_CONFIG_SETTING_ON)).width);
 					width = std::max(width, GetStringBoundingBox(GetString(ce.str, STR_CONFIG_SETTING_OFF)).width);
 					break;
 
 				default:
-					switch (ce.str) {
+					switch (ce.str.base()) {
 						/* Display date for change date cheat */
-						case STR_CHEAT_CHANGE_DATE:
+						case STR_CHEAT_CHANGE_DATE.base():
 							width = std::max(width, GetStringBoundingBox(GetString(ce.str, TimerGameCalendar::ConvertYMDToDate(CalendarTime::MAX_YEAR, 11, 31))).width);
 							break;
 
 						/* Draw coloured flag for change company cheat */
-						case STR_CHEAT_CHANGE_COMPANY:
+						case STR_CHEAT_CHANGE_COMPANY.base():
 							width = std::max(width, GetStringBoundingBox(GetString(ce.str, MAX_COMPANIES)).width + WidgetDimensions::scaled.hsep_wide);
 							break;
 
@@ -466,7 +465,7 @@ struct CheatWindow : Window {
 		*ce->been_used = true;
 
 		switch (ce->type) {
-			case SLE_BOOL:
+			case VarMemType::Bool:
 				value ^= 1;
 				if (ce->proc != nullptr) ce->proc(value, 0);
 				break;
@@ -642,7 +641,7 @@ struct CheatWindow : Window {
 /** Window description of the cheats GUI. */
 static WindowDesc _cheats_desc(
 	WindowPosition::Automatic, "cheats", 0, 0,
-	WC_CHEATS, WC_NONE,
+	WindowClass::Cheat, WindowClass::None,
 	{},
 	_nested_cheat_widgets
 );
@@ -650,6 +649,6 @@ static WindowDesc _cheats_desc(
 /** Open cheat window. */
 void ShowCheatWindow()
 {
-	CloseWindowById(WC_CHEATS, 0);
+	CloseWindowById(WindowClass::Cheat, 0);
 	new CheatWindow(_cheats_desc);
 }

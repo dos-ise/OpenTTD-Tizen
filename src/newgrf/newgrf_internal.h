@@ -95,7 +95,7 @@ private:
 	};
 
 	/** Currently referenceable spritesets */
-	std::array<std::map<uint, SpriteSet>, to_underlying(GrfSpecFeature::End)> spritesets{};
+	EnumIndexArray<std::map<uint, SpriteSet>, GrfSpecFeature, GrfSpecFeature::End> spritesets{};
 
 public:
 	/* Global state */
@@ -139,7 +139,7 @@ public:
 	{
 		assert(feature < GrfSpecFeature::End);
 		for (uint i = 0; i < numsets; i++) {
-			SpriteSet &set = this->spritesets[to_underlying(feature)][first_set + i];
+			SpriteSet &set = this->spritesets[feature][first_set + i];
 			set.sprite = first_sprite + i * numents;
 			set.num_sprites = numents;
 		}
@@ -154,7 +154,7 @@ public:
 	bool HasValidSpriteSets(GrfSpecFeature feature) const
 	{
 		assert(feature < GrfSpecFeature::End);
-		return !this->spritesets[to_underlying(feature)].empty();
+		return !this->spritesets[feature].empty();
 	}
 
 	/**
@@ -167,7 +167,7 @@ public:
 	bool IsValidSpriteSet(GrfSpecFeature feature, uint set) const
 	{
 		assert(feature < GrfSpecFeature::End);
-		return this->spritesets[to_underlying(feature)].find(set) != this->spritesets[to_underlying(feature)].end();
+		return this->spritesets[feature].find(set) != this->spritesets[feature].end();
 	}
 
 	/**
@@ -179,7 +179,7 @@ public:
 	SpriteID GetSprite(GrfSpecFeature feature, uint set) const
 	{
 		assert(IsValidSpriteSet(feature, set));
-		return this->spritesets[to_underlying(feature)].find(set)->second.sprite;
+		return this->spritesets[feature].find(set)->second.sprite;
 	}
 
 	/**
@@ -191,27 +191,23 @@ public:
 	uint GetNumEnts(GrfSpecFeature feature, uint set) const
 	{
 		assert(IsValidSpriteSet(feature, set));
-		return this->spritesets[to_underlying(feature)].find(set)->second.num_sprites;
+		return this->spritesets[feature].find(set)->second.num_sprites;
 	}
 };
 
 extern GrfProcessingState _cur_gps;
 
+/** A location within a NewGRF, like file:line but in the context of NewGRFs. */
 struct GRFLocation {
-	uint32_t grfid;
-	uint32_t nfoline;
+	GrfID grfid; ///< Identifier of the NewGRF this refers to.
+	uint32_t nfoline; ///< The line of NFO this refers to.
 
-	GRFLocation(uint32_t grfid, uint32_t nfoline) : grfid(grfid), nfoline(nfoline) { }
-
-	bool operator <(const GRFLocation &other) const
-	{
-		return this->grfid < other.grfid || (this->grfid == other.grfid && this->nfoline < other.nfoline);
-	}
-
-	bool operator ==(const GRFLocation &other) const
-	{
-		return this->grfid == other.grfid && this->nfoline == other.nfoline;
-	}
+	/**
+	 * Compare with another location.
+	 * @param other The other location to compare to.
+	 * @return The std::strong_ordering of the comparison.
+	 */
+	constexpr auto operator<=>(const GRFLocation &other) const = default;
 };
 
 using GRFLineToSpriteOverride = std::map<GRFLocation, std::vector<uint8_t>>;
@@ -221,7 +217,7 @@ extern GRFLineToSpriteOverride _grf_line_to_action6_sprite_override;
 
 extern GrfMiscBits _misc_grf_features;
 
-void SetNewGRFOverride(uint32_t source_grfid, uint32_t target_grfid);
+void SetNewGRFOverride(GrfID source_grfid, GrfID target_grfid);
 GRFFile *GetCurrentGRFOverride();
 
 std::span<const CargoLabel> GetCargoTranslationTable(const GRFFile &grffile);
@@ -235,7 +231,7 @@ void MapSpriteMappingRecolour(PalSpriteID *grf_sprite);
 TileLayoutFlags ReadSpriteLayoutSprite(ByteReader &buf, bool read_flags, bool invert_action1_flag, bool use_cur_spritesets, GrfSpecFeature feature, PalSpriteID *grf_sprite, uint16_t *max_sprite_offset = nullptr, uint16_t *max_palette_offset = nullptr);
 bool ReadSpriteLayout(ByteReader &buf, uint num_building_sprites, bool use_cur_spritesets, GrfSpecFeature feature, bool allow_var10, bool no_z_position, NewGRFSpriteLayout *dts);
 
-GRFFile *GetFileByGRFID(uint32_t grfid);
+GRFFile *GetFileByGRFID(GrfID grfid);
 GRFError *DisableGrf(StringID message = {}, GRFConfig *config = nullptr);
 void DisableStaticNewGRFInfluencingNonStaticNewGRFs(GRFConfig &c);
 bool HandleChangeInfoResult(std::string_view caller, ChangeInfoResult cir, GrfSpecFeature feature, uint8_t property);

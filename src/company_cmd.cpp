@@ -37,11 +37,14 @@
 #include "goal_base.h"
 #include "story_base.h"
 #include "company_cmd.h"
+#include "script/api/script_event_types.hpp"
 #include "timer/timer.h"
 #include "timer/timer_game_economy.h"
 #include "timer/timer_game_tick.h"
 #include "timer/timer_window.h"
+#include "road_gui.h"
 
+#include "widgets/company_widget.h"
 #include "widgets/statusbar_widget.h"
 
 #include "table/strings.h"
@@ -76,7 +79,7 @@ Company::Company(CompanyID index, StringID name_1, bool is_ai) : CompanyPool::Po
 	this->tree_limit         = (uint32_t)_settings_game.construction.tree_frame_burst << 16;
 	this->build_object_limit = (uint32_t)_settings_game.construction.build_object_frame_burst << 16;
 
-	InvalidateWindowData(WC_PERFORMANCE_DETAIL, 0, CompanyID::Invalid());
+	InvalidateWindowData(WindowClass::PerformanceDetail, 0, CompanyID::Invalid());
 }
 
 /** Close the associated company windows. */
@@ -93,12 +96,12 @@ Company::~Company()
  */
 void Company::PostDestructor(size_t index)
 {
-	InvalidateWindowData(WC_GRAPH_LEGEND, 0, (int)index);
-	InvalidateWindowData(WC_PERFORMANCE_DETAIL, 0, (int)index);
-	InvalidateWindowData(WC_COMPANY_LEAGUE, 0, 0);
-	InvalidateWindowData(WC_LINKGRAPH_LEGEND, 0);
+	InvalidateWindowData(WindowClass::GraphLegend, 0, static_cast<int>(index));
+	InvalidateWindowData(WindowClass::PerformanceDetail, 0, static_cast<int>(index));
+	InvalidateWindowData(WindowClass::CompanyLeague, 0, 0);
+	InvalidateWindowData(WindowClass::LinkGraphLegend, 0);
 	/* If the currently shown error message has this company in it, then close it. */
-	InvalidateWindowData(WC_ERRMSG, 0);
+	InvalidateWindowData(WindowClass::ErrorMessage, 0);
 }
 
 /**
@@ -115,9 +118,10 @@ Money Company::GetMaxLoan() const
  * Sets the local company and updates the settings that are set on a
  * per-company basis to reflect the core's state in the GUI.
  * @param new_company the new company
+ * @param switching_game Whether we are switching the game, e.g. a new game or loading a game.
  * @pre Company::IsValidID(new_company) || new_company == COMPANY_SPECTATOR || new_company == OWNER_NONE
  */
-void SetLocalCompany(CompanyID new_company)
+void SetLocalCompany(CompanyID new_company, bool switching_game)
 {
 	/* company could also be COMPANY_SPECTATOR or OWNER_NONE */
 	assert(Company::IsValidID(new_company) || new_company == COMPANY_SPECTATOR || new_company == OWNER_NONE);
@@ -126,27 +130,33 @@ void SetLocalCompany(CompanyID new_company)
 	bool switching_company = _local_company != new_company;
 
 	/* Delete the chat window, if you were team chatting. */
-	if (switching_company) InvalidateWindowData(WC_SEND_NETWORK_MSG, NetworkChatDestinationType::Team, _local_company);
+	if (switching_company) InvalidateWindowData(WindowClass::NetworkChat, NetworkChatDestinationType::Team, _local_company);
 
 	assert(IsLocalCompany());
 
 	_current_company = _local_company = new_company;
 
 	if (switching_company) {
-		InvalidateWindowClassesData(WC_COMPANY);
-		InvalidateWindowClassesData(WC_VEHICLE_VIEW);
+		InvalidateWindowClassesData(WindowClass::Company);
+		InvalidateWindowClassesData(WindowClass::VehicleView);
 		/* Delete any construction windows... */
 		CloseConstructionWindows();
-		/* Update the default rail based on most used */
-		SetDefaultRailGui();
 	}
 
-	/* ... and redraw the whole screen. */
-	MarkWholeScreenDirty();
-	InvalidateWindowClassesData(WC_SIGN_LIST, -1);
-	InvalidateWindowClassesData(WC_GOALS_LIST);
-	InvalidateWindowClassesData(WC_COMPANY_COLOUR, -1);
-	ResetVehicleColourMap();
+	if (switching_company || switching_game) {
+		/* Update the default rail and road types */
+		SetDefaultRailGui();
+		SetDefaultRoadGui();
+	}
+
+	if (!switching_game) {
+		/* ... and redraw the whole screen. */
+		MarkWholeScreenDirty();
+		InvalidateWindowClassesData(WindowClass::SignList, -1);
+		InvalidateWindowClassesData(WindowClass::GoalList);
+		InvalidateWindowClassesData(WindowClass::CompanyLivery, -1);
+		ResetVehicleColourMap();
+	}
 }
 
 /**
@@ -154,10 +164,10 @@ void SetLocalCompany(CompanyID new_company)
  * @param company Company to get the colour of.
  * @return Colour of \a company.
  */
-TextColour GetDrawStringCompanyColour(CompanyID company)
+ExtendedTextColour GetDrawStringCompanyColour(CompanyID company)
 {
-	if (!Company::IsValidID(company)) return GetColourGradient(Colours::White, Shade::Normal).ToTextColour();
-	return GetColourGradient(_company_colours[company], Shade::Normal).ToTextColour();
+	if (!Company::IsValidID(company)) return ExtendedTextColour{GetColourGradient(Colours::White, Shade::Normal)};
+	return ExtendedTextColour{GetColourGradient(_company_colours[company], Shade::Normal)};
 }
 
 /**
@@ -218,8 +228,8 @@ void InvalidateCompanyWindows(const Company *company)
  */
 static const IntervalTimer<TimerWindow> invalidate_company_windows_interval(std::chrono::milliseconds(1), [](auto) {
 	for (CompanyID cid : _dirty_company_finances) {
-		if (cid == _local_company) SetWindowWidgetDirty(WC_STATUS_BAR, 0, WID_S_RIGHT);
-		Window *w = FindWindowById(WC_FINANCES, cid);
+		if (cid == _local_company) SetWindowWidgetDirty(WindowClass::Statusbar, 0, WID_S_RIGHT);
+		Window *w = FindWindowById(WindowClass::Finances, cid);
 		if (w != nullptr) {
 			w->SetWidgetDirty(WID_CF_EXPS_PRICE3);
 			w->SetWidgetDirty(WID_CF_OWN_VALUE);
@@ -227,7 +237,7 @@ static const IntervalTimer<TimerWindow> invalidate_company_windows_interval(std:
 			w->SetWidgetDirty(WID_CF_BALANCE_VALUE);
 			w->SetWidgetDirty(WID_CF_MAXLOAN_VALUE);
 		}
-		SetWindowWidgetDirty(WC_COMPANY, cid, WID_C_DESC_COMPANY_VALUE);
+		SetWindowWidgetDirty(WindowClass::Company, cid, WID_C_DESC_COMPANY_VALUE);
 	}
 	_dirty_company_finances.Reset();
 });
@@ -421,6 +431,44 @@ CommandCost CheckTileOwnership(TileIndex tile)
 }
 
 /**
+ * Set a company name based on type and seed, if the name is unique and shorter than the max length.
+ * @param other_names List of names that cannot be used.
+ * @param c The company of the name to set.
+ * @param t The nearby town, for news message.
+ * @param str The type of name.
+ * @param strp The random seed.
+ * @return True iff the name was set.
+ */
+static bool SetCompanyName(std::span<const std::string> other_names, Company *c, const Town *t, StringID str, uint32_t strp)
+{
+	assert(c != nullptr);
+	assert(t != nullptr);
+
+	/* Name must not be too long. */
+	std::string name = GetString(str, strp);
+	if (Utf8StringLength(name) >= MAX_LENGTH_COMPANY_NAME_CHARS) return false;
+
+	/* No companies must have this name already. */
+	if (std::ranges::find(other_names, name) != other_names.end()) return false;
+
+	c->name_1 = str;
+	c->name_2 = strp;
+
+	MarkWholeScreenDirty();
+	AI::BroadcastNewEvent(new ScriptEventCompanyRenamed(c->index, name));
+	Game::NewEvent(new ScriptEventCompanyRenamed(c->index, name));
+
+	if (!c->is_ai) return true;
+
+	auto cni = std::make_unique<CompanyNewsInformation>(STR_NEWS_COMPANY_LAUNCH_TITLE, c);
+	EncodedString headline = GetEncodedString(STR_NEWS_COMPANY_LAUNCH_DESCRIPTION, cni->company_name, t->index);
+	AddNewsItem(std::move(headline),
+		NewsType::CompanyInfo, NewsStyle::Company, {}, c->last_build_coordinate, {}, std::move(cni));
+
+	return true;
+}
+
+/**
  * Generate the name of a company from the last build coordinate.
  * @param c Company to give a name.
  */
@@ -429,51 +477,24 @@ static void GenerateCompanyName(Company *c)
 	if (c->name_1 != STR_SV_UNNAMED) return;
 	if (c->last_build_coordinate == 0) return;
 
-	Town *t = ClosestTownFromTile(c->last_build_coordinate, UINT_MAX);
-
-	StringID str;
-	uint32_t strp;
-	std::string name;
-	if (t->name.empty() && IsInsideMM(t->townnametype, SPECSTR_TOWNNAME_START, SPECSTR_TOWNNAME_END)) {
-		str = t->townnametype - SPECSTR_TOWNNAME_START + SPECSTR_COMPANY_NAME_START;
-		strp = t->townnameparts;
-
-verify_name:;
-		/* No companies must have this name already */
-		for (const Company *cc : Company::Iterate()) {
-			if (cc->name_1 == str && cc->name_2 == strp) goto bad_town_name;
-		}
-
-		name = GetString(str, strp);
-		if (Utf8StringLength(name) >= MAX_LENGTH_COMPANY_NAME_CHARS) goto bad_town_name;
-
-set_name:;
-		c->name_1 = str;
-		c->name_2 = strp;
-
-		MarkWholeScreenDirty();
-		AI::BroadcastNewEvent(new ScriptEventCompanyRenamed(c->index, name));
-		Game::NewEvent(new ScriptEventCompanyRenamed(c->index, name));
-
-		if (c->is_ai) {
-			auto cni = std::make_unique<CompanyNewsInformation>(STR_NEWS_COMPANY_LAUNCH_TITLE, c);
-			EncodedString headline = GetEncodedString(STR_NEWS_COMPANY_LAUNCH_DESCRIPTION, cni->company_name, t->index);
-			AddNewsItem(std::move(headline),
-				NewsType::CompanyInfo, NewsStyle::Company, {}, c->last_build_coordinate, {}, std::move(cni));
-		}
-		return;
+	/* Collect existing company names. */
+	std::vector<std::string> other_names;
+	for (const Company *cc : Company::Iterate()) {
+		if (cc != c) other_names.emplace_back(GetString(STR_COMPANY_NAME, cc->index));
 	}
-bad_town_name:;
+
+	const Town *t = ClosestTownFromTile(c->last_build_coordinate, UINT_MAX);
+
+	if (t->name.empty() && IsInsideMM(t->townnametype, SPECSTR_TOWNNAME_START, SPECSTR_TOWNNAME_END)) {
+		if (SetCompanyName(other_names, c, t, SPECSTR_COMPANY_NAME_START + (t->townnametype - SPECSTR_TOWNNAME_START), t->townnameparts)) return;
+	}
 
 	if (c->president_name_1 == SPECSTR_PRESIDENT_NAME) {
-		str = SPECSTR_ANDCO_NAME;
-		strp = c->president_name_2;
-		name = GetString(str, strp);
-		goto set_name;
-	} else {
-		str = SPECSTR_ANDCO_NAME;
-		strp = Random();
-		goto verify_name;
+		if (SetCompanyName(other_names, c, t, SPECSTR_ANDCO_NAME, c->president_name_2)) return;
+	}
+
+	for (;;) {
+		if (SetCompanyName(other_names, c, t, SPECSTR_ANDCO_NAME, Random())) return;
 	}
 }
 
@@ -516,7 +537,7 @@ static Colours GenerateCompanyColour()
 	}
 
 	/* Sort it according to the values in _colour_sort. */
-	std::ranges::stable_sort(colours, {}, [](auto &i) { return _colour_sort[i]; });
+	std::ranges::stable_sort(colours, std::greater_equal{}, [](auto &i) { return _colour_sort[i]; });
 
 	/* Move the colours that look similar to each company's colour to the side */
 	for (const Company *c : Company::Iterate()) {
@@ -534,28 +555,43 @@ static Colours GenerateCompanyColour()
 }
 
 /**
+ * Set a company's president name based on seed, if the name is unique and shorter than the max length.
+ * @param other_names List of names that cannot be used.
+ * @param c The company of the president name to set.
+ * @param seed The random seed.
+ * @return True iff the name was set.
+ */
+static bool SetPresidentName(std::span<const std::string> other_names, Company *c, uint32_t seed)
+{
+	assert(c != nullptr);
+
+	c->president_name_1 = SPECSTR_PRESIDENT_NAME;
+	c->president_name_2 = seed;
+
+	/* President name must not be too long. */
+	std::string name = GetString(STR_PRESIDENT_NAME, c->index);
+	if (Utf8StringLength(name) >= MAX_LENGTH_PRESIDENT_NAME_CHARS) return false;
+
+	/* No presidents must have this name already. */
+	if (std::ranges::find(other_names, name) != other_names.end()) return false;
+
+	return true;
+}
+
+/**
  * Generate a random president name of a company.
  * @param c Company that needs a new president name.
  */
 static void GeneratePresidentName(Company *c)
 {
+	/* Collect existing president names. */
+	std::vector<std::string> other_names;
+	for (const Company *cc : Company::Iterate()) {
+		if (cc != c) other_names.emplace_back(GetString(STR_PRESIDENT_NAME, cc->index));
+	}
+
 	for (;;) {
-restart:;
-		c->president_name_2 = Random();
-		c->president_name_1 = SPECSTR_PRESIDENT_NAME;
-
-		/* Reserve space for extra unicode character. We need to do this to be able
-		 * to detect too long president name. */
-		std::string name = GetString(STR_PRESIDENT_NAME, c->index);
-		if (Utf8StringLength(name) >= MAX_LENGTH_PRESIDENT_NAME_CHARS) continue;
-
-		for (const Company *cc : Company::Iterate()) {
-			if (c != cc) {
-				std::string other_name = GetString(STR_PRESIDENT_NAME, cc->index);
-				if (name == other_name) goto restart;
-			}
-		}
-		return;
+		if (SetPresidentName(other_names, c, Random())) return;
 	}
 }
 
@@ -566,7 +602,7 @@ restart:;
  */
 void ResetCompanyLivery(Company *c)
 {
-	for (LiveryScheme scheme = LS_BEGIN; scheme < LS_END; scheme++) {
+	for (LiveryScheme scheme : EnumRange(LiveryScheme::End)) {
 		c->livery[scheme].in_use.Reset();
 		c->livery[scheme].colour1 = c->colour;
 		c->livery[scheme].colour2 = c->colour;
@@ -633,11 +669,11 @@ Company *DoStartupNewCompany(bool is_ai, CompanyID company = CompanyID::Invalid(
 
 	GeneratePresidentName(c);
 
-	SetWindowDirty(WC_GRAPH_LEGEND, 0);
-	InvalidateWindowData(WC_CLIENT_LIST, 0);
-	InvalidateWindowData(WC_LINKGRAPH_LEGEND, 0);
+	SetWindowDirty(WindowClass::GraphLegend, 0);
+	InvalidateWindowData(WindowClass::NetworkClientList, 0);
+	InvalidateWindowData(WindowClass::LinkGraphLegend, 0);
 	BuildOwnerLegend();
-	InvalidateWindowData(WC_SMALLMAP, 0, 1);
+	InvalidateWindowData(WindowClass::SmallMap, 0, 1);
 
 	if (is_ai && (!_networking || _network_server)) AI::StartNew(c->index);
 
@@ -649,7 +685,7 @@ Company *DoStartupNewCompany(bool is_ai, CompanyID company = CompanyID::Invalid(
 
 /** Start a new competitor company if possible. */
 TimeoutTimer<TimerGameTick> _new_competitor_timeout({ TimerGameTick::Priority::CompetitorTimeout, 0 }, []() {
-	if (_game_mode == GM_MENU || !AI::CanStartNew()) return;
+	if (_game_mode == GameMode::Menu || !AI::CanStartNew()) return;
 	if (_networking && Company::GetNumItems() >= _settings_client.network.max_companies) return;
 	if (_settings_game.difficulty.competitors_interval == 0) return;
 
@@ -663,7 +699,7 @@ TimeoutTimer<TimerGameTick> _new_competitor_timeout({ TimerGameTick::Priority::C
 
 	/* Send a command to all clients to start up a new AI.
 	 * Works fine for Multiplayer and Singleplayer */
-	Command<Commands::CompanyControl>::Post(CompanyCtrlAction::NewAI, CompanyID::Invalid(), CompanyRemoveReason::None, INVALID_CLIENT_ID);
+	Command<Commands::CompanyControl>::Post(CompanyCtrlAction::NewAI, CompanyID::Invalid(), CompanyRemoveReason::None, ClientID::Invalid);
 });
 
 /** Start of a new game. */
@@ -762,7 +798,7 @@ static void HandleBankruptcyTakeover(Company *c)
 /** Called every tick for updating some company info. */
 void OnTick_Companies()
 {
-	if (_game_mode == GM_EDITOR) return;
+	if (_game_mode == GameMode::Editor) return;
 
 	Company *c = Company::GetIfValid(_cur_company_tick_index);
 	if (c != nullptr) {
@@ -770,7 +806,7 @@ void OnTick_Companies()
 		if (c->bankrupt_asked.Any()) HandleBankruptcyTakeover(c);
 	}
 
-	if (_new_competitor_timeout.HasFired() && _game_mode != GM_MENU && AI::CanStartNew()) {
+	if (_new_competitor_timeout.HasFired() && _game_mode != GameMode::Menu && AI::CanStartNew()) {
 		int32_t timeout = _settings_game.difficulty.competitors_interval * 60 * Ticks::TICKS_PER_SECOND;
 		/* If the interval is zero, start as many competitors as needed then check every ~10 minutes if a company went bankrupt and needs replacing. */
 		if (timeout == 0) {
@@ -784,7 +820,7 @@ void OnTick_Companies()
 			for (auto i = 0; i < _settings_game.difficulty.max_no_competitors; i++) {
 				if (_networking && num_companies++ >= _settings_client.network.max_companies) break;
 				if (num_ais++ >= _settings_game.difficulty.max_no_competitors) break;
-				Command<Commands::CompanyControl>::Post(CompanyCtrlAction::NewAI, CompanyID::Invalid(), {}, INVALID_CLIENT_ID);
+				Command<Commands::CompanyControl>::Post(CompanyCtrlAction::NewAI, CompanyID::Invalid(), {}, ClientID::Invalid);
 			}
 			timeout = 10 * 60 * Ticks::TICKS_PER_SECOND;
 		}
@@ -808,7 +844,7 @@ static const IntervalTimer<TimerGameEconomy> _economy_companies_yearly({TimerGam
 		/* Move expenses to previous years. */
 		std::rotate(std::rbegin(c->yearly_expenses), std::rbegin(c->yearly_expenses) + 1, std::rend(c->yearly_expenses));
 		c->yearly_expenses[0].fill(0);
-		InvalidateWindowData(WC_FINANCES, c->index);
+		InvalidateWindowData(WindowClass::Finances, c->index);
 	}
 
 	if (_settings_client.gui.show_finances && _local_company != COMPANY_SPECTATOR) {
@@ -861,7 +897,7 @@ void CompanyAdminUpdate(const Company *company)
  */
 void CompanyAdminRemove(CompanyID company_id, CompanyRemoveReason reason)
 {
-	if (_network_server) NetworkAdminCompanyRemove(company_id, (AdminCompanyRemoveReason)reason);
+	if (_network_server) NetworkAdminCompanyRemove(company_id, static_cast<AdminCompanyRemoveReason>(reason));
 }
 
 /**
@@ -875,7 +911,7 @@ void CompanyAdminRemove(CompanyID company_id, CompanyRemoveReason reason)
  */
 CommandCost CmdCompanyCtrl(DoCommandFlags flags, CompanyCtrlAction cca, CompanyID company_id, CompanyRemoveReason reason, ClientID client_id)
 {
-	InvalidateWindowData(WC_COMPANY_LEAGUE, 0, 0);
+	InvalidateWindowData(WindowClass::CompanyLeague, 0, 0);
 
 	switch (cca) {
 		case CompanyCtrlAction::New: { // Create a new company
@@ -888,7 +924,7 @@ CommandCost CmdCompanyCtrl(DoCommandFlags flags, CompanyCtrlAction cca, CompanyI
 			NetworkClientInfo *ci = NetworkClientInfo::GetByClientID(client_id);
 
 			/* Delete multiplayer progress bar */
-			CloseWindowById(WC_NETWORK_STATUS_WINDOW, WN_NETWORK_STATUS_WINDOW_JOIN);
+			CloseWindowById(WindowClass::NetworkStatus, NetworkStatusWindowNumber::Join);
 
 			Company *c = DoStartupNewCompany(false);
 
@@ -978,8 +1014,8 @@ CommandCost CmdCompanyCtrl(DoCommandFlags flags, CompanyCtrlAction cca, CompanyI
 			Game::NewEvent(new ScriptEventCompanyBankrupt(c_index));
 			CompanyAdminRemove(c_index, (CompanyRemoveReason)reason);
 
-			if (StoryPage::GetNumItems() == 0 || Goal::GetNumItems() == 0) InvalidateWindowData(WC_MAIN_TOOLBAR, 0);
-			InvalidateWindowData(WC_CLIENT_LIST, 0);
+			if (StoryPage::GetNumItems() == 0 || Goal::GetNumItems() == 0) InvalidateWindowData(WindowClass::MainToolbar, 0);
+			InvalidateWindowData(WindowClass::NetworkClientList, 0);
 
 			break;
 		}
@@ -987,9 +1023,9 @@ CommandCost CmdCompanyCtrl(DoCommandFlags flags, CompanyCtrlAction cca, CompanyI
 		default: return CMD_ERROR;
 	}
 
-	InvalidateWindowClassesData(WC_GAME_OPTIONS);
-	InvalidateWindowClassesData(WC_SCRIPT_SETTINGS);
-	InvalidateWindowClassesData(WC_SCRIPT_LIST);
+	InvalidateWindowClassesData(WindowClass::GameOptions);
+	InvalidateWindowClassesData(WindowClass::ScriptSettings);
+	InvalidateWindowClassesData(WindowClass::ScriptList);
 
 	return CommandCost();
 }
@@ -1048,8 +1084,8 @@ CommandCost CmdCompanyAllowListCtrl(DoCommandFlags flags, CompanyAllowListCtrlAc
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		if (ExecuteAllowListCtrlAction(action, c, public_key)) {
-			InvalidateWindowData(WC_CLIENT_LIST, 0);
-			SetWindowDirty(WC_COMPANY, _current_company);
+			InvalidateWindowData(WindowClass::NetworkClientList, 0);
+			SetWindowDirty(WindowClass::Company, _current_company);
 		}
 	}
 
@@ -1079,15 +1115,15 @@ CommandCost CmdSetCompanyManagerFace(DoCommandFlags flags, uint style, uint32_t 
 }
 
 /**
- * Update liveries for a company. This is called when the LS_DEFAULT scheme is changed, to update schemes with colours
+ * Update liveries for a company. This is called when the LiveryScheme::Default scheme is changed, to update schemes with colours
  * set to default.
  * @param c Company to update.
  */
 void UpdateCompanyLiveries(Company *c)
 {
-	for (int i = 1; i < LS_END; i++) {
-		if (!c->livery[i].in_use.Test(Livery::Flag::Primary)) c->livery[i].colour1 = c->livery[LS_DEFAULT].colour1;
-		if (!c->livery[i].in_use.Test(Livery::Flag::Secondary)) c->livery[i].colour2 = c->livery[LS_DEFAULT].colour2;
+	for (LiveryScheme i : EnumRange(LiveryScheme::Steam, LiveryScheme::End)) {
+		if (!c->livery[i].in_use.Test(Livery::Flag::Primary)) c->livery[i].colour1 = c->livery[LiveryScheme::Default].colour1;
+		if (!c->livery[i].in_use.Test(Livery::Flag::Secondary)) c->livery[i].colour2 = c->livery[LiveryScheme::Default].colour2;
 	}
 	UpdateCompanyGroupLiveries(c);
 }
@@ -1102,15 +1138,15 @@ void UpdateCompanyLiveries(Company *c)
  */
 CommandCost CmdSetCompanyColour(DoCommandFlags flags, LiveryScheme scheme, bool primary, Colours colour)
 {
-	if (scheme >= LS_END || (colour >= Colours::End && colour != Colours::Invalid)) return CMD_ERROR;
+	if (scheme >= LiveryScheme::End || (colour >= Colours::End && colour != Colours::Invalid)) return CMD_ERROR;
 
 	/* Default scheme can't be reset to invalid. */
-	if (scheme == LS_DEFAULT && colour == Colours::Invalid) return CMD_ERROR;
+	if (scheme == LiveryScheme::Default && colour == Colours::Invalid) return CMD_ERROR;
 
 	Company *c = Company::Get(_current_company);
 
 	/* Ensure no two companies have the same primary colour */
-	if (scheme == LS_DEFAULT && primary) {
+	if (scheme == LiveryScheme::Default && primary) {
 		for (const Company *cc : Company::Iterate()) {
 			if (cc != c && cc->colour == colour) return CMD_ERROR;
 		}
@@ -1118,38 +1154,38 @@ CommandCost CmdSetCompanyColour(DoCommandFlags flags, LiveryScheme scheme, bool 
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		if (primary) {
-			if (scheme != LS_DEFAULT) c->livery[scheme].in_use.Set(Livery::Flag::Primary, colour != Colours::Invalid);
-			if (colour == Colours::Invalid) colour = c->livery[LS_DEFAULT].colour1;
+			if (scheme != LiveryScheme::Default) c->livery[scheme].in_use.Set(Livery::Flag::Primary, colour != Colours::Invalid);
+			if (colour == Colours::Invalid) colour = c->livery[LiveryScheme::Default].colour1;
 			c->livery[scheme].colour1 = colour;
 
 			/* If setting the first colour of the default scheme, adjust the
 			 * original and cached company colours too. */
-			if (scheme == LS_DEFAULT) {
+			if (scheme == LiveryScheme::Default) {
 				UpdateCompanyLiveries(c);
 				_company_colours[_current_company] = colour;
 				c->colour = colour;
 				CompanyAdminUpdate(c);
 			}
 		} else {
-			if (scheme != LS_DEFAULT) c->livery[scheme].in_use.Set(Livery::Flag::Secondary, colour != Colours::Invalid);
-			if (colour == Colours::Invalid) colour = c->livery[LS_DEFAULT].colour2;
+			if (scheme != LiveryScheme::Default) c->livery[scheme].in_use.Set(Livery::Flag::Secondary, colour != Colours::Invalid);
+			if (colour == Colours::Invalid) colour = c->livery[LiveryScheme::Default].colour2;
 			c->livery[scheme].colour2 = colour;
 
-			if (scheme == LS_DEFAULT) {
+			if (scheme == LiveryScheme::Default) {
 				UpdateCompanyLiveries(c);
 			}
 		}
 
 		if (c->livery[scheme].in_use.Any({Livery::Flag::Primary, Livery::Flag::Secondary})) {
 			/* If enabling a scheme, set the default scheme to be in use too */
-			c->livery[LS_DEFAULT].in_use.Set(Livery::Flag::Primary);
+			c->livery[LiveryScheme::Default].in_use.Set(Livery::Flag::Primary);
 		} else {
 			/* Else loop through all schemes to see if any are left enabled.
 			 * If not, disable the default scheme too. */
-			c->livery[LS_DEFAULT].in_use.Reset({Livery::Flag::Primary, Livery::Flag::Secondary});
-			for (scheme = LS_DEFAULT; scheme < LS_END; scheme++) {
-				if (c->livery[scheme].in_use.Any({Livery::Flag::Primary, Livery::Flag::Secondary})) {
-					c->livery[LS_DEFAULT].in_use.Set(Livery::Flag::Primary);
+			c->livery[LiveryScheme::Default].in_use.Reset({Livery::Flag::Primary, Livery::Flag::Secondary});
+			for (LiveryScheme other_scheme : EnumRange(LiveryScheme::End)) {
+				if (c->livery[other_scheme].in_use.Any({Livery::Flag::Primary, Livery::Flag::Secondary})) {
+					c->livery[LiveryScheme::Default].in_use.Set(Livery::Flag::Primary);
 					break;
 				}
 			}
@@ -1159,15 +1195,15 @@ CommandCost CmdSetCompanyColour(DoCommandFlags flags, LiveryScheme scheme, bool 
 		MarkWholeScreenDirty();
 
 		/* All graph related to companies use the company colour. */
-		InvalidateWindowData(WC_INCOME_GRAPH, 0);
-		InvalidateWindowData(WC_OPERATING_PROFIT, 0);
-		InvalidateWindowData(WC_DELIVERED_CARGO, 0);
-		InvalidateWindowData(WC_PERFORMANCE_HISTORY, 0);
-		InvalidateWindowData(WC_COMPANY_VALUE, 0);
-		InvalidateWindowData(WC_LINKGRAPH_LEGEND, 0);
+		InvalidateWindowData(WindowClass::IncomeGraph, 0);
+		InvalidateWindowData(WindowClass::OperatingProfitGraph, 0);
+		InvalidateWindowData(WindowClass::DeliveredCargoGraph, 0);
+		InvalidateWindowData(WindowClass::PerformanceGraph, 0);
+		InvalidateWindowData(WindowClass::CompanyValueGraph, 0);
+		InvalidateWindowData(WindowClass::LinkGraphLegend, 0);
 		/* The smallmap owner view also stores the company colours. */
 		BuildOwnerLegend();
-		InvalidateWindowData(WC_SMALLMAP, 0, 1);
+		InvalidateWindowData(WindowClass::SmallMap, 0, 1);
 
 		/* Company colour data is indirectly cached. */
 		for (Vehicle *v : Vehicle::Iterate()) {
@@ -1216,7 +1252,7 @@ CommandCost CmdRenameCompany(DoCommandFlags flags, const std::string &text)
 			c->name = text;
 		}
 
-		InvalidateWindowClassesData(WC_COMPANY, WID_C_COMPANY_NAME);
+		InvalidateWindowClassesData(WindowClass::Company, WID_C_COMPANY_NAME);
 		MarkWholeScreenDirty();
 		CompanyAdminUpdate(c);
 
@@ -1270,7 +1306,7 @@ CommandCost CmdRenamePresident(DoCommandFlags flags, const std::string &text)
 			}
 		}
 
-		InvalidateWindowClassesData(WC_COMPANY, WID_C_PRESIDENT_NAME);
+		InvalidateWindowClassesData(WindowClass::Company, WID_C_PRESIDENT_NAME);
 		MarkWholeScreenDirty();
 		CompanyAdminUpdate(c);
 

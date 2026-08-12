@@ -30,6 +30,8 @@ enum class SettingFlag : uint8_t {
 	NoNetworkSync, ///< Do not synchronize over network (but it is saved if SettingFlag::NotInSave is not set).
 	Sandbox, ///< This setting is a sandbox setting.
 };
+
+/** Bitset of \c SettingFlag elements. */
 using SettingFlags = EnumBitSet<SettingFlag, uint16_t>;
 
 /**
@@ -288,6 +290,8 @@ struct IntSettingDesc : SettingDesc {
 	virtual int32_t ParseValue(std::string_view str) const;
 	std::string FormatValue(const void *object) const override;
 	void ParseValue(const IniItem *item, void *object) const override;
+	static std::optional<int32_t> ParseSingleValue(std::string_view str, int32_t min, uint32_t max);
+
 	bool IsSameValue(const IniItem *item, void *object) const override;
 	bool IsDefaultValue(void *object) const override;
 	void ResetToDefault(void *object) const override;

@@ -8,7 +8,7 @@
 /** @file fios_gui.cpp GUIs for loading/saving games, scenarios, heightmaps, ... */
 
 #include "stdafx.h"
-#include "saveload/saveload.h"
+#include "saveload/saveload_func.h"
 #include "error.h"
 #include "gui.h"
 #include "gfx_func.h"
@@ -16,6 +16,7 @@
 #include "network/network.h"
 #include "network/network_content.h"
 #include "strings_func.h"
+#include "string_func.h"
 #include "fileio_func.h"
 #include "fios.h"
 #include "window_func.h"
@@ -282,8 +283,9 @@ static constexpr std::initializer_list<NWidgetPart> _nested_save_dialog_widgets 
 				NWidget(WWT_EDITBOX, Colours::Grey, WID_SL_SAVE_OSK_TITLE), SetPadding(2, 2, 2, 2), SetFill(1, 0), SetResize(1, 0),
 						SetStringTip(STR_SAVELOAD_OSKTITLE, STR_SAVELOAD_EDITBOX_TOOLTIP),
 			EndContainer(),
-			/* Save/delete buttons */
-			NWidget(NWID_HORIZONTAL),
+			/* New directory/delete/save buttons */
+			NWidget(NWID_HORIZONTAL, NWidContainerFlag::EqualSize),
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_SL_NEW_DIRECTORY), SetStringTip(STR_SAVELOAD_NEW_DIRECTORY_BUTTON, STR_SAVELOAD_NEW_DIRECTORY_TOOLTIP), SetFill(1, 0), SetResize(1, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_SL_DELETE_SELECTION), SetStringTip(STR_SAVELOAD_DELETE_BUTTON, STR_SAVELOAD_DELETE_TOOLTIP), SetFill(1, 0), SetResize(1, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_SL_SAVE_GAME),        SetStringTip(STR_SAVELOAD_SAVE_BUTTON, STR_SAVELOAD_SAVE_TOOLTIP),     SetFill(1, 0), SetResize(1, 0),
 			EndContainer(),
@@ -303,16 +305,16 @@ static constexpr std::initializer_list<NWidgetPart> _nested_save_dialog_widgets 
 };
 
 /** Text colours of #DetailedFileType fios entries in the window. */
-static const EnumIndexArray<TextColour, DetailedFileType, DetailedFileType::End> _fios_colours = {
-	TC_LIGHT_BROWN, // DetailedFileType::OldGameFile
-	TC_ORANGE, // DetailedFileType::GameFile
-	TC_YELLOW, // DetailedFileType::HeightmapBmp
-	TC_ORANGE, // DetailedFileType::HeightmapPng
-	TC_LIGHT_BROWN, // DetailedFileType::TownDataJson
-	TC_LIGHT_BLUE, // DetailedFileType::FiosDrive
-	TC_DARK_GREEN, // DetailedFileType::FiosParent
-	TC_DARK_GREEN, // DetailedFileType::FiosDirectory
-	TC_ORANGE, // DetailedFileType::FiosDirect
+static const EnumIndexArray<ExtendedTextColour, DetailedFileType, DetailedFileType::End> _fios_colours = {
+	TextColour::LightBrown, // DetailedFileType::OldGameFile
+	TextColour::Orange, // DetailedFileType::GameFile
+	TextColour::Yellow, // DetailedFileType::HeightmapBmp
+	TextColour::Orange, // DetailedFileType::HeightmapPng
+	TextColour::LightBrown, // DetailedFileType::TownDataJson
+	TextColour::LightBlue, // DetailedFileType::FiosDrive
+	TextColour::DarkGreen, // DetailedFileType::FiosParent
+	TextColour::DarkGreen, // DetailedFileType::FiosDirectory
+	TextColour::Orange, // DetailedFileType::FiosDirect
 };
 
 /**
@@ -343,6 +345,7 @@ static void SortSaveGameList(FileList &file_list)
 struct SaveLoadWindow : public Window {
 private:
 	static const uint EDITBOX_MAX_SIZE   =  50;
+	static const uint MAX_DIRECTORY_NAME_CHARS = 64; ///< Maximum length of a new directory name in characters.
 
 	QueryString filename_editbox; ///< Filename editbox.
 	AbstractFileType abstract_filetype{}; ///< Type of file to select.
@@ -360,13 +363,13 @@ private:
 	static void SaveGameConfirmationCallback(Window *, bool confirmed)
 	{
 		/* File name has already been written to _file_to_saveload */
-		if (confirmed) _switch_mode = SM_SAVE_GAME;
+		if (confirmed) _switch_mode = SwitchMode::SaveGame;
 	}
 
 	static void SaveHeightmapConfirmationCallback(Window *, bool confirmed)
 	{
 		/* File name has already been written to _file_to_saveload */
-		if (confirmed) _switch_mode = SM_SAVE_HEIGHTMAP;
+		if (confirmed) _switch_mode = SwitchMode::SaveHeightmap;
 	}
 
 	static void DeleteFileConfirmationCallback(Window *window, bool confirmed)
@@ -377,12 +380,83 @@ private:
 
 		if (confirmed) {
 			if (!FioRemove(save_load_window->selected->name)) {
-				ShowErrorMessage(GetEncodedString(STR_ERROR_UNABLE_TO_DELETE_FILE), {}, WL_ERROR);
+				ShowErrorMessage(GetEncodedString(STR_ERROR_UNABLE_TO_DELETE_FILE), {}, WarningLevel::Error);
 			} else {
 				save_load_window->InvalidateData(SLIWD_RESCAN_FILES);
 				/* Reset file name to current date on successful delete */
 				if (save_load_window->abstract_filetype == AbstractFileType::Savegame) save_load_window->GenerateFileName();
 			}
+		}
+	}
+
+	/**
+	 * Check a user-entered name for use as a single directory component. Any other name the OS
+	 * dislikes is caught by FiosCreateDirectory and reported as an error.
+	 * @param name The candidate name. The caller must have stripped whitespace and rejected empty names.
+	 * @return The error to show if the name is unusable, or std::nullopt if it is valid.
+	 */
+	static std::optional<StringID> GetDirectoryNameError(const std::string &name)
+	{
+		assert(!name.empty());
+
+		/* Reject path and drive separators, which would turn the name into a path. */
+		if (name.find_first_of("/\\:") != std::string::npos) return STR_ERROR_DIRECTORY_ILLEGAL_NAME;
+		/* Reject a leading dot. This covers the current and parent directory entries and hidden names the list would never show. */
+		if (name.front() == '.') return STR_ERROR_DIRECTORY_LEADING_DOT;
+
+		return std::nullopt;
+	}
+
+	/**
+	 * Open the query used to enter a new directory name.
+	 * @param initial_name Name to pre-fill, used to let the user correct a rejected name.
+	 */
+	void ShowNewDirectoryQuery(std::string_view initial_name = {})
+	{
+		/* An unchanged name would otherwise be treated as cancel, so the AcceptUnchanged flag lets the pre-filled name be resubmitted to try again. */
+		ShowQueryString(
+				initial_name,
+				STR_SAVELOAD_NEW_DIRECTORY_QUERY_CAPTION,
+				MAX_DIRECTORY_NAME_CHARS,
+				this,
+				CS_ALPHANUMERAL,
+				{QueryStringFlag::LengthIsInChars, QueryStringFlag::AcceptUnchanged});
+	}
+
+	/**
+	 * Validate a user-entered directory name and, if valid, create the directory in the current FIOS path.
+	 * A name the user can still fix (invalid, or already in use) re-opens the query pre-filled so
+	 * they can try again. Other failures just show an error. On success, refreshes the file list.
+	 * @param query_text The raw text returned from the query dialog.
+	 */
+	void HandleNewDirectoryRequest(const std::string &query_text)
+	{
+		/* CS_ALPHANUMERAL allows spaces, so trim them before validating. */
+		const std::string name{StrTrimView(query_text, " ")};
+
+		/* An empty name is treated as a cancel, the same as other query dialogs. */
+		if (name.empty()) return;
+
+		if (auto error = GetDirectoryNameError(name); error.has_value()) {
+			this->ShowNewDirectoryQuery(name);
+			ShowErrorMessage(GetEncodedString(STR_ERROR_CANNOT_CREATE_DIRECTORY), GetEncodedString(*error), WarningLevel::Error);
+			return;
+		}
+
+		switch (FiosCreateDirectory(name)) {
+			case DirectoryCreateResult::Success:
+				this->InvalidateData(SLIWD_RESCAN_FILES);
+				break;
+			case DirectoryCreateResult::AlreadyExists:
+				this->ShowNewDirectoryQuery(name);
+				ShowErrorMessage(GetEncodedString(STR_ERROR_CANNOT_CREATE_DIRECTORY), GetEncodedString(STR_ERROR_DIRECTORY_NAME_IN_USE), WarningLevel::Error);
+				break;
+			case DirectoryCreateResult::PermissionDenied:
+				ShowErrorMessage(GetEncodedString(STR_ERROR_CANNOT_CREATE_DIRECTORY), GetEncodedString(STR_ERROR_DIRECTORY_PERMISSION_DENIED), WarningLevel::Error);
+				break;
+			case DirectoryCreateResult::OtherError:
+				ShowErrorMessage(GetEncodedString(STR_ERROR_CANNOT_CREATE_DIRECTORY), {}, WarningLevel::Error);
+				break;
 		}
 	}
 
@@ -457,10 +531,10 @@ public:
 
 		/* pause is only used in single-player, non-editor mode, non-menu mode. It
 		 * will be unpaused in the WE_DESTROY event handler. */
-		if (_game_mode != GM_MENU && !_networking && _game_mode != GM_EDITOR) {
+		if (_game_mode != GameMode::Menu && !_networking && _game_mode != GameMode::Editor) {
 			Command<Commands::Pause>::Post(PauseMode::SaveLoad, true);
 		}
-		SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WC_MAIN_WINDOW, 0);
+		SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WindowClass::MainWindow, 0);
 
 		this->OnInvalidateData(SLIWD_RESCAN_FILES);
 
@@ -500,7 +574,7 @@ public:
 	void Close([[maybe_unused]] int data = 0) override
 	{
 		/* pause is only used in single-player, non-editor mode, non menu mode */
-		if (!_networking && _game_mode != GM_EDITOR && _game_mode != GM_MENU) {
+		if (!_networking && _game_mode != GameMode::Editor && _game_mode != GameMode::Menu) {
 			Command<Commands::Pause>::Post(PauseMode::SaveLoad, false);
 		}
 		this->Window::Close();
@@ -512,7 +586,7 @@ public:
 			case WID_SL_SORT_BYNAME:
 			case WID_SL_SORT_BYDATE:
 				if ((_savegame_sorter == SavegameSorter::Name) == (widget == WID_SL_SORT_BYNAME)) {
-					this->DrawSortButtonState(widget, _savegame_sorter_ascending ? SBS_UP : SBS_DOWN);
+					this->DrawSortButton(widget, !_savegame_sorter_ascending);
 				}
 				break;
 
@@ -533,7 +607,7 @@ public:
 				} else {
 					DrawString(ir.left, ir.right, ir.top + GetCharacterHeight(FontSize::Normal), STR_ERROR_UNABLE_TO_READ_DRIVE);
 				}
-				DrawString(ir.left, ir.right, ir.top, path, TC_BLACK);
+				DrawString(ir.left, ir.right, ir.top, path, TextColour::Black);
 				break;
 			}
 
@@ -574,7 +648,7 @@ public:
 
 		/* Create the nice lighter rectangle at the details top */
 		GfxFillRect(r.WithHeight(HEADER_HEIGHT).Shrink(WidgetDimensions::scaled.bevel.left, WidgetDimensions::scaled.bevel.top, WidgetDimensions::scaled.bevel.right, 0), GetColourGradient(Colours::Grey, Shade::Lightest));
-		DrawString(hr.left, hr.right, hr.top, STR_SAVELOAD_DETAIL_CAPTION, TC_FROMSTRING, SA_HOR_CENTER);
+		DrawString(hr.left, hr.right, hr.top, STR_SAVELOAD_DETAIL_CAPTION, TextColour::FromString, AlignmentH::Centre);
 
 		if (this->selected == nullptr) return;
 
@@ -588,7 +662,7 @@ public:
 			tr.top += GetCharacterHeight(FontSize::Normal);
 		} else if (_load_check_data.error != INVALID_STRING_ID) {
 			/* Incompatible / broken savegame */
-			tr.top = DrawStringMultiLine(tr, GetString(_load_check_data.error, _load_check_data.error_msg), TC_RED);
+			tr.top = DrawStringMultiLine(tr, GetString(_load_check_data.error, _load_check_data.error_msg), TextColour::Red);
 		} else {
 			/* Mapsize */
 			DrawString(tr, GetString(STR_NETWORK_SERVER_LIST_MAP_SIZE, _load_check_data.map_size_x, _load_check_data.map_size_y));
@@ -718,7 +792,7 @@ public:
 					this->Close();
 					LoadTownData();
 				} else if (!_load_check_data.HasNewGrfs() || _load_check_data.grf_compatibility != GRFListCompatibility::NotFound || _settings_client.gui.UserIsAllowedToChangeNewGRFs()) {
-					_switch_mode = (_game_mode == GM_EDITOR) ? SM_LOAD_SCENARIO : SM_LOAD_GAME;
+					_switch_mode = (_game_mode == GameMode::Editor) ? SwitchMode::LoadScenario : SwitchMode::LoadGame;
 					ClearErrorMessages();
 					this->Close();
 				}
@@ -733,7 +807,7 @@ public:
 
 			case WID_SL_MISSING_NEWGRFS:
 				if (!_network_available) {
-					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WL_ERROR);
+					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WarningLevel::Error);
 				} else if (_load_check_data.HasNewGrfs()) {
 					ShowMissingContentWindow(_load_check_data.grfconfig);
 				}
@@ -788,7 +862,7 @@ public:
 
 			case WID_SL_CONTENT_DOWNLOAD:
 				if (!_network_available) {
-					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WL_ERROR);
+					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WarningLevel::Error);
 				} else {
 					assert(this->fop == SaveLoadOperation::Load);
 					switch (this->abstract_filetype) {
@@ -805,6 +879,10 @@ public:
 			case WID_SL_SAVE_GAME: // Save game
 				/* Note, this is also called via the OSK; and we need to lower the button. */
 				this->HandleButtonClick(WID_SL_SAVE_GAME);
+				break;
+
+			case WID_SL_NEW_DIRECTORY: // Create directory
+				this->ShowNewDirectoryQuery();
 				break;
 		}
 	}
@@ -832,10 +910,10 @@ public:
 	{
 		if (keycode == WKC_ESC) {
 			this->Close();
-			return ES_HANDLED;
+			return EventState::Handled;
 		}
 
-		return ES_NOT_HANDLED;
+		return EventState::NotHandled;
 	}
 
 	void OnTimeout() override
@@ -853,7 +931,7 @@ public:
 					ShowQuery(GetEncodedString(STR_SAVELOAD_OVERWRITE_TITLE), GetEncodedString(STR_SAVELOAD_OVERWRITE_WARNING),
 							this, SaveLoadWindow::SaveGameConfirmationCallback);
 				} else {
-					_switch_mode = SM_SAVE_GAME;
+					_switch_mode = SwitchMode::SaveGame;
 				}
 			} else {
 				_file_to_saveload.name = FiosMakeHeightmapName(this->filename_editbox.text.GetText());
@@ -861,12 +939,12 @@ public:
 					ShowQuery(GetEncodedString(STR_SAVELOAD_OVERWRITE_TITLE), GetEncodedString(STR_SAVELOAD_OVERWRITE_WARNING),
 							this, SaveLoadWindow::SaveHeightmapConfirmationCallback);
 				} else {
-					_switch_mode = SM_SAVE_HEIGHTMAP;
+					_switch_mode = SwitchMode::SaveHeightmap;
 				}
 			}
 
 			/* In the editor set up the vehicle engines correctly (date might have changed) */
-			if (_game_mode == GM_EDITOR) StartupEngines();
+			if (_game_mode == GameMode::Editor) StartupEngines();
 		}
 	}
 
@@ -978,12 +1056,17 @@ public:
 			this->InvalidateData(SLIWD_SELECTION_CHANGES);
 		}
 	}
+
+	void OnQueryTextFinished(std::optional<std::string> str) override
+	{
+		if (str.has_value()) this->HandleNewDirectoryRequest(*str);
+	}
 };
 
 /** Load game/scenario */
 static WindowDesc _load_dialog_desc(
 	WindowPosition::Center, "load_game", 500, 294,
-	WC_SAVELOAD, WC_NONE,
+	WindowClass::SaveLoad, WindowClass::None,
 	{},
 	_nested_load_dialog_widgets
 );
@@ -991,7 +1074,7 @@ static WindowDesc _load_dialog_desc(
 /** Load heightmap */
 static WindowDesc _load_heightmap_dialog_desc(
 	WindowPosition::Center, "load_heightmap", 257, 320,
-	WC_SAVELOAD, WC_NONE,
+	WindowClass::SaveLoad, WindowClass::None,
 	{},
 	_nested_load_heightmap_dialog_widgets
 );
@@ -999,7 +1082,7 @@ static WindowDesc _load_heightmap_dialog_desc(
 /** Load town data */
 static WindowDesc _load_town_data_dialog_desc(
 	WindowPosition::Center, "load_town_data", 257, 320,
-	WC_SAVELOAD, WC_NONE,
+	WindowClass::SaveLoad, WindowClass::None,
 	{},
 	_nested_load_town_data_dialog_widgets
 );
@@ -1007,7 +1090,7 @@ static WindowDesc _load_town_data_dialog_desc(
 /** Save game/scenario */
 static WindowDesc _save_dialog_desc(
 	WindowPosition::Center, "save_game", 500, 294,
-	WC_SAVELOAD, WC_NONE,
+	WindowClass::SaveLoad, WindowClass::None,
 	{},
 	_nested_save_dialog_widgets
 );
@@ -1019,7 +1102,7 @@ static WindowDesc _save_dialog_desc(
  */
 void ShowSaveLoadDialog(AbstractFileType abstract_filetype, SaveLoadOperation fop)
 {
-	CloseWindowById(WC_SAVELOAD, 0);
+	CloseWindowById(WindowClass::SaveLoad, 0);
 
 	if (fop == SaveLoadOperation::Save) {
 		new SaveLoadWindow(_save_dialog_desc, abstract_filetype, fop);

@@ -292,7 +292,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_industry_widge
 /** Window definition of the dynamic place industries gui */
 static WindowDesc _build_industry_desc(
 	WindowPosition::Automatic, "build_industry", 170, 212,
-	WC_BUILD_INDUSTRY, WC_NONE,
+	WindowClass::BuildIndustry, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_build_industry_widgets
 );
@@ -311,7 +311,7 @@ class BuildIndustryWindow : public Window {
 
 	void UpdateAvailability()
 	{
-		this->enabled = this->selected_type != IT_INVALID && (_game_mode == GM_EDITOR || GetIndustryProbabilityCallback(this->selected_type, IndustryAvailabilityCallType::UserCreation, 1) > 0);
+		this->enabled = this->selected_type != IT_INVALID && (_game_mode == GameMode::Editor || GetIndustryProbabilityCallback(this->selected_type, IndustryAvailabilityCallType::UserCreation, 1) > 0);
 	}
 
 	void SetupArrays()
@@ -328,7 +328,7 @@ class BuildIndustryWindow : public Window {
 				/* Rule is that editor mode loads all industries.
 				 * In game mode, all non raw industries are loaded too
 				 * and raw ones are loaded only when setting allows it */
-				if (_game_mode != GM_EDITOR && indsp->IsRawIndustry() && _settings_game.construction.raw_industry_construction == 0) {
+				if (_game_mode != GameMode::Editor && indsp->IsRawIndustry() && _settings_game.construction.raw_industry_construction == 0) {
 					/* Unselect if the industry is no longer in the list */
 					if (this->selected_type == ind) this->selected_type = IT_INVALID;
 					continue;
@@ -389,7 +389,7 @@ public:
 		this->CreateNestedTree();
 		this->vscroll = this->GetScrollbar(WID_DPI_SCROLLBAR);
 		/* Show scenario editor tools in editor. */
-		if (_game_mode != GM_EDITOR) {
+		if (_game_mode != GameMode::Editor) {
 			this->GetWidget<NWidgetStacked>(WID_DPI_SCENARIO_EDITOR_PANE)->SetDisplayedPlane(SZSP_HORIZONTAL);
 		}
 		this->FinishInitNested(0);
@@ -426,7 +426,7 @@ public:
 
 			case WID_DPI_INFOPANEL: {
 				/* Extra line for cost outside of editor. */
-				int height = 2 + (_game_mode == GM_EDITOR ? 0 : 1);
+				int height = 2 + (_game_mode == GameMode::Editor ? 0 : 1);
 				uint extra_lines_req = 0;
 				uint extra_lines_prd = 0;
 				uint extra_lines_newgrf = 0;
@@ -487,7 +487,7 @@ public:
 			case WID_DPI_FUND_WIDGET:
 				/* Raw industries might be prospected. Show this fact by changing the string
 				 * In Editor, you just build, while ingame, or you fund or you prospect */
-				if (_game_mode == GM_EDITOR) {
+				if (_game_mode == GameMode::Editor) {
 					/* We've chosen many random industries but no industries have been specified */
 					return GetString(STR_FUND_INDUSTRY_BUILD_NEW_INDUSTRY);
 				}
@@ -534,10 +534,10 @@ public:
 					}
 
 					/* Draw the name of the industry in white is selected, otherwise, in orange */
-					DrawString(tr, indsp->name, selected ? TC_WHITE : TC_ORANGE);
+					DrawString(tr, indsp->name, selected ? TextColour::White : TextColour::Orange);
 					GfxFillRect(icon, selected ? PC_WHITE : PC_BLACK);
 					GfxFillRect(icon.Shrink(WidgetDimensions::scaled.bevel), indsp->map_colour);
-					DrawString(tr, GetString(STR_JUST_COMMA, Industry::GetIndustryTypeCount(type)), TC_BLACK, SA_RIGHT, false, FontSize::Small);
+					DrawString(tr, GetString(STR_JUST_COMMA, Industry::GetIndustryTypeCount(type)), TextColour::Black, AlignmentH::End, false, FontSize::Small);
 
 					text = text.Translate(0, this->resize.step_height);
 					icon = icon.Translate(0, this->resize.step_height);
@@ -555,7 +555,7 @@ public:
 
 				const IndustrySpec *indsp = GetIndustrySpec(this->selected_type);
 
-				if (_game_mode != GM_EDITOR) {
+				if (_game_mode != GameMode::Editor) {
 					DrawString(ir, GetString(STR_FUND_INDUSTRY_INDUSTRY_BUILD_COST, indsp->GetConstructionCost()));
 					ir.top += GetCharacterHeight(FontSize::Normal);
 				}
@@ -588,7 +588,7 @@ public:
 							str = GetGRFStringWithTextStack(indsp->grf_prop.grffile, GRFSTR_MISC_GRF_TEXT + callback_res, regs100);
 						}
 						if (!str.empty()) {
-							DrawStringMultiLine(ir, str, TC_YELLOW);
+							DrawStringMultiLine(ir, str, TextColour::Yellow);
 						}
 					}
 				}
@@ -602,8 +602,9 @@ public:
 		if (!confirmed) return;
 
 		if (Town::GetNumItems() == 0) {
-			ShowErrorMessage(GetEncodedString(STR_ERROR_CAN_T_GENERATE_INDUSTRIES), GetEncodedString(STR_ERROR_MUST_FOUND_TOWN_FIRST), WL_INFO);
+			ShowErrorMessage(GetEncodedString(STR_ERROR_CAN_T_GENERATE_INDUSTRIES), GetEncodedString(STR_ERROR_MUST_FOUND_TOWN_FIRST), WarningLevel::Info);
 		} else {
+			Map::CountLandTiles();
 			AutoRestoreBackup old_generating_world(_generating_world, true);
 			BasePersistentStorageArray::SwitchMode(PSM_ENTER_GAMELOOP);
 			GenerateIndustries();
@@ -631,7 +632,7 @@ public:
 	{
 		switch (widget) {
 			case WID_DPI_CREATE_RANDOM_INDUSTRIES_WIDGET: {
-				assert(_game_mode == GM_EDITOR);
+				assert(_game_mode == GameMode::Editor);
 				this->HandleButtonClick(WID_DPI_CREATE_RANDOM_INDUSTRIES_WIDGET);
 				ShowQuery(
 					GetEncodedString(STR_FUND_INDUSTRY_MANY_RANDOM_INDUSTRIES_CAPTION),
@@ -641,7 +642,7 @@ public:
 			}
 
 			case WID_DPI_REMOVE_ALL_INDUSTRIES_WIDGET: {
-				assert(_game_mode == GM_EDITOR);
+				assert(_game_mode == GameMode::Editor);
 				this->HandleButtonClick(WID_DPI_REMOVE_ALL_INDUSTRIES_WIDGET);
 				ShowQuery(
 					GetEncodedString(STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_CAPTION),
@@ -661,7 +662,7 @@ public:
 					this->SetDirty();
 
 					if (_thd.GetCallbackWnd() == this &&
-							((_game_mode != GM_EDITOR && _settings_game.construction.raw_industry_construction == 2 && indsp != nullptr && indsp->IsRawIndustry()) || !this->enabled)) {
+							((_game_mode != GameMode::Editor && _settings_game.construction.raw_industry_construction == 2 && indsp != nullptr && indsp->IsRawIndustry()) || !this->enabled)) {
 						/* Reset the button state if going to prospecting or "build many industries" */
 						this->RaiseButtons();
 						ResetObjectToPlace();
@@ -679,7 +680,7 @@ public:
 
 			case WID_DPI_FUND_WIDGET: {
 				if (this->selected_type != IT_INVALID) {
-					if (_game_mode != GM_EDITOR && _settings_game.construction.raw_industry_construction == 2 && GetIndustrySpec(this->selected_type)->IsRawIndustry()) {
+					if (_game_mode != GameMode::Editor && _settings_game.construction.raw_industry_construction == 2 && GetIndustrySpec(this->selected_type)->IsRawIndustry()) {
 						Command<Commands::BuildIndustry>::Post(STR_ERROR_CAN_T_CONSTRUCT_THIS_INDUSTRY, TileIndex{}, this->selected_type, 0, false, InteractiveRandom());
 						this->HandleButtonClick(WID_DPI_FUND_WIDGET);
 					} else {
@@ -705,11 +706,11 @@ public:
 		uint32_t seed = InteractiveRandom();
 		uint32_t layout_index = InteractiveRandomRange((uint32_t)indsp->layouts.size());
 
-		if (_game_mode == GM_EDITOR) {
+		if (_game_mode == GameMode::Editor) {
 			/* Show error if no town exists at all */
 			if (Town::GetNumItems() == 0) {
 				ShowErrorMessage(GetEncodedString(STR_ERROR_CAN_T_BUILD_HERE, indsp->name),
-					GetEncodedString(STR_ERROR_MUST_FOUND_TOWN_FIRST), WL_INFO, pt.x, pt.y);
+					GetEncodedString(STR_ERROR_MUST_FOUND_TOWN_FIRST), WarningLevel::Info, pt.x, pt.y);
 				return;
 			}
 
@@ -727,7 +728,7 @@ public:
 	}
 
 	const IntervalTimer<TimerWindow> update_interval = {std::chrono::seconds(3), [this](auto) {
-		if (_game_mode == GM_EDITOR) return;
+		if (_game_mode == GameMode::Editor) return;
 		if (this->selected_type == IT_INVALID) return;
 
 		bool enabled = this->enabled;
@@ -764,8 +765,8 @@ public:
 
 void ShowBuildIndustryWindow()
 {
-	if (_game_mode != GM_EDITOR && !Company::IsValidID(_local_company)) return;
-	if (BringWindowToFrontById(WC_BUILD_INDUSTRY, 0)) return;
+	if (_game_mode != GameMode::Editor && !Company::IsValidID(_local_company)) return;
+	if (BringWindowToFrontById(WindowClass::BuildIndustry, 0)) return;
 	new BuildIndustryWindow();
 }
 
@@ -775,7 +776,7 @@ static inline bool IsProductionAlterable(const Industry *i)
 {
 	const IndustrySpec *is = GetIndustrySpec(i->type);
 	bool has_prod = std::any_of(std::begin(is->production_rate), std::end(is->production_rate), [](auto rate) { return rate != 0; });
-	return ((_game_mode == GM_EDITOR || _cheats.setup_prod.value) &&
+	return ((_game_mode == GameMode::Editor || _cheats.setup_prod.value) &&
 			(has_prod || is->IsRawIndustry()) &&
 			!_networking);
 }
@@ -824,7 +825,7 @@ public:
 	/** Close the industry production window. */
 	~IndustryViewWindow() override
 	{
-		CloseWindowById(WC_INDUSTRY_PRODUCTION, this->window_number, false);
+		CloseWindowById(WindowClass::IndustryProductionGraph, this->window_number, false);
 	}
 
 	void OnInit() override
@@ -974,14 +975,14 @@ public:
 				}
 				if (!str.empty()) {
 					ir.top += WidgetDimensions::scaled.vsep_wide;
-					ir.top = DrawStringMultiLine(ir, str, TC_YELLOW);
+					ir.top = DrawStringMultiLine(ir, str, TextColour::Yellow);
 				}
 			}
 		}
 
 		if (!i->text.empty()) {
 			ir.top += WidgetDimensions::scaled.vsep_wide;
-			ir.top = DrawStringMultiLine(ir, i->text.GetDecodedString(), TC_BLACK);
+			ir.top = DrawStringMultiLine(ir, i->text.GetDecodedString(), TextColour::Black);
 		}
 
 		/* Return required bottom position, the last pixel row plus some padding. */
@@ -1222,7 +1223,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_industry_view_widget
 /** Window definition of the view industry gui */
 static WindowDesc _industry_view_desc(
 	WindowPosition::Automatic, "view_industry", 260, 120,
-	WC_INDUSTRY_VIEW, WC_NONE,
+	WindowClass::IndustryView, WindowClass::None,
 	{},
 	_nested_industry_view_widgets
 );
@@ -1693,7 +1694,7 @@ public:
 	{
 		switch (widget) {
 			case WID_ID_DROPDOWN_ORDER:
-				this->DrawSortButtonState(widget, this->industries.IsDescSortOrder() ? SBS_DOWN : SBS_UP);
+				this->DrawSortButton(widget, this->industries.IsDescSortOrder());
 				break;
 
 			case WID_ID_INDUSTRY_LIST: {
@@ -1717,11 +1718,11 @@ public:
 				const CargoType acf_cargo_type = this->accepted_cargo_filter_criteria;
 				auto [first, last] = this->vscroll->GetVisibleRangeIterators(this->industries);
 				for (auto it = first; it != last; ++it) {
-					TextColour tc = TC_FROMSTRING;
+					ExtendedTextColour tc{TextColour::FromString};
 					if (acf_cargo_type != CargoFilterCriteria::CF_ANY && acf_cargo_type != CargoFilterCriteria::CF_NONE) {
 						Industry *ind = const_cast<Industry *>(*it);
 						if (IndustryTemporarilyRefusesCargo(ind, acf_cargo_type)) {
-							tc = TC_GREY | TC_FORCED;
+							tc = ExtendedTextColour{TextColour::Grey, ExtendedTextColourFlag::Forced};
 						}
 					}
 					DrawString(ir, this->GetIndustryString(*it), tc);
@@ -1916,7 +1917,7 @@ CargoType IndustryDirectoryWindow::produced_cargo_filter = CargoFilterCriteria::
 /** Window definition of the industry directory gui */
 static WindowDesc _industry_directory_desc(
 	WindowPosition::Automatic, "list_industries", 428, 190,
-	WC_INDUSTRY_DIRECTORY, WC_NONE,
+	WindowClass::IndustryDirectory, WindowClass::None,
 	{},
 	_nested_industry_directory_widgets,
 	&IndustryDirectoryWindow::hotkeys
@@ -1955,7 +1956,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_industry_cargoes_wid
 /** Window description for the industry cargoes window. */
 static WindowDesc _industry_cargoes_desc(
 	WindowPosition::Automatic, "industry_cargoes", 300, 210,
-	WC_INDUSTRY_CARGOES, WC_NONE,
+	WindowClass::IndustryCargoes, WindowClass::None,
 	{},
 	_nested_industry_cargoes_widgets
 );
@@ -2151,7 +2152,7 @@ struct CargoesField {
 
 			case CargoesFieldType::Header:
 				ypos += (small_height - GetCharacterHeight(FontSize::Normal)) / 2;
-				DrawString(xpos, xpos + industry_width, ypos, this->u.header, TC_WHITE, SA_HOR_CENTER);
+				DrawString(xpos, xpos + industry_width, ypos, this->u.header, TextColour::White, AlignmentH::Centre);
 				break;
 
 			case CargoesFieldType::Industry: {
@@ -2162,7 +2163,7 @@ struct CargoesField {
 				ypos += (normal_height - GetCharacterHeight(FontSize::Normal)) / 2;
 				if (this->u.industry.ind_type < NUM_INDUSTRYTYPES) {
 					const IndustrySpec *indsp = GetIndustrySpec(this->u.industry.ind_type);
-					DrawString(xpos, xpos2, ypos, indsp->name, TC_WHITE, SA_HOR_CENTER);
+					DrawString(xpos, xpos2, ypos, indsp->name, TextColour::White, AlignmentH::Centre);
 
 					/* Draw the industry legend. */
 					int blob_left, blob_right;
@@ -2176,7 +2177,7 @@ struct CargoesField {
 					GfxFillRect(blob_left,     ypos2 - blob_distance - CargoesField::legend.height,     blob_right,     ypos2 - blob_distance,     PC_BLACK); // Border
 					GfxFillRect(blob_left + 1, ypos2 - blob_distance - CargoesField::legend.height + 1, blob_right - 1, ypos2 - blob_distance - 1, indsp->map_colour);
 				} else {
-					DrawString(xpos, xpos2, ypos, STR_INDUSTRY_CARGOES_HOUSES, TC_FROMSTRING, SA_HOR_CENTER);
+					DrawString(xpos, xpos2, ypos, STR_INDUSTRY_CARGOES_HOUSES, TextColour::FromString, AlignmentH::Centre);
 				}
 
 				/* Draw the other_produced/other_accepted cargoes. */
@@ -2266,8 +2267,8 @@ struct CargoesField {
 				for (uint i = 0; i < MAX_CARGOES; i++) {
 					if (IsValidCargoType(this->u.cargo_label.cargoes[i])) {
 						const CargoSpec *csp = CargoSpec::Get(this->u.cargo_label.cargoes[i]);
-						DrawString(xpos + WidgetDimensions::scaled.framerect.left, xpos + industry_width - 1 - WidgetDimensions::scaled.framerect.right, ypos, csp->name, TC_WHITE,
-								(this->u.cargo_label.left_align) ? SA_LEFT : SA_RIGHT);
+						DrawString(xpos + WidgetDimensions::scaled.framerect.left, xpos + industry_width - 1 - WidgetDimensions::scaled.framerect.right, ypos, csp->name, TextColour::White,
+								(this->u.cargo_label.left_align) ? AlignmentH::Start : AlignmentH::End);
 					}
 					ypos += GetCharacterHeight(FontSize::Normal) + CargoesField::cargo_space.height;
 				}
@@ -2786,7 +2787,7 @@ struct IndustryCargoesWindow : public Window {
 
 		/* Only notify the smallmap window if it exists. In particular, do not
 		 * bring it to the front to prevent messing up any nice layout of the user. */
-		InvalidateWindowClassesData(WC_SMALLMAP, 0);
+		InvalidateWindowClassesData(WindowClass::SmallMap, 0);
 	}
 
 	/**
@@ -3076,7 +3077,7 @@ struct IndustryCargoesWindow : public Window {
 				SndClickBeep();
 
 				if (this->IsWidgetLowered(WID_IC_NOTIFY)) {
-					if (FindWindowByClass(WC_SMALLMAP) == nullptr) ShowSmallMap();
+					if (FindWindowByClass(WindowClass::SmallMap) == nullptr) ShowSmallMap();
 					this->NotifySmallmap();
 				}
 				break;
@@ -3190,7 +3191,7 @@ static void ShowIndustryCargoesWindow(IndustryType id)
 		if (id >= NUM_INDUSTRYTYPES) return;
 	}
 
-	Window *w = BringWindowToFrontById(WC_INDUSTRY_CARGOES, 0);
+	Window *w = BringWindowToFrontById(WindowClass::IndustryCargoes, 0);
 	if (w != nullptr) {
 		w->InvalidateData(id);
 		return;

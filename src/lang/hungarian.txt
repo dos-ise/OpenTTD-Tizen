@@ -588,6 +588,7 @@ STR_AIRCRAFT_MENU_AIRPORT_CONSTRUCTION                          :Repülőtér é
 STR_LANDSCAPING_MENU_LANDSCAPING                                :Tájrendezés
 STR_LANDSCAPING_MENU_PLANT_TREES                                :Faültetés
 STR_LANDSCAPING_MENU_PLACE_SIGN                                 :Felirat lerakása
+STR_LANDSCAPING_MENU_PLACE_OBJECT                               :Objektum építése
 
 # Music menu
 STR_TOOLBAR_SOUND_MUSIC                                         :Hang/zene
@@ -693,7 +694,6 @@ STR_GRAPH_LAST_24_MONTHS                                        :{TINY_FONT}{BLA
 STR_GRAPH_LAST_24_QUARTERS                                      :{TINY_FONT}{BLACK}6 év (negyedévente)
 STR_GRAPH_LAST_24_YEARS                                         :{TINY_FONT}{BLACK}24 év (évente)
 
-STR_GRAPH_TOGGLE_RANGE                                          :Grafikon megjelenítése ehhez az adatsorhoz
 STR_GRAPH_SELECT_SCALE                                          :A grafikon vízszintes skálájának módosítása
 
 STR_GRAPH_CARGO_PAYMENT_RATES_CAPTION                           :{WHITE}Rakományok szállítási díja
@@ -709,14 +709,21 @@ STR_GRAPH_CARGO_PAYMENT_CARGO                                   :{TINY_FONT}{BLA
 
 STR_GRAPH_INDUSTRY_CAPTION                                      :{WHITE}{INDUSTRY} - Rakománytörténet
 STR_GRAPH_INDUSTRY_RANGE_PRODUCED                               :Előállított
+STR_GRAPH_INDUSTRY_RANGE_PRODUCED_TOOLTIP                       :Ezen iparág által által előállított rakomány grafikonjának mutatása be/ki
 STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED                            :Szállítva
+STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED_TOOLTIP                    :Ezen iparágtól szállított rakomány grafikonjának mutatása be/ki
 STR_GRAPH_INDUSTRY_RANGE_DELIVERED                              :Leszállítva
+STR_GRAPH_INDUSTRY_RANGE_DELIVERED_TOOLTIP                      :Ezen iparághoz szállított rakomány grafikonjának mutatása be/ki
 STR_GRAPH_INDUSTRY_RANGE_WAITING                                :Várakozik
+STR_GRAPH_INDUSTRY_RANGE_WAITING_TOOLTIP                        :Ezen iparágnál várakozó rakomány grafikonjának mutatása be/ki
 
 STR_GRAPH_TOWN_CARGO_CAPTION                                    :{WHITE}{TOWN} - Rakománytörténet
 STR_GRAPH_TOWN_RANGE_PRODUCED                                   :Előállított
+STR_GRAPH_TOWN_RANGE_PRODUCED_TOOLTIP                           :Az ebben a városban előállított rakomány grafikonjának mutatása be/ki
 STR_GRAPH_TOWN_RANGE_TRANSPORTED                                :Elszállítva
+STR_GRAPH_TOWN_RANGE_TRANSPORTED_TOOLTIP                        :Az ebből a városból szállított rakomány grafikonjának mutatása be/ki
 STR_GRAPH_TOWN_RANGE_DELIVERED                                  :Leszállítva
+STR_GRAPH_TOWN_RANGE_DELIVERED_TOOLTIP                          :Az ebbe a városba szállított rakomány grafikonjának mutatása be/ki
 
 STR_GRAPH_PERFORMANCE_DETAIL_TOOLTIP                            :{BLACK}Részletes teljesítményértékelés mutatása
 
@@ -1274,9 +1281,9 @@ STR_RIVERS_MODERATE                                             :Közepes
 STR_RIVERS_LOT                                                  :Sok
 
 ###length 3
-STR_DISASTER_NONE                                               :Nincs
-STR_DISASTER_REDUCED                                            :Ritka
-STR_DISASTER_NORMAL                                             :Normál
+STR_BREAKDOWNS_NONE                                             :Nincs
+STR_BREAKDOWNS_REDUCED                                          :Ritka
+STR_BREAKDOWNS_NORMAL                                           :Normál
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :1,5x
@@ -1627,6 +1634,12 @@ STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE                         :Gazdasági ép�
 STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE_HELPTEXT                :A gazdasági épületek rakománytermelésének mértéke százalékban.
 STR_CONFIG_SETTING_CARGO_SCALE_VALUE                            :{NUM}%
 
+STR_CONFIG_SETTING_CARGO_AGING_RATE                             :Mért rakomány öregedési ráta: {STRING}
+STR_CONFIG_SETTING_CARGO_AGING_RATE_HELPTEXT                    :Annak beállítása, hogy a járművekre rakodott áru hogyan vesszen az értékéből az idő folyamán
+STR_CONFIG_SETTING_CARGO_AGING_RATE_VALUE                       :{NUM}%
+###setting-zero-is-special
+STR_CONFIG_SETTING_CARGO_AGING_RATE_ZERO                        :Nincs öregedés
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Automatikusan felújítja a járművet ha elöregedik: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :Bekapcsolva a jármű élettartamának végén automatikusan cserére kerül, ha a lecserélési feltételek teljesülnek
 
@@ -1717,12 +1730,12 @@ STR_CONFIG_SETTING_TREE_PLACER_NONE                             :Nincs
 STR_CONFIG_SETTING_TREE_PLACER_ORIGINAL                         :Eredeti
 STR_CONFIG_SETTING_TREE_PLACER_IMPROVED                         :Javított
 
-STR_CONFIG_SETTING_ROAD_SIDE                                    :Közúti járművek: {STRING}
-STR_CONFIG_SETTING_ROAD_SIDE_HELPTEXT                           :Melyik oldalon közlekedjenek a közúti járművek
+STR_CONFIG_SETTING_ROAD_SIDE                                    :Közúti járművek közlekedési oldala: {STRING}
+STR_CONFIG_SETTING_ROAD_SIDE_HELPTEXT                           :Válaszd ki a közúti járművek közlekedési oldalát.{}Ez befolyásolja a jelzések oldalát és a szemafor grafikát.{}Elképzelhető, hogy igényli a játék újra töltését a változtatás teljes érvénybe lépéséhez.
 
 ###length 2
-STR_CONFIG_SETTING_ROAD_SIDE_LEFT                               :Balra hajtás
-STR_CONFIG_SETTING_ROAD_SIDE_RIGHT                              :Jobbra hajtás
+STR_CONFIG_SETTING_ROAD_SIDE_LEFT                               :Bal
+STR_CONFIG_SETTING_ROAD_SIDE_RIGHT                              :Jobb
 
 STR_CONFIG_SETTING_HEIGHTMAP_ROTATION                           :Magasságtérkép forgatása: {STRING}
 STR_CONFIG_SETTING_HEIGHTMAP_ROTATION_TOOLTIP                   :A magasságtérkép elforgatásának beállítása a játékvilágba való illesztéshez
@@ -1862,12 +1875,12 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :Várható érke
 STR_CONFIG_SETTING_QUICKGOTO                                    :Utasításlista gyors elkészítése: {STRING}
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :A 'Menj' parancs előzetes kiválasztása az utasításlista megnyitásakor
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Alapértelmezett vasúti pályatípus: {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Egy játék kezdete vagy betöltése után használt vasúti pályatípus. 'Első elérhető' kiválasztja a legrégebbi típusú pályát, 'Utolsó elérhető' kiválasztja a legújabb típusú pályát, 'Legtöbbet használt' kiválasztja azt a pályatípust, amelyik a legtöbb helyen volt használva
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE                       :Alapértelmezett sín, út, és villamos típus (új játék/ játék betöltés után): {STRING}
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_HELPTEXT              :Sín, út és villamos típus a játék indításakor vagy betöltésekor. Az 'Első elérhető' kiválasztja a legrégebbi elérhető pályatípust, az 'utolsó elérhető' kiválasztja a legújabb elérhető pályatípust és a 'leggyakrabban használt' kiválasztja a típust, ami aktuálisan a leggyakrabban használt.
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :Első elérhető
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :Utolsó elérhető
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :Legtöbbet használt
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_FIRST                 :Első elérhető
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_LAST                  :Utolsó elérhető
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_MOST_USED             :Leggyakrabban használt
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :Vágányszakasz foglaltságának jelzése: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :A vonatok számára lezárt vágányutak jelölése más színnel, az irányjelzési rendszerrel kapcsolatos vonatmegállási problémák megoldásához
@@ -2945,22 +2958,22 @@ STR_PICKER_COLLECTION_DELETE_QUERY                              :Kollekció tör
 STR_PICKER_COLLECTION_DELETE_QUERY_TEXT                         :{YELLOW}Biztosan törölni akarod ezt a kollekciót?
 STR_PICKER_COLLECTION_DELETE_QUERY_DISABLED_TEXT                :{YELLOW}Biztos, hogy törölni szeretnéd ezt a kollekciót? Vannak benne elemek a tiltott NewGRF-ekből!
 
-STR_PICKER_STATION_CLASS_TOOLTIP                                :Válaszd ki a megjeleníteni kívánt állomástípust
+STR_PICKER_STATION_CLASS_TOOLTIP                                :Válaszd ki a megjeleníteni kívánt állomástípust. Ctrl+kattintás a mentett elemek hozzáadásához, eltávolításához
 STR_PICKER_STATION_TYPE_TOOLTIP                                 :Válassz ki egy állomástípust az építéshez. Ctrl+kattintás a mentett elemek hozzáadásához vagy eltávolításához
 STR_PICKER_STATION_COLLECTION_TOOLTIP                           :Jelöljön ki egy állomás kollekciót a megjelenítéshez
-STR_PICKER_WAYPOINT_CLASS_TOOLTIP                               :Válassz egy útpontot amit meg akarsz jeleníteni
+STR_PICKER_WAYPOINT_CLASS_TOOLTIP                               :Válassz egy útpontot amit meg akarsz jeleníteni. Ctrl+kattintás a mentett elemek hozzáadásához, eltávolításához
 STR_PICKER_WAYPOINT_TYPE_TOOLTIP                                :Válassz egy útpontot az építéshez. Ctrl+katintás a mentett elemek hozzáadásához vagy eltávolításához
 STR_PICKER_WAYPOINT_COLLECTION_TOOLTIP                          :Jelöljön ki egy útpont kollekciót a megjelenítéshez
-STR_PICKER_ROADSTOP_BUS_CLASS_TOOLTIP                           :Válaszd ki a megjeleníteni kívánt buszállomás-típust
+STR_PICKER_ROADSTOP_BUS_CLASS_TOOLTIP                           :Válaszd ki a megjeleníteni kívánt buszállomás-típust. Ctrl+kattintás a mentett elemek eltávolításához
 STR_PICKER_ROADSTOP_BUS_TYPE_TOOLTIP                            :Válassz egy autóbuszállomás-típust az építéshez. Ctrl + kattintás a mentett elemek hozzáadásához vagy eltávolításához
 STR_PICKER_ROADSTOP_BUS_COLLECTION_TOOLTIP                      :Jelöljön ki egy buszállomás kollekciót a megjelenítéshez
-STR_PICKER_ROADSTOP_TRUCK_CLASS_TOOLTIP                         :Válaszd ki a megjeleníteni kívánt teherautó-típust
+STR_PICKER_ROADSTOP_TRUCK_CLASS_TOOLTIP                         :Válaszd ki a megjeleníteni kívánt teherautó-típust. Ctrl+kattintás a mentett elemek eltávolításához
 STR_PICKER_ROADSTOP_TRUCK_TYPE_TOOLTIP                          :Válassz egy teherautóállomás-típust az építéshez. Ctrl + kattintás a mentett elemek hozzáadásához vagy eltávolításához
 STR_PICKER_ROADSTOP_TRUCK_COLLECTION_TOOLTIP                    :Jelöljön ki egy hajóállomás kollekciót a megjelenítéshez
-STR_PICKER_OBJECT_CLASS_TOOLTIP                                 :Válaszd ki a megjelenítendő elemcsoportot
+STR_PICKER_OBJECT_CLASS_TOOLTIP                                 :Válaszd ki a megjelenítendő elemcsoportot. Ctrl+kattintás a mentett elemek hozzáadásához, eltávolításához
 STR_PICKER_OBJECT_TYPE_TOOLTIP                                  :Válaszd ki az építendő elem típusát. Ctrl+kattintás a mentett elemek hozzáadásához vagy eltávolításához. Ctrl+kattintás+húzás a terület átlós kijelöléséhez. Nyomd meg a Shift billentyűt is, ha csak a költségbecslést szeretnéd megjeleníteni
 STR_PICKER_OBJECT_COLLECTION_TOOLTIP                            :Jelöljön ki egy objektum kollekciót a megjelenítéshez
-STR_PICKER_HOUSE_CLASS_TOOLTIP                                  :Válassz egy település-zónát amit meg akarsz jeleníteni
+STR_PICKER_HOUSE_CLASS_TOOLTIP                                  :Válassz egy település-zónát amit meg akarsz jeleníteni. Ctrl+kattintás a mentett elemek hozzáadásához, eltávolításához
 STR_PICKER_HOUSE_TYPE_TOOLTIP                                   :Válassz egy ház típúst az építéshez. Ctrl+kattintás a mentett elemek hozzáadásához vagy eltávolításához
 STR_PICKER_HOUSE_COLLECTION_TOOLTIP                             :Jelöljön ki egy ház kollekciót a megjelenítéshez
 
@@ -3151,10 +3164,12 @@ STR_TREES_MODE_FOREST_LG_TOOLTIP                                :{BLACK}A tájon
 
 # Land generation window (SE)
 STR_TERRAFORM_TOOLBAR_LAND_GENERATION_CAPTION                   :{WHITE}Táj szerkesztése
-STR_TERRAFORM_TOOLTIP_PLACE_ROCKY_AREAS_ON_LANDSCAPE            :{BLACK}Sziklás területek elhelyezése a térképen
+STR_TERRAFORM_TOOLTIP_PLACE_ROCKY_AREAS_ON_LANDSCAPE            :{BLACK}Sziklás területek elhelyezése a térképen.{}Ctrl+kattintással a sziklás terület eltávolítása
 STR_TERRAFORM_TOOLTIP_DEFINE_DESERT_AREA                        :{BLACK}Sivatag létrehozása.{}Ctrl+kattintás a sivatag eltávolításához
 STR_TERRAFORM_TOOLTIP_INCREASE_SIZE_OF_LAND_AREA                :{BLACK}Az emelendő/süllyesztendő földterület növelése
 STR_TERRAFORM_TOOLTIP_DECREASE_SIZE_OF_LAND_AREA                :{BLACK}Az emelendő/süllyesztendő földterület csökkentése
+STR_TERRAFORM_TOOLTIP_LOWER_A_CORNER_OF_LAND                    :{BLACK} Sarok vagy terület lesüllyesztése. Ha a méret 1x1, kattints+húzd az első kijelölt saroknál majd állítsd be a szintet az új sarok magasságra. Ctrl+kattintás+húzással átlós terület jelölhető ki. Shift+kattintással csak a becsült költséget jeleníti meg
+STR_TERRAFORM_TOOLTIP_RAISE_A_CORNER_OF_LAND                    :{BLACK}Sarok vagy terület megemelése. Ha a méret 1x1, kattints+húzd az első kijelölt saroknál majd állítsd be a szintet az új sarok magasságra. Ctrl+kattintás+húzással átlós terület jelölhető ki. Shift+kattintással csak a becsült költséget jeleníti meg
 STR_TERRAFORM_TOOLTIP_GENERATE_RANDOM_LAND                      :{BLACK}Véletlenszerű táj készítése
 STR_TERRAFORM_SE_NEW_WORLD                                      :{BLACK}Új pálya létrehozása
 STR_TERRAFORM_RESET_LANDSCAPE                                   :{BLACK}A táj törlése
@@ -3891,6 +3906,7 @@ STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Kattintással a fő nézetet a célra állítja. Ctrl+kattintással új nézet nyílik a gazdasági épület/település/mező helyzeténél
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :{BLACK}Kérdés
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :{BLACK}Információ
 STR_GOAL_QUESTION_CAPTION_WARNING                               :{BLACK}Figyelmeztetés
@@ -4772,9 +4788,9 @@ STR_ORDER_DROP_FULL_LOAD_ANY                                    :Telerakodás b�
 STR_ORDER_DROP_NO_LOADING                                       :Nincs berakodás
 STR_ORDER_TOOLTIP_FULL_LOAD                                     :{BLACK}A kijelölt célponton a berakodási szokások beállítása
 
-STR_ORDER_TOGGLE_UNLOAD                                         :{BLACK}Teljes kirakodás
+STR_ORDER_TOGGLE_UNLOAD                                         :{BLACK}Kényszerített teljes kirakodás
 STR_ORDER_DROP_UNLOAD_IF_ACCEPTED                               :Kirakodás ha fogadott
-STR_ORDER_DROP_UNLOAD                                           :Teljes kirakodás
+STR_ORDER_DROP_UNLOAD                                           :Kényszerített teljes kirakodás, akkor is ha nem fogadott
 STR_ORDER_DROP_TRANSFER                                         :Elszállítás
 STR_ORDER_DROP_NO_UNLOADING                                     :Nincs kirakodás
 STR_ORDER_TOOLTIP_UNLOAD                                        :{BLACK}A kijelölt célponton a kirakodási szokások beállítása
@@ -4811,7 +4827,7 @@ STR_ORDER_CONDITIONAL_REQUIRES_SERVICE                          :Javításra szo
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :Mindig
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :Hátralévő élettartam (év)
 STR_ORDER_CONDITIONAL_MAX_RELIABILITY                           :Maximális megbízhatóság
-STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :Tolatva halad
+STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :Tolatva halad csökkentett sebességgel
 ###next-name-looks-similar
 
 STR_ORDER_CONDITIONAL_COMPARATOR_TOOLTIP                        :{BLACK}Hogyan viszonyul a jármű kiválasztott adata a megadott értékhez
@@ -4877,10 +4893,10 @@ STR_ORDER_IMPLICIT                                              :{SPACE}(Automat
 STR_ORDER_FULL_LOAD                                             :{SPACE}(Telerakodás)
 STR_ORDER_FULL_LOAD_ANY                                         :{SPACE}(Bármiből teljes berakodás)
 STR_ORDER_NO_LOAD                                               :{SPACE}(Nincs berakodás)
-STR_ORDER_UNLOAD                                                :{SPACE}(Kirakodás és rakományfelvétel)
-STR_ORDER_UNLOAD_FULL_LOAD                                      :{SPACE}(Kirakodás és mindenből teljes berakodás)
-STR_ORDER_UNLOAD_FULL_LOAD_ANY                                  :{SPACE}(Kirakodás és bármiből teljes berakodás)
-STR_ORDER_UNLOAD_NO_LOAD                                        :{SPACE}(Kirakodás és üresen indulás)
+STR_ORDER_UNLOAD                                                :{SPACE}(Kinyszerített kirakodás és rakományfelvétel)
+STR_ORDER_UNLOAD_FULL_LOAD                                      :{SPACE}(Kényszerített kirakodás és mindenből teljes berakodás)
+STR_ORDER_UNLOAD_FULL_LOAD_ANY                                  :{SPACE}(Kényszerített kirakodás és bármiből teljes berakodás)
+STR_ORDER_UNLOAD_NO_LOAD                                        :{SPACE}(Kényszerített kirakodás és üresen indulás)
 STR_ORDER_TRANSFER                                              :(Elszállítás és rakományfelvétel)
 STR_ORDER_TRANSFER_FULL_LOAD                                    :{SPACE}(Elszállítás és mindenből teljes berakodás)
 STR_ORDER_TRANSFER_FULL_LOAD_ANY                                :{SPACE}(Elszállítás és bármiből teljes berakodás)
@@ -4893,9 +4909,9 @@ STR_ORDER_NO_UNLOAD_NO_LOAD                                     :{SPACE}(Nincs k
 STR_ORDER_AUTO_REFIT                                            :{SPACE}(Átalakítás {STRING} szállítására)
 STR_ORDER_FULL_LOAD_REFIT                                       :{SPACE}(Mindenből teljes berakodás és átalakítás {STRING} rakományra)
 STR_ORDER_FULL_LOAD_ANY_REFIT                                   :{SPACE}(Bármiből teljes berakodás és átalakítás {STRING} rakományra)
-STR_ORDER_UNLOAD_REFIT                                          :{SPACE}(Kirakodás, rakományfelvétel és átalakítás {STRING} rakományra)
-STR_ORDER_UNLOAD_FULL_LOAD_REFIT                                :{SPACE}(Kirakodás, mindenből teljes berakodás és átalakítás {STRING} rakományra)
-STR_ORDER_UNLOAD_FULL_LOAD_ANY_REFIT                            :{SPACE}(Kirakodás, bármiből teljes berakodás és átalakítás {STRING} rakományra)
+STR_ORDER_UNLOAD_REFIT                                          :{SPACE}(Kényszerített kirakodás, rakományfelvétel és átalakítás {STRING} rakományra)
+STR_ORDER_UNLOAD_FULL_LOAD_REFIT                                :{SPACE}(Kényszerített kirakodás, mindenből teljes berakodás és átalakítás {STRING} rakományra)
+STR_ORDER_UNLOAD_FULL_LOAD_ANY_REFIT                            :{SPACE}(Kényszerített kirakodás, bármiből teljes berakodás és átalakítás {STRING} rakományra)
 STR_ORDER_TRANSFER_REFIT                                        :{SPACE}(Elszállítás, rakományfelvétel és átalakítás {STRING} rakományra)
 STR_ORDER_TRANSFER_FULL_LOAD_REFIT                              :{SPACE}(Elszállítás, bármiből teljes berakodás és átalakítás {STRING} rakományra)
 STR_ORDER_TRANSFER_FULL_LOAD_ANY_REFIT                          :{SPACE}(Elszállítás, mindenből teljes berakodás és átalakítás {STRING} rakományra)
@@ -5416,6 +5432,10 @@ STR_ERROR_BRIDGE_TOO_LOW_FOR_BUOY                               :a híd {HEIGHT}
 STR_ERROR_BRIDGE_TOO_LOW_FOR_RAIL_WAYPOINT                      :a híd {HEIGHT} magas, túl alacsony a vasúti ellenőrzőponthoz
 STR_ERROR_BRIDGE_TOO_LOW_FOR_ROAD_WAYPOINT                      :a híd {HEIGHT} magas, túl alacsony az útponthoz
 STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK                               :a híd {HEIGHT} magas, túl alacsony a zároláshoz
+STR_ERROR_BRIDGE_TOO_LOW_FOR_TRAIN_DEPOT                        :híd {HEIGHT} magas, túl alacsony a vasúti járműtelephez
+STR_ERROR_BRIDGE_TOO_LOW_FOR_ROADVEH_DEPOT                      :híd {HEIGHT} magas, túl alacsony a közúti járműtelephez
+STR_ERROR_BRIDGE_TOO_LOW_FOR_SHIP_DEPOT                         :híd {HEIGHT} magas, túl alacsony a dokkhoz
+STR_ERROR_BRIDGE_TOO_LOW_FOR_OBJECT                             :híd {HEIGHT} magas, túl alacsony az objektumhoz
 
 # Tunnel related errors
 STR_ERROR_CAN_T_BUILD_TUNNEL_HERE                               :Nem áshatsz ide alagutat...

@@ -143,7 +143,7 @@ void FileStringReader::HandlePragma(std::string_view str, LanguagePackHeader &la
 		if (langid >= 0x7F || langid < 0) {
 			FatalError("Invalid grflangid {}", langid);
 		}
-		lang.newgrflangid = static_cast<uint8_t>(langid);
+		lang.newgrflangid = static_cast<GRFLanguage>(langid);
 	} else if (name == "gender") {
 		if (this->master) FatalError("Genders are not allowed in the base translation.");
 		for (;;) {
@@ -240,7 +240,7 @@ struct HeaderFileWriter : HeaderWriter, FileWriter {
 	void WriteStringID(const std::string &name, size_t stringid) override
 	{
 		if (prev + 1 != stringid) this->output_stream << "\n";
-		fmt::print(this->output_stream, "static const StringID {} = 0x{:X};\n", name, stringid);
+		fmt::print(this->output_stream, "static constexpr StringID {}{{0x{:X}}};\n", name, stringid);
 		prev = stringid;
 		total_strings++;
 	}

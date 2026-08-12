@@ -972,9 +972,9 @@ STR_RIVERS_MODERATE                                             :درمیانے
 STR_RIVERS_LOT                                                  :بہت سے
 
 ###length 3
-STR_DISASTER_NONE                                               :کوئی نہیں
-STR_DISASTER_REDUCED                                            :کم
-STR_DISASTER_NORMAL                                             :نارمل
+STR_BREAKDOWNS_NONE                                             :کوئی نہیں
+STR_BREAKDOWNS_REDUCED                                          :کم
+STR_BREAKDOWNS_NORMAL                                           :نارمل
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1.5
@@ -1166,6 +1166,8 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES                        :گاڑیوں ک
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :گاڑی پرانی ہونے کی صورت میں خودکار طریقے سے بدل دیں: {STRING}
 
 STR_CONFIG_SETTING_AUTORENEW_MONTHS                             :گاڑی کی زیادہ سے زیادہ عمر {STRING} ہونے پر خودکار تجدید کریں۔
@@ -1302,11 +1304,7 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE             :قوقات کے
 
 STR_CONFIG_SETTING_QUICKGOTO                                    :جلدی گاڑیوں کو احکامات دینا: {STRING}
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :کھیل شروع کرنے یا لوڈ کرنے کے بعد ریل گاڑی کی شروعاتی قسم: {STRING}
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :پہلی دستیاب
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :آخری دستیاب
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :زیادہ استعمال شدہ
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :مخصوص پٹریاں دکھائیں: {STRING}
 
@@ -2338,6 +2336,7 @@ STR_LOCAL_AUTHORITY_COMPANY_RATING                              :{YELLOW}{COMPAN
 STR_GOALS_TEXT                                                  :{ORANGE}{STRING}
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :سوال
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :معلومات
 STR_GOAL_QUESTION_CAPTION_WARNING                               :انتباہ

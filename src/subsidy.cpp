@@ -26,6 +26,7 @@
 #include "string_func.h"
 #include "tile_cmd.h"
 #include "subsidy_cmd.h"
+#include "script/api/script_event_types.hpp"
 #include "timer/timer.h"
 #include "timer/timer_game_economy.h"
 
@@ -82,7 +83,7 @@ void Subsidy::AwardTo(CompanyID company)
 	AI::BroadcastNewEvent(new ScriptEventSubsidyAwarded(this->index));
 	Game::NewEvent(new ScriptEventSubsidyAwarded(this->index));
 
-	InvalidateWindowData(WC_SUBSIDIES_LIST, 0);
+	InvalidateWindowData(WindowClass::SubsidyList, 0);
 }
 
 /**
@@ -128,7 +129,7 @@ void DeleteSubsidyWith(Source source)
 	}
 
 	if (dirty) {
-		InvalidateWindowData(WC_SUBSIDIES_LIST, 0);
+		InvalidateWindowData(WindowClass::SubsidyList, 0);
 		RebuildSubsidisedSourceAndDestinationCache();
 	}
 }
@@ -182,7 +183,7 @@ void CreateSubsidy(CargoType cargo_type, Source src, Source dst)
 	AI::BroadcastNewEvent(new ScriptEventSubsidyOffer(s->index));
 	Game::NewEvent(new ScriptEventSubsidyOffer(s->index));
 
-	InvalidateWindowData(WC_SUBSIDIES_LIST, 0);
+	InvalidateWindowData(WindowClass::SubsidyList, 0);
 }
 
 /**
@@ -479,7 +480,7 @@ static const IntervalTimer<TimerGameEconomy> _economy_subsidies_monthly({TimerGa
 
 	modified |= passenger_subsidy || town_subsidy || industry_subsidy;
 
-	if (modified) InvalidateWindowData(WC_SUBSIDIES_LIST, 0);
+	if (modified) InvalidateWindowData(WindowClass::SubsidyList, 0);
 });
 
 /**

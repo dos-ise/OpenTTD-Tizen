@@ -112,8 +112,8 @@ inline bool IsLevelCrossingTile(Tile t)
 inline RoadBits GetRoadBits(Tile t, RoadTramType rtt)
 {
 	assert(IsNormalRoad(t));
-	if (rtt == RoadTramType::Tram) return (RoadBits)GB(t.m3(), 0, 4);
-	return (RoadBits)GB(t.m5(), 0, 4);
+	if (rtt == RoadTramType::Tram) return static_cast<RoadBits>(GB(t.m3(), 0, 4));
+	return static_cast<RoadBits>(GB(t.m5(), 0, 4));
 }
 
 /**
@@ -152,7 +152,7 @@ inline void SetRoadBits(Tile t, RoadBits r, RoadTramType rtt)
 inline RoadType GetRoadTypeRoad(Tile t)
 {
 	assert(MayHaveRoad(t));
-	return (RoadType)GB(t.m4(), 0, 6);
+	return static_cast<RoadType>(GB(t.m4(), 0, 6));
 }
 
 /**
@@ -163,7 +163,7 @@ inline RoadType GetRoadTypeRoad(Tile t)
 inline RoadType GetRoadTypeTram(Tile t)
 {
 	assert(MayHaveRoad(t));
-	return (RoadType)GB(t.m8(), 6, 6);
+	return static_cast<RoadType>(GB(t.m8(), 6, 6));
 }
 
 /**
@@ -244,11 +244,11 @@ inline bool HasTileAnyRoadType(Tile t, RoadTypes rts)
 inline Owner GetRoadOwner(Tile t, RoadTramType rtt)
 {
 	assert(MayHaveRoad(t));
-	if (rtt == RoadTramType::Road) return (Owner)GB(IsNormalRoadTile(t) ? t.m1() : t.m7(), 0, 5);
+	if (rtt == RoadTramType::Road) return static_cast<Owner>(GB(IsNormalRoadTile(t) ? t.m1() : t.m7(), 0, 5));
 
 	/* Trams don't need OWNER_TOWN, and remapping OWNER_NONE
 	 * to OWNER_TOWN makes it use one bit less */
-	Owner o = (Owner)GB(t.m3(), 4, 4);
+	Owner o = static_cast<Owner>(GB(t.m3(), 4, 4));
 	return o == OWNER_TOWN ? OWNER_NONE : o;
 }
 
@@ -335,7 +335,7 @@ inline void SetDisallowedRoadDirections(Tile t, DisallowedRoadDirections drd)
 inline Axis GetCrossingRoadAxis(Tile t)
 {
 	assert(IsLevelCrossing(t));
-	return (Axis)GB(t.m5(), 0, 1);
+	return static_cast<Axis>(GB(t.m5(), 0, 1));
 }
 
 /**
@@ -347,7 +347,7 @@ inline Axis GetCrossingRoadAxis(Tile t)
 inline Axis GetCrossingRailAxis(Tile t)
 {
 	assert(IsLevelCrossing(t));
-	return OtherAxis((Axis)GetCrossingRoadAxis(t));
+	return OtherAxis(GetCrossingRoadAxis(t));
 }
 
 /**
@@ -357,7 +357,7 @@ inline Axis GetCrossingRailAxis(Tile t)
  */
 inline RoadBits GetCrossingRoadBits(Tile tile)
 {
-	return GetCrossingRoadAxis(tile) == AXIS_X ? ROAD_X : ROAD_Y;
+	return AxisToRoadBits(GetCrossingRoadAxis(tile));
 }
 
 /**
@@ -369,17 +369,6 @@ inline Track GetCrossingRailTrack(Tile tile)
 {
 	return AxisToTrack(GetCrossingRailAxis(tile));
 }
-
-/**
- * Get the rail track bits of a level crossing.
- * @param tile The tile to query.
- * @return The rail track bits.
- */
-inline TrackBits GetCrossingRailBits(Tile tile)
-{
-	return AxisToTrackBits(GetCrossingRailAxis(tile));
-}
-
 
 /**
  * Get the reservation state of the rail crossing
@@ -414,7 +403,7 @@ inline void SetCrossingReservation(Tile t, bool b)
  */
 inline TrackBits GetCrossingReservationTrackBits(Tile t)
 {
-	return HasCrossingReservation(t) ? GetCrossingRailBits(t) : TRACK_BIT_NONE;
+	return HasCrossingReservation(t) ? GetCrossingRailTrack(t) : TrackBits{};
 }
 
 /**
@@ -576,7 +565,7 @@ inline void TerminateRoadWorks(Tile t)
 inline DiagDirection GetRoadDepotDirection(Tile t)
 {
 	assert(IsRoadDepot(t));
-	return (DiagDirection)GB(t.m5(), 0, 2);
+	return static_cast<DiagDirection>(GB(t.m5(), 0, 2));
 }
 
 
@@ -676,7 +665,7 @@ inline void MakeRoadCrossing(Tile t, Owner road, Owner tram, Owner rail, Axis ro
 	t.m2() = town.base();
 	t.m3() = 0;
 	t.m4() = INVALID_ROADTYPE;
-	t.m5() = to_underlying(RoadTileType::Crossing) << 6 | roaddir;
+	t.m5() = to_underlying(RoadTileType::Crossing) << 6 | to_underlying(roaddir);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = road.base();
 	t.m8() = INVALID_ROADTYPE << 6 | rat;
@@ -692,7 +681,7 @@ inline void MakeRoadCrossing(Tile t, Owner road, Owner tram, Owner rail, Axis ro
 inline void SetRoadDepotExitDirection(Tile tile, DiagDirection dir)
 {
 	assert(IsRoadDepotTile(tile));
-	SB(tile.m5(), 0, 2, dir);
+	SB(tile.m5(), 0, 2, to_underlying(dir));
 }
 
 /**
@@ -710,7 +699,7 @@ inline void MakeRoadDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirectio
 	tile.m2() = depot_id.base();
 	tile.m3() = 0;
 	tile.m4() = INVALID_ROADTYPE;
-	tile.m5() = to_underlying(RoadTileType::Depot) << 6 | dir;
+	tile.m5() = to_underlying(RoadTileType::Depot) << 6 | to_underlying(dir);
 	SB(tile.m6(), 2, 6, 0);
 	tile.m7() = owner.base();
 	tile.m8() = INVALID_ROADTYPE << 6;

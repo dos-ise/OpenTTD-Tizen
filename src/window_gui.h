@@ -27,6 +27,8 @@ enum class FrameFlag : uint8_t {
 	Lowered, ///< If set the frame is lowered and the background colour brighter (ie. buttons when pressed)
 	Darkened, ///< If set the background is darker, allows for lowered frames with normal background colour when used with FrameFlag::Lowered (ie. dropdown boxes)
 };
+
+/** Bitset of \c FrameFlag elements. */
 using FrameFlags = EnumBitSet<FrameFlag, uint8_t>;
 
 class WidgetDimensions {
@@ -130,7 +132,7 @@ inline void DrawFrameRect(const Rect &r, Colours colour, FrameFlags flags)
 	DrawFrameRect(r.left, r.top, r.right, r.bottom, colour, flags);
 }
 
-void DrawCaption(const Rect &r, Colours colour, Owner owner, TextColour text_colour, std::string_view str, StringAlignment align, FontSize fs);
+void DrawCaption(const Rect &r, Colours colour, Owner owner, TextColour text_colour, std::string_view str, Alignment align, FontSize fs);
 
 /* window.cpp */
 using WindowList = std::list<Window *>;
@@ -155,6 +157,8 @@ enum class WindowDefaultFlag : uint8_t {
 	NoFocus, ///< This window won't get focus/make any other window lose focus when click
 	NoClose, ///< This window can't be interactively closed
 };
+
+/** Bitset of \c WindowDefaultFlag elements. */
 using WindowDefaultFlags = EnumBitSet<WindowDefaultFlag, uint8_t>;
 
 Point GetToolbarAlignedWindowPosition(int window_width);
@@ -213,13 +217,6 @@ struct ResizeInfo {
 	uint step_height; ///< Step-size of height resize changes
 };
 
-/** State of a sort direction button. */
-enum SortButtonState : uint8_t {
-	SBS_OFF,  ///< Do not sort (with this button).
-	SBS_DOWN, ///< Sort ascending.
-	SBS_UP,   ///< Sort descending.
-};
-
 /**
  * Window flags.
  */
@@ -236,6 +233,8 @@ enum class WindowFlag : uint8_t {
 	Highlighted,      ///< Window has a widget that has a highlight.
 	Centred,          ///< Window is centered and shall stay centered after ReInit.
 };
+
+/** Bitset of \c WindowFlag elements. */
 using WindowFlags = EnumBitSet<WindowFlag, uint16_t>;
 
 static const int TIMEOUT_DURATION = 7; ///< The initial timeout value for WindowFlag::Timeout.
@@ -260,12 +259,12 @@ struct ViewportData : Viewport {
 
 struct QueryString;
 
-/* misc_gui.cpp */
-enum TooltipCloseCondition : uint8_t {
-	TCC_RIGHT_CLICK,
-	TCC_HOVER,
-	TCC_NONE,
-	TCC_EXIT_VIEWPORT,
+/* Automatic closing conditions for tooltips. */
+enum class TooltipCloseCondition : uint8_t {
+	RightClick, ///< Close the tooltip when releasing the right mouse button.
+	Hover, ///< Close the tooltip when stopping to hovering, i.e. moving the mouse.
+	None, ///< Do not automatically close the tooltip.
+	ExitViewport, ///< Close the tooltip when leaving the viewport.
 };
 
 /**
@@ -543,12 +542,12 @@ public:
 
 	void DrawWidgets() const;
 	void DrawViewport() const;
-	void DrawSortButtonState(WidgetID widget, SortButtonState state) const;
+	void DrawSortButton(WidgetID widget, bool descending) const;
 	static int SortButtonWidth();
 
-	Window *FindChildWindow(WindowClass wc = WC_INVALID) const;
+	Window *FindChildWindow(WindowClass wc = WindowClass::Invalid) const;
 	Window *FindChildWindowById(WindowClass wc, WindowNumber number) const;
-	void CloseChildWindows(WindowClass wc = WC_INVALID) const;
+	void CloseChildWindows(WindowClass wc = WindowClass::Invalid) const;
 	void CloseChildWindowById(WindowClass wc, WindowNumber number) const;
 	virtual void Close(int data = 0);
 	static void DeleteClosedWindows();
@@ -648,19 +647,19 @@ public:
 	 * A key has been pressed.
 	 * @param key     the Unicode value of the key.
 	 * @param keycode the untranslated key code including shift state.
-	 * @return #ES_HANDLED if the key press has been handled and no other
+	 * @return #EventState::Handled if the key press has been handled and no other
 	 *         window should receive the event.
 	 */
-	virtual EventState OnKeyPress([[maybe_unused]] char32_t key, [[maybe_unused]] uint16_t keycode) { return ES_NOT_HANDLED; }
+	virtual EventState OnKeyPress([[maybe_unused]] char32_t key, [[maybe_unused]] uint16_t keycode) { return EventState::NotHandled; }
 
 	virtual EventState OnHotkey(int hotkey);
 
 	/**
 	 * The state of the control key has changed
-	 * @return #ES_HANDLED if the change has been handled and no other
+	 * @return #EventState::Handled if the change has been handled and no other
 	 *         window should receive the event.
 	 */
-	virtual EventState OnCTRLStateChange() { return ES_NOT_HANDLED; }
+	virtual EventState OnCTRLStateChange() { return EventState::NotHandled; }
 
 
 	/**
@@ -1044,12 +1043,12 @@ extern bool _scrolling_viewport;
 extern bool _mouse_hovering;
 
 /** Mouse modes. */
-enum SpecialMouseMode : uint8_t {
-	WSM_NONE,     ///< No special mouse mode.
-	WSM_DRAGDROP, ///< Drag&drop an object.
-	WSM_SIZING,   ///< Sizing mode.
-	WSM_PRESIZE,  ///< Presizing mode (docks, tunnels).
-	WSM_DRAGGING, ///< Dragging mode (trees).
+enum class SpecialMouseMode : uint8_t {
+	None, ///< No special mouse mode.
+	DragDrop, ///< Drag&drop an object.
+	Sizing, ///< Sizing mode.
+	Presize, ///< Presizing mode (docks, tunnels).
+	Dragging, ///< Dragging mode (trees).
 };
 extern SpecialMouseMode _special_mouse_mode;
 

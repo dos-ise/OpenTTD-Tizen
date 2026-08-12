@@ -66,7 +66,7 @@ void DrawRoadVehDetails(const Vehicle *v, const Rect &r)
 			}
 		}
 
-		DrawString(r.left, r.right, y, GetString(STR_VEHICLE_DETAILS_TRAIN_ARTICULATED_RV_CAPACITY, capacity), TC_BLUE);
+		DrawString(r.left, r.right, y, GetString(STR_VEHICLE_DETAILS_TRAIN_ARTICULATED_RV_CAPACITY, capacity), TextColour::Blue);
 		y += GetCharacterHeight(FontSize::Normal) + WidgetDimensions::scaled.vsep_normal;
 
 		for (const Vehicle *u = v; u != nullptr; u = u->Next()) {
@@ -113,7 +113,7 @@ void DrawRoadVehDetails(const Vehicle *v, const Rect &r)
 void DrawRoadVehImage(const Vehicle *v, const Rect &r, VehicleID selection, EngineImageType image_type, int skip)
 {
 	bool rtl = _current_text_dir == TD_RTL;
-	Direction dir = rtl ? DIR_E : DIR_W;
+	Direction dir = rtl ? Direction::E : Direction::W;
 	const RoadVehicle *u = RoadVehicle::From(v);
 
 	DrawPixelInfo tmp_dpi;

@@ -57,7 +57,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_land_info_widgets = 
 /** Window definition for the land information window. */
 static WindowDesc _land_info_desc(
 	WindowPosition::Automatic, {}, 0, 0,
-	WC_LAND_INFO, WC_NONE,
+	WindowClass::LandInfo, WindowClass::None,
 	{},
 	_nested_land_info_widgets
 );
@@ -75,12 +75,12 @@ public:
 
 		Rect ir = r.Shrink(WidgetDimensions::scaled.frametext);
 		for (size_t i = 0; i < this->landinfo_data.size(); i++) {
-			DrawString(ir, this->landinfo_data[i], i == 0 ? TC_LIGHT_BLUE : TC_FROMSTRING, SA_HOR_CENTER);
+			DrawString(ir, this->landinfo_data[i], i == 0 ? TextColour::LightBlue : TextColour::FromString, AlignmentH::Centre);
 			ir.top += GetCharacterHeight(FontSize::Normal) + (i == 0 ? WidgetDimensions::scaled.vsep_wide : WidgetDimensions::scaled.vsep_normal);
 		}
 
 		if (!this->cargo_acceptance.empty()) {
-			DrawStringMultiLine(ir, GetString(STR_JUST_RAW_STRING, this->cargo_acceptance), TC_FROMSTRING, SA_CENTER);
+			DrawStringMultiLine(ir, GetString(STR_JUST_RAW_STRING, this->cargo_acceptance), TextColour::FromString, {AlignmentH::Centre, AlignmentV::Middle});
 		}
 	}
 
@@ -314,7 +314,7 @@ public:
  */
 void ShowLandInfo(TileIndex tile)
 {
-	CloseWindowById(WC_LAND_INFO, 0);
+	CloseWindowById(WindowClass::LandInfo, 0);
 	new LandInfoWindow(tile);
 }
 
@@ -337,7 +337,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_about_widgets = {
 /** Window definition for the about window. */
 static WindowDesc _about_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_GAME_OPTIONS, WC_NONE,
+	WindowClass::GameOptions, WindowClass::None,
 	{},
 	_nested_about_widgets
 );
@@ -417,7 +417,7 @@ struct AboutWindow : public Window {
 
 	AboutWindow() : Window(_about_desc)
 	{
-		this->InitNested(WN_GAME_OPTIONS_ABOUT);
+		this->InitNested(GameOptionsWindowNumber::About);
 
 		this->text_position = this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->pos_y + this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->current_y;
 	}
@@ -454,7 +454,7 @@ struct AboutWindow : public Window {
 		/* Show all scrolling _credits */
 		for (const auto &str : _credits) {
 			if (y >= r.top + 7 && y < r.bottom - this->line_height) {
-				DrawString(r.left, r.right, y, str, TC_BLACK, SA_LEFT | SA_FORCE);
+				DrawString(r.left, r.right, y, str, TextColour::Black, AlignmentH::ForceLeft);
 			}
 			y += this->line_height;
 		}
@@ -477,7 +477,7 @@ struct AboutWindow : public Window {
 
 void ShowAboutWindow()
 {
-	CloseWindowByClass(WC_GAME_OPTIONS);
+	CloseWindowByClass(WindowClass::GameOptions);
 	new AboutWindow();
 }
 
@@ -495,7 +495,7 @@ void ShowEstimatedCostOrIncome(Money cost, int x, int y)
 		cost = -cost;
 		msg = STR_MESSAGE_ESTIMATED_INCOME;
 	}
-	ShowErrorMessage(GetEncodedString(msg, cost), {}, WL_INFO, x, y);
+	ShowErrorMessage(GetEncodedString(msg, cost), {}, WarningLevel::Info, x, y);
 }
 
 /**
@@ -517,7 +517,7 @@ void ShowCostOrIncomeAnimation(int x, int y, int z, Money cost)
 		cost = -cost;
 		msg = STR_INCOME_FLOAT_INCOME;
 	}
-	AddTextEffect(GetEncodedString(msg, cost), pt.x, pt.y, Ticks::DAY_TICKS, TE_RISING);
+	AddTextEffect(GetEncodedString(msg, cost), pt.x, pt.y, Ticks::DAY_TICKS, TextEffectMode::Rising);
 }
 
 /**
@@ -533,14 +533,14 @@ void ShowFeederIncomeAnimation(int x, int y, int z, Money transfer, Money income
 	Point pt = RemapCoords(x, y, z);
 
 	if (income == 0) {
-		AddTextEffect(GetEncodedString(STR_FEEDER, transfer), pt.x, pt.y, Ticks::DAY_TICKS, TE_RISING);
+		AddTextEffect(GetEncodedString(STR_FEEDER, transfer), pt.x, pt.y, Ticks::DAY_TICKS, TextEffectMode::Rising);
 	} else {
 		StringID msg = STR_FEEDER_COST;
 		if (income < 0) {
 			income = -income;
 			msg = STR_FEEDER_INCOME;
 		}
-		AddTextEffect(GetEncodedString(msg, transfer, income), pt.x, pt.y, Ticks::DAY_TICKS, TE_RISING);
+		AddTextEffect(GetEncodedString(msg, transfer, income), pt.x, pt.y, Ticks::DAY_TICKS, TextEffectMode::Rising);
 	}
 }
 
@@ -559,7 +559,7 @@ TextEffectID ShowFillingPercent(int x, int y, int z, uint8_t percent, StringID s
 
 	assert(string != STR_NULL);
 
-	return AddTextEffect(GetEncodedString(string, percent), pt.x, pt.y, 0, TE_STATIC);
+	return AddTextEffect(GetEncodedString(string, percent), pt.x, pt.y, 0, TextEffectMode::Static);
 }
 
 /**
@@ -594,7 +594,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_tooltips_widgets = {
 /** Window definition for the tool tip window. */
 static WindowDesc _tool_tips_desc(
 	WindowPosition::Manual, {}, 0, 0, // Coordinates and sizes are not used,
-	WC_TOOLTIPS, WC_NONE,
+	WindowClass::ToolTips, WindowClass::None,
 	{WindowDefaultFlag::NoFocus, WindowDefaultFlag::NoClose},
 	_nested_tooltips_widgets
 );
@@ -654,7 +654,7 @@ struct TooltipsWindow : public Window
 		GfxFillRect(r, PC_BLACK);
 		GfxFillRect(r.Shrink(WidgetDimensions::scaled.bevel), PC_LIGHT_YELLOW);
 
-		DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.framerect).Shrink(WidgetDimensions::scaled.fullbevel), this->text.GetDecodedString(), TC_BLACK, SA_CENTER);
+		DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.framerect).Shrink(WidgetDimensions::scaled.fullbevel), this->text.GetDecodedString(), TextColour::Black, {AlignmentH::Centre, AlignmentV::Middle});
 	}
 
 	void OnMouseLoop() override
@@ -668,11 +668,11 @@ struct TooltipsWindow : public Window
 		/* We can show tooltips while dragging tools. These are shown as long as
 		 * we are dragging the tool. Normal tooltips work with hover or rmb. */
 		switch (this->close_cond) {
-			case TCC_RIGHT_CLICK: if (!_right_button_down) this->Close(); break;
-			case TCC_HOVER: if (!_mouse_hovering) this->Close(); break;
-			case TCC_NONE: break;
+			case TooltipCloseCondition::RightClick: if (!_right_button_down) this->Close(); break;
+			case TooltipCloseCondition::Hover: if (!_mouse_hovering) this->Close(); break;
+			case TooltipCloseCondition::None: break;
 
-			case TCC_EXIT_VIEWPORT: {
+			case TooltipCloseCondition::ExitViewport: {
 				Window *w = FindWindowFromPt(_cursor.pos.x, _cursor.pos.y);
 				if (w == nullptr || IsPtInWindowViewport(w, _cursor.pos.x, _cursor.pos.y) == nullptr) this->Close();
 				break;
@@ -689,7 +689,7 @@ struct TooltipsWindow : public Window
  */
 void GuiShowTooltips(Window *parent, EncodedString &&text, TooltipCloseCondition close_tooltip)
 {
-	CloseWindowById(WC_TOOLTIPS, 0);
+	CloseWindowById(WindowClass::ToolTips, 0);
 
 	if (text.empty() || !_cursor.in_window) return;
 
@@ -702,7 +702,7 @@ void QueryString::HandleEditBox(Window *w, WidgetID wid)
 		w->SetWidgetDirty(wid);
 
 		/* For the OSK also invalidate the parent window */
-		if (w->window_class == WC_OSK) w->InvalidateData();
+		if (w->window_class == WindowClass::OnScreenKeyboard) w->InvalidateData();
 	}
 }
 
@@ -745,7 +745,7 @@ void QueryString::DrawEditBox(const Window *w, WidgetID wid) const
 	Rect fr = r.Indent(clearbtn_width, !rtl);
 
 	DrawFrameRect(cr, wi->colour, wi->IsLowered() ? FrameFlag::Lowered : FrameFlags{});
-	DrawSpriteIgnorePadding(rtl ? SPR_IMG_DELETE_RIGHT : SPR_IMG_DELETE_LEFT, PAL_NONE, cr, SA_CENTER);
+	DrawSpriteIgnorePadding(rtl ? SPR_IMG_DELETE_RIGHT : SPR_IMG_DELETE_LEFT, PAL_NONE, cr, {AlignmentH::Centre, AlignmentV::Middle});
 	if (this->text.GetText().empty()) GfxFillRect(cr.Shrink(WidgetDimensions::scaled.bevel), GetColourGradient(wi->colour, Shade::Darker), FillRectMode::Checker);
 
 	DrawFrameRect(fr, wi->colour, {FrameFlag::Lowered, FrameFlag::Darkened});
@@ -769,14 +769,14 @@ void QueryString::DrawEditBox(const Window *w, WidgetID wid) const
 	/* If we have a marked area, draw a background highlight. */
 	if (tb->marklength != 0) GfxFillRect(fr.left + tb->markxoffs, fr.top, fr.left + tb->markxoffs + tb->marklength - 1, fr.bottom, PC_GREY);
 
-	DrawString(fr.left, fr.right, CentreBounds(fr.top, fr.bottom, GetCharacterHeight(FontSize::Normal)), tb->GetText(), TC_YELLOW);
+	DrawString(fr.left, fr.right, CentreBounds(fr.top, fr.bottom, GetCharacterHeight(FontSize::Normal)), tb->GetText(), TextColour::Yellow);
 	bool focussed = w->IsWidgetGloballyFocused(wid) || IsOSKOpenedFor(w, wid);
 	if (focussed && tb->caret) {
 		int caret_width = GetCaretWidth();
 		if (rtl) {
-			DrawString(fr.right - tb->pixels + tb->caretxoffs - caret_width, fr.right - tb->pixels + tb->caretxoffs, CentreBounds(fr.top, fr.bottom, GetCharacterHeight(FontSize::Normal)), "_", TC_WHITE);
+			DrawString(fr.right - tb->pixels + tb->caretxoffs - caret_width, fr.right - tb->pixels + tb->caretxoffs, CentreBounds(fr.top, fr.bottom, GetCharacterHeight(FontSize::Normal)), "_", TextColour::White);
 		} else {
-			DrawString(fr.left + tb->caretxoffs, fr.left + tb->caretxoffs + caret_width, CentreBounds(fr.top, fr.bottom, GetCharacterHeight(FontSize::Normal)), "_", TC_WHITE);
+			DrawString(fr.left + tb->caretxoffs, fr.left + tb->caretxoffs + caret_width, CentreBounds(fr.top, fr.bottom, GetCharacterHeight(FontSize::Normal)), "_", TextColour::White);
 		}
 	}
 }
@@ -887,7 +887,7 @@ void QueryString::ClickEditBox(Window *w, Point pt, WidgetID wid, int click_coun
 		return;
 	}
 
-	if (w->window_class != WC_OSK && _settings_client.gui.osk_activation != OskActivation::Disabled &&
+	if (w->window_class != WindowClass::OnScreenKeyboard && _settings_client.gui.osk_activation != OskActivation::Disabled &&
 		(!focus_changed || _settings_client.gui.osk_activation == OskActivation::Immediately) &&
 		(click_count == 2 || _settings_client.gui.osk_activation != OskActivation::DoubleClick)) {
 		/* Open the OSK window */
@@ -920,7 +920,7 @@ struct QueryStringWindow : public Window
 		this->CreateNestedTree();
 		this->GetWidget<NWidgetStacked>(WID_QS_DEFAULT_SEL)->SetDisplayedPlane((this->flags.Test(QueryStringFlag::EnableDefault)) ? 0 : SZSP_NONE);
 		this->GetWidget<NWidgetStacked>(WID_QS_MOVE_SEL)->SetDisplayedPlane((this->flags.Test(QueryStringFlag::EnableMove)) ? 0 : SZSP_NONE);
-		this->FinishInitNested(WN_QUERY_STRING);
+		this->FinishInitNested(QueryStringWindowNumber::Default);
 
 		this->parent = parent;
 
@@ -996,8 +996,8 @@ private:
 	/** Clear parent window station/waypoint viewport rect. */
 	void ClearViewportRect()
 	{
-		if (this->parent->window_class == WC_STATION_VIEW) SetViewportStationRect(Station::Get(this->parent->window_number), false);
-		if (this->parent->window_class == WC_WAYPOINT_VIEW) SetViewportWaypointRect(Waypoint::Get(this->parent->window_number), false);
+		if (this->parent->window_class == WindowClass::StationView) SetViewportStationRect(Station::Get(this->parent->window_number), false);
+		if (this->parent->window_class == WindowClass::WaypointView) SetViewportWaypointRect(Waypoint::Get(this->parent->window_number), false);
 	}
 
 public:
@@ -1029,7 +1029,7 @@ public:
 static constexpr std::initializer_list<NWidgetPart> _nested_query_string_widgets = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, Colours::Grey),
-		NWidget(WWT_CAPTION, Colours::Grey, WID_QS_CAPTION), SetTextStyle(TC_WHITE),
+		NWidget(WWT_CAPTION, Colours::Grey, WID_QS_CAPTION), SetTextStyle(TextColour::White),
 	EndContainer(),
 	NWidget(WWT_PANEL, Colours::Grey),
 		NWidget(WWT_EDITBOX, Colours::Grey, WID_QS_TEXT), SetMinimalSize(256, 0), SetFill(1, 0), SetPadding(2, 2, 2, 2),
@@ -1049,7 +1049,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_query_string_widgets
 /** Window definition for the string query window. */
 static WindowDesc _query_string_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_QUERY_STRING, WC_NONE,
+	WindowClass::QueryString, WindowClass::None,
 	{},
 	_nested_query_string_widgets
 );
@@ -1067,7 +1067,7 @@ void ShowQueryString(std::string_view str, StringID caption, uint maxsize, Windo
 {
 	assert(parent != nullptr);
 
-	CloseWindowByClass(WC_QUERY_STRING);
+	CloseWindowByClass(WindowClass::QueryString);
 	new QueryStringWindow(str, caption, (flags.Test(QueryStringFlag::LengthIsInChars) ? MAX_CHAR_LENGTH : 1) * maxsize, maxsize, _query_string_desc, parent, afilter, flags);
 }
 
@@ -1077,7 +1077,7 @@ void ShowQueryString(std::string_view str, StringID caption, uint maxsize, Windo
  */
 void UpdateQueryStringDefault(std::string_view str)
 {
-	QueryStringWindow *w = dynamic_cast<QueryStringWindow *>(FindWindowByClass(WC_QUERY_STRING));
+	QueryStringWindow *w = dynamic_cast<QueryStringWindow *>(FindWindowByClass(WindowClass::QueryString));
 	if (w != nullptr) w->editbox.orig = str;
 }
 
@@ -1095,7 +1095,7 @@ struct QueryWindow : public Window {
 		this->parent = parent;
 
 		this->CreateNestedTree();
-		this->FinishInitNested(WN_CONFIRM_POPUP_QUERY);
+		this->FinishInitNested(ConfirmPopupQueryWindowNumber::Default);
 	}
 
 	void Close([[maybe_unused]] int data = 0) override
@@ -1134,7 +1134,7 @@ struct QueryWindow : public Window {
 	{
 		if (widget != WID_Q_TEXT) return;
 
-		DrawStringMultiLine(r, this->message.GetDecodedString(), TC_FROMSTRING, SA_CENTER);
+		DrawStringMultiLine(r, this->message.GetDecodedString(), TextColour::FromString, {AlignmentH::Centre, AlignmentV::Middle});
 	}
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
@@ -1174,9 +1174,9 @@ struct QueryWindow : public Window {
 
 			case WKC_ESC:
 				this->Close();
-				return ES_HANDLED;
+				return EventState::Handled;
 		}
-		return ES_NOT_HANDLED;
+		return EventState::NotHandled;
 	}
 };
 
@@ -1199,7 +1199,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_query_widgets = {
 /** Window definition for the query window. */
 static WindowDesc _query_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_CONFIRM_POPUP_QUERY, WC_NONE,
+	WindowClass::ConfirmPopupQuery, WindowClass::None,
 	WindowDefaultFlag::Modal,
 	_nested_query_widgets
 );
@@ -1210,7 +1210,7 @@ static WindowDesc _query_desc(
  * @param caption string shown as window caption
  * @param message string that will be shown for the window
  * @param parent pointer to parent window, if this pointer is nullptr the parent becomes
- * the main window WC_MAIN_WINDOW
+ * the main window WindowClass::MainWindow
  * @param callback callback function pointer to set in the window descriptor
  * @param focus whether the window should be focussed (by default false)
  */
@@ -1219,7 +1219,7 @@ void ShowQuery(EncodedString &&caption, EncodedString &&message, Window *parent,
 	if (parent == nullptr) parent = GetMainWindow();
 
 	for (Window *w : Window::Iterate()) {
-		if (w->window_class != WC_CONFIRM_POPUP_QUERY) continue;
+		if (w->window_class != WindowClass::ConfirmPopupQuery) continue;
 
 		QueryWindow *qw = dynamic_cast<QueryWindow *>(w);
 		assert(qw != nullptr);

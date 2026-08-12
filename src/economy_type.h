@@ -72,7 +72,6 @@ enum class ScoreID : uint8_t {
 	Total, ///< Total points out of possible points ,must always be the last entry.
 	End, ///< Score ID end marker.
 };
-DECLARE_INCREMENT_DECREMENT_OPERATORS(ScoreID)
 
 /**
  * The max score that can be in the performance history.
@@ -166,7 +165,6 @@ enum class Price : uint8_t {
 	End, ///< Price base end marker.
 	Invalid = 0xFF ///< Invalid base price.
 };
-DECLARE_INCREMENT_DECREMENT_OPERATORS(Price)
 
 using Prices = EnumIndexArray<Money, Price, Price::End>; ///< Prices of everything. @see Price
 using PriceMultipliers = EnumIndexArray<int8_t, Price, Price::End>;
@@ -191,8 +189,6 @@ enum class ExpensesType : uint8_t {
 	Invalid = 0xFF, ///< Invalid expense type.
 };
 
-DECLARE_INCREMENT_DECREMENT_OPERATORS(ExpensesType)
-
 /**
  * Data type for storage of Money for each #ExpensesType category.
  */
@@ -201,10 +197,10 @@ using Expenses = EnumIndexArray<Money, ExpensesType, ExpensesType::End>;
 /**
  * Categories of a price bases.
  */
-enum PriceCategory : uint8_t {
-	PCAT_NONE,         ///< Not affected by difficulty settings
-	PCAT_RUNNING,      ///< Price is affected by "vehicle running cost" difficulty setting
-	PCAT_CONSTRUCTION, ///< Price is affected by "construction cost" difficulty setting
+enum class PriceCategory : uint8_t {
+	None, ///< Not affected by difficulty settings
+	Running, ///< Price is affected by "vehicle running cost" difficulty setting
+	Construction, ///< Price is affected by "construction cost" difficulty setting
 };
 
 /** The "steps" in loan size, in British Pounds! */

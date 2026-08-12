@@ -107,7 +107,7 @@ bool HasClients()
 NetworkClientInfo::~NetworkClientInfo()
 {
 	/* Delete the chat window, if you were chatting with this client. */
-	InvalidateWindowData(WC_SEND_NETWORK_MSG, NetworkChatDestinationType::Client, this->client_id);
+	InvalidateWindowData(WindowClass::NetworkChat, NetworkChatDestinationType::Client, this->client_id);
 }
 
 /**
@@ -241,7 +241,7 @@ uint8_t NetworkSpectatorCount()
  * @param str Arbitrary extra string, depending on the action. For example a complete message or company name.
  * @param data Arbitrary extra data, depending on the action. For example a client's ID or an amount of money that was given.
  */
-void NetworkTextMessage(NetworkAction action, TextColour colour, bool self_send, std::string_view name, std::string_view str, StringParameter &&data)
+void NetworkTextMessage(NetworkAction action, ExtendedTextColour colour, bool self_send, std::string_view name, std::string_view str, StringParameter &&data)
 {
 	std::string message;
 	StringBuilder builder(message);
@@ -315,8 +315,8 @@ uint NetworkCalculateLag(const NetworkClientSocket *cs)
  */
 void ShowNetworkError(StringID error_string)
 {
-	_switch_mode = SM_MENU;
-	ShowErrorMessage(GetEncodedString(error_string), {}, WL_CRITICAL);
+	_switch_mode = SwitchMode::Menu;
+	ShowErrorMessage(GetEncodedString(error_string), {}, WarningLevel::Critical);
 }
 
 /**
@@ -424,7 +424,7 @@ static void CheckPauseHelper(bool pause, PauseMode pm)
 
 /**
  * Counts the number of active clients connected.
- * It has to be in STATUS_ACTIVE and not a spectator
+ * It has to be in \c ClientStatus::Active and not a spectator
  * @return number of active clients
  */
 static uint NetworkCountActiveClients()
@@ -432,7 +432,7 @@ static uint NetworkCountActiveClients()
 	uint count = 0;
 
 	for (const NetworkClientSocket *cs : NetworkClientSocket::Iterate()) {
-		if (cs->status != NetworkClientSocket::STATUS_ACTIVE) continue;
+		if (cs->status != NetworkClientSocket::ClientStatus::Active) continue;
 		if (!Company::IsValidID(cs->GetInfo()->client_playas)) continue;
 		count++;
 	}
@@ -460,7 +460,7 @@ static void CheckMinActiveClients()
 static bool NetworkHasJoiningClient()
 {
 	for (const NetworkClientSocket *cs : NetworkClientSocket::Iterate()) {
-		if (cs->status >= NetworkClientSocket::STATUS_AUTHORIZED && cs->status < NetworkClientSocket::STATUS_ACTIVE) return true;
+		if (cs->status >= NetworkClientSocket::ClientStatus::Authorized && cs->status < NetworkClientSocket::ClientStatus::Active) return true;
 	}
 
 	return false;
@@ -583,7 +583,7 @@ NetworkAddress ParseConnectionString(std::string_view connection_string, uint16_
 	ServerNetworkGameSocketHandler *cs = ServerNetworkGameSocketHandler::Create(s);
 	cs->client_address = address; // Save the IP of the client
 
-	InvalidateWindowData(WC_CLIENT_LIST, 0);
+	InvalidateWindowData(WindowClass::NetworkClientList, 0);
 }
 
 /**
@@ -611,7 +611,7 @@ void NetworkClose(bool close_admins)
 		}
 
 		for (NetworkClientSocket *cs : NetworkClientSocket::Iterate()) {
-			cs->CloseConnection(NETWORK_RECV_STATUS_CLIENT_QUIT);
+			cs->CloseConnection(NetworkRecvStatus::ClientQuit);
 		}
 		ServerNetworkGameSocketHandler::CloseListeners();
 		ServerNetworkAdminSocketHandler::CloseListeners();
@@ -620,7 +620,7 @@ void NetworkClose(bool close_admins)
 	} else {
 		if (MyClient::my_client != nullptr) {
 			MyClient::SendQuit();
-			MyClient::my_client->CloseConnection(NETWORK_RECV_STATUS_CLIENT_QUIT);
+			MyClient::my_client->CloseConnection(NetworkRecvStatus::ClientQuit);
 		}
 
 		_network_coordinator_client.CloseAllConnections();
@@ -668,7 +668,7 @@ public:
 		Debug(net, 9, "Query::OnFailure(): connection_string={}", this->connection_string);
 
 		NetworkGame *item = NetworkGameListAddItem(connection_string);
-		item->status = NGLS_OFFLINE;
+		item->status = NetworkGameStatus::Offline;
 		item->refreshing = false;
 
 		UpdateNetworkGameWindow();
@@ -820,7 +820,7 @@ bool NetworkClientConnectGame(std::string_view connection_string, CompanyID defa
 	_network_join.company = join_as;
 	_network_join.server_password = join_server_password;
 
-	if (_game_mode == GM_MENU) {
+	if (_game_mode == GameMode::Menu) {
 		/* From the menu we can immediately continue with the actual join. */
 		NetworkClientJoinGame();
 	} else {
@@ -829,7 +829,7 @@ bool NetworkClientConnectGame(std::string_view connection_string, CompanyID defa
 		 * load in the new. After all, there is little point in continuing to
 		 * play on a server if we are connecting to another one.
 		 */
-		_switch_mode = SM_JOIN_GAME;
+		_switch_mode = SwitchMode::JoinGame;
 	}
 	return true;
 }
@@ -865,7 +865,7 @@ static void NetworkInitServerClientInfo()
 {
 	/* There should be always space for the server. */
 	assert(NetworkClientInfo::CanAllocateItem());
-	NetworkClientInfo *ci = NetworkClientInfo::Create(CLIENT_ID_SERVER);
+	NetworkClientInfo *ci = NetworkClientInfo::Create(ClientID::Server);
 	ci->client_playas = COMPANY_SPECTATOR;
 
 	ci->client_name = _settings_client.network.client_name;
@@ -889,7 +889,7 @@ bool NetworkValidateServerName(std::string &server_name)
 	StrTrimInPlace(server_name);
 	if (!server_name.empty()) return true;
 
-	ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_BAD_SERVER_NAME), {}, WL_ERROR);
+	ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_BAD_SERVER_NAME), {}, WarningLevel::Error);
 	return false;
 }
 
@@ -953,7 +953,7 @@ bool NetworkServerStart()
 	_frame_counter_server = 0;
 	_frame_counter_max = 0;
 	_last_sync_frame = 0;
-	_network_own_client_id = CLIENT_ID_SERVER;
+	_network_own_client_id = ClientID::Server;
 
 	_network_clients_connected = 0;
 
@@ -987,7 +987,7 @@ void NetworkOnGameStart()
 
 	if (!_network_dedicated) {
 		Company *c = Company::GetIfValid(GetFirstPlayableCompanyID());
-		NetworkClientInfo *ci = NetworkClientInfo::GetByClientID(CLIENT_ID_SERVER);
+		NetworkClientInfo *ci = NetworkClientInfo::GetByClientID(ClientID::Server);
 		if (c != nullptr && ci != nullptr) {
 			ci->client_playas = c->index;
 
@@ -1048,7 +1048,7 @@ void NetworkDisconnect(bool close_admins)
 		}
 	}
 
-	CloseWindowById(WC_NETWORK_STATUS_WINDOW, WN_NETWORK_STATUS_WINDOW_JOIN);
+	CloseWindowById(WindowClass::NetworkStatus, NetworkStatusWindowNumber::Join);
 
 	NetworkClose(close_admins);
 

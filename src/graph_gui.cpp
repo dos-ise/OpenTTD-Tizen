@@ -21,7 +21,7 @@
 #include "sound_func.h"
 #include "gfx_func.h"
 #include "core/geometry_func.hpp"
-#include "currency.h"
+#include "currency_func.h"
 #include "timer/timer.h"
 #include "timer/timer_window.h"
 #include "timer/timer_game_tick.h"
@@ -78,7 +78,7 @@ struct GraphLegendWindow : Window {
 		DrawCompanyIcon(cid, rtl ? ir.right - d.width : ir.left, CentreBounds(ir.top, ir.bottom, d.height));
 
 		const Rect tr = ir.Indent(d.width + WidgetDimensions::scaled.hsep_normal, rtl);
-		DrawString(tr.left, tr.right, CentreBounds(tr.top, tr.bottom, GetCharacterHeight(FontSize::Normal)), GetString(STR_COMPANY_NAME_COMPANY_NUM, cid, cid), _legend_excluded_companies.Test(cid) ? TC_BLACK : TC_WHITE);
+		DrawString(tr.left, tr.right, CentreBounds(tr.top, tr.bottom, GetCharacterHeight(FontSize::Normal)), GetString(STR_COMPANY_NAME_COMPANY_NUM, cid, cid), _legend_excluded_companies.Test(cid) ? TextColour::Black : TextColour::White);
 	}
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
@@ -88,11 +88,11 @@ struct GraphLegendWindow : Window {
 		_legend_excluded_companies.Flip(static_cast<CompanyID>(widget - WID_GL_FIRST_COMPANY));
 		this->ToggleWidgetLoweredState(widget);
 		this->SetDirty();
-		InvalidateWindowData(WC_INCOME_GRAPH, 0);
-		InvalidateWindowData(WC_OPERATING_PROFIT, 0);
-		InvalidateWindowData(WC_DELIVERED_CARGO, 0);
-		InvalidateWindowData(WC_PERFORMANCE_HISTORY, 0);
-		InvalidateWindowData(WC_COMPANY_VALUE, 0);
+		InvalidateWindowData(WindowClass::IncomeGraph, 0);
+		InvalidateWindowData(WindowClass::OperatingProfitGraph, 0);
+		InvalidateWindowData(WindowClass::DeliveredCargoGraph, 0);
+		InvalidateWindowData(WindowClass::PerformanceGraph, 0);
+		InvalidateWindowData(WindowClass::CompanyValueGraph, 0);
 
 		SndClickBeep();
 	}
@@ -148,7 +148,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_graph_legend_widgets
 /** Window definition for the graph legend window. */
 static WindowDesc _graph_legend_desc(
 	WindowPosition::Automatic, "graph_legend", 0, 0,
-	WC_GRAPH_LEGEND, WC_NONE,
+	WindowClass::GraphLegend, WindowClass::None,
 	{},
 	_nested_graph_legend_widgets
 );
@@ -184,7 +184,7 @@ protected:
 	static const int ECONOMY_QUARTER_MINUTES = 3;  ///< Minutes per economic quarter.
 	static const int ECONOMY_MONTH_MINUTES = 1;  ///< Minutes per economic month.
 
-	static const TextColour GRAPH_AXIS_LABEL_COLOUR = TC_BLACK; ///< colour of the graph axis label.
+	static const TextColour GRAPH_AXIS_LABEL_COLOUR = TextColour::Black; ///< colour of the graph axis label.
 
 	static const int MIN_GRAPH_NUM_LINES_Y  =   9; ///< Minimal number of horizontal lines to draw.
 	static const int MIN_GRID_PIXEL_SIZE    =  20; ///< Minimum distance between graph lines.
@@ -194,6 +194,12 @@ protected:
 		uint8_t month_increment = 0;
 		int16_t x_values_increment = 0;
 		const HistoryRange *history_range = nullptr;
+	};
+
+	/** Label and tooltip for a graph range. */
+	struct GraphRange {
+		StringID label; ///< Label for this range.
+		StringID tooltip; ///< Tooltip for this range.
 	};
 
 	static inline constexpr GraphScale MONTHLY_SCALE_WALLCLOCK[] = {
@@ -240,7 +246,7 @@ protected:
 	};
 	std::vector<DataSet> data{};
 
-	std::span<const StringID> ranges{};
+	std::span<const GraphRange> ranges{};
 	std::span<const GraphScale> scales{};
 	uint8_t selected_scale = 0;
 
@@ -482,11 +488,11 @@ protected:
 			if (rtl) {
 				DrawString(r.right + ScaleGUITrad(4), r.right + label_width + ScaleGUITrad(4), y,
 					GetString(STR_GRAPH_Y_LABEL, this->format_str_y_axis, y_label),
-					GRAPH_AXIS_LABEL_COLOUR, SA_RIGHT | SA_FORCE);
+					GRAPH_AXIS_LABEL_COLOUR, AlignmentH::ForceRight);
 			} else {
 				DrawString(r.left - label_width - ScaleGUITrad(4), r.left - ScaleGUITrad(4), y,
 					GetString(STR_GRAPH_Y_LABEL, this->format_str_y_axis, y_label),
-					GRAPH_AXIS_LABEL_COLOUR, SA_RIGHT | SA_FORCE);
+					GRAPH_AXIS_LABEL_COLOUR, AlignmentH::ForceRight);
 			}
 
 			y_label -= y_label_separation;
@@ -507,11 +513,11 @@ protected:
 				if (rtl) {
 					DrawStringMultiLineWithClipping(x + x_sep, x, y, this->height,
 						GetString(mo == 0 ? STR_GRAPH_X_LABEL_MONTH_YEAR : STR_GRAPH_X_LABEL_MONTH, STR_MONTH_ABBREV_JAN + mo, yr),
-						GRAPH_AXIS_LABEL_COLOUR, SA_LEFT);
+						GRAPH_AXIS_LABEL_COLOUR, AlignmentH::Start);
 				} else {
 					DrawStringMultiLineWithClipping(x, x + x_sep, y, this->height,
 						GetString(mo == 0 ? STR_GRAPH_X_LABEL_MONTH_YEAR : STR_GRAPH_X_LABEL_MONTH, STR_MONTH_ABBREV_JAN + mo, yr),
-						GRAPH_AXIS_LABEL_COLOUR, SA_LEFT);
+						GRAPH_AXIS_LABEL_COLOUR, AlignmentH::Start);
 				}
 
 				mo += this->month_increment;
@@ -538,9 +544,9 @@ protected:
 
 			for (int i = 0; i < this->num_on_x_axis; i++) {
 				if (rtl) {
-					DrawString(x + x_sep + 1, x - 1, y, GetString(STR_GRAPH_Y_LABEL_NUMBER, label), GRAPH_AXIS_LABEL_COLOUR, SA_HOR_CENTER);
+					DrawString(x + x_sep + 1, x - 1, y, GetString(STR_GRAPH_Y_LABEL_NUMBER, label), GRAPH_AXIS_LABEL_COLOUR, AlignmentH::Centre);
 				} else {
-					DrawString(x + 1, x + x_sep - 1, y, GetString(STR_GRAPH_Y_LABEL_NUMBER, label), GRAPH_AXIS_LABEL_COLOUR, SA_HOR_CENTER);
+					DrawString(x + 1, x + x_sep - 1, y, GetString(STR_GRAPH_Y_LABEL_NUMBER, label), GRAPH_AXIS_LABEL_COLOUR, AlignmentH::Centre);
 				}
 
 				label += iterator;
@@ -635,7 +641,7 @@ protected:
 			Window(desc),
 			format_str_y_axis(format_str_y_axis)
 	{
-		SetWindowDirty(WC_GRAPH_LEGEND, 0);
+		SetWindowDirty(WindowClass::GraphLegend, 0);
 	}
 
 	const IntervalTimer<TimerWindow> blink_interval = {TIMER_BLINK_INTERVAL, [this](auto) {
@@ -670,7 +676,7 @@ public:
 	{
 		switch (widget) {
 			case WID_GRAPH_RANGE_MATRIX:
-				this->UpdateMatrixSize(widget, size, resize, this->ranges);
+				this->UpdateMatrixSize(widget, size, resize, this->ranges | std::views::transform(&GraphRange::label));
 				break;
 
 			case WID_GRAPH_SCALE_MATRIX:
@@ -704,6 +710,17 @@ public:
 		}
 	}
 
+	bool OnTooltip([[maybe_unused]] Point pt, WidgetID widget, TooltipCloseCondition close_cond) override
+	{
+		if (widget != WID_GRAPH_RANGE_MATRIX) return false;
+
+		int row = GetRowFromWidget(pt.y, widget, 0, GetCharacterHeight(FontSize::Small) + WidgetDimensions::scaled.framerect.Vertical());
+		if (row == INT_MAX) return false;
+
+		GuiShowTooltips(this, GetEncodedString(this->ranges[row].tooltip), close_cond);
+		return true;
+	}
+
 	void DrawWidget(const Rect &r, WidgetID widget) const override
 	{
 		switch (widget) {
@@ -715,14 +732,14 @@ public:
 				uint line_height = GetCharacterHeight(FontSize::Small) + WidgetDimensions::scaled.framerect.Vertical();
 				uint index = 0;
 				Rect line = r.WithHeight(line_height);
-				for (const auto &str : this->ranges) {
+				for (const auto &[label, tooltip] : this->ranges) {
 					bool lowered = !HasBit(this->excluded_range, index) && !HasBit(this->masked_range, index);
 
 					/* Redraw frame if lowered */
 					if (lowered) DrawFrameRect(line, Colours::Brown, FrameFlag::Lowered);
 
 					const Rect text = line.Shrink(WidgetDimensions::scaled.framerect);
-					DrawString(text, str, (this->highlight_state && this->highlight_range == index) ? TC_WHITE : TC_BLACK, SA_CENTER, false, FontSize::Small);
+					DrawString(text, label, (this->highlight_state && this->highlight_range == index) ? TextColour::White : TextColour::Black, {AlignmentH::Centre, AlignmentV::Middle}, false, FontSize::Small);
 
 					if (HasBit(this->masked_range, index)) {
 						GfxFillRect(line.Shrink(WidgetDimensions::scaled.bevel), GetColourGradient(Colours::Brown, Shade::Darker), FillRectMode::Checker);
@@ -742,7 +759,7 @@ public:
 					/* Redraw frame if selected */
 					if (selected_month_increment == scale.month_increment) DrawFrameRect(line, Colours::Brown, FrameFlag::Lowered);
 
-					DrawString(line.Shrink(WidgetDimensions::scaled.framerect), scale.label, TC_BLACK, SA_CENTER, false, FontSize::Small);
+					DrawString(line.Shrink(WidgetDimensions::scaled.framerect), scale.label, TextColour::Black, {AlignmentH::Centre, AlignmentV::Middle}, false, FontSize::Small);
 
 					line = line.Translate(0, line_height);
 				}
@@ -956,7 +973,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_operating_profit_wid
 	NWidget(WWT_PANEL, Colours::Brown, WID_GRAPH_BACKGROUND),
 		NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(576, 160), SetFill(1, 1), SetResize(1, 1),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -965,7 +982,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_operating_profit_wid
 /** Window definition for the operating profit graph window. */
 static WindowDesc _operating_profit_desc(
 	WindowPosition::Automatic, "graph_operating_profit", 0, 0,
-	WC_OPERATING_PROFIT, WC_NONE,
+	WindowClass::OperatingProfitGraph, WindowClass::None,
 	{},
 	_nested_operating_profit_widgets
 );
@@ -1010,7 +1027,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_income_graph_widgets
 	NWidget(WWT_PANEL, Colours::Brown, WID_GRAPH_BACKGROUND),
 		NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(576, 128), SetFill(1, 1), SetResize(1, 1),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -1019,7 +1036,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_income_graph_widgets
 /** Window definition for the income graph window. */
 static WindowDesc _income_graph_desc(
 	WindowPosition::Automatic, "graph_income", 0, 0,
-	WC_INCOME_GRAPH, WC_NONE,
+	WindowClass::IncomeGraph, WindowClass::None,
 	{},
 	_nested_income_graph_widgets
 );
@@ -1062,7 +1079,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_delivered_cargo_grap
 	NWidget(WWT_PANEL, Colours::Brown, WID_GRAPH_BACKGROUND),
 		NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(576, 128), SetFill(1, 1), SetResize(1, 1),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -1071,7 +1088,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_delivered_cargo_grap
 /** Window definition for the delivered cargo graph window. */
 static WindowDesc _delivered_cargo_graph_desc(
 	WindowPosition::Automatic, "graph_delivered_cargo", 0, 0,
-	WC_DELIVERED_CARGO, WC_NONE,
+	WindowClass::DeliveredCargoGraph, WindowClass::None,
 	{},
 	_nested_delivered_cargo_graph_widgets
 );
@@ -1121,7 +1138,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_performance_history_
 	NWidget(WWT_PANEL, Colours::Brown, WID_GRAPH_BACKGROUND),
 		NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(576, 224), SetFill(1, 1), SetResize(1, 1),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -1130,7 +1147,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_performance_history_
 /** Window definition for the performance history graph window. */
 static WindowDesc _performance_history_desc(
 	WindowPosition::Automatic, "graph_performance", 0, 0,
-	WC_PERFORMANCE_HISTORY, WC_NONE,
+	WindowClass::PerformanceGraph, WindowClass::None,
 	{},
 	_nested_performance_history_widgets
 );
@@ -1173,7 +1190,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_value_graph_
 	NWidget(WWT_PANEL, Colours::Brown, WID_GRAPH_BACKGROUND),
 		NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(576, 224), SetFill(1, 1), SetResize(1, 1),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -1182,7 +1199,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_value_graph_
 /** Window definition for the company value graph window. */
 static WindowDesc _company_value_graph_desc(
 	WindowPosition::Automatic, "graph_company_value", 0, 0,
-	WC_COMPANY_VALUE, WC_NONE,
+	WindowClass::CompanyValueGraph, WindowClass::None,
 	{},
 	_nested_company_value_graph_widgets
 );
@@ -1445,7 +1462,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_cargo_payment_rates_
 		NWidget(WWT_STICKYBOX, Colours::Brown),
 	EndContainer(),
 	NWidget(WWT_PANEL, Colours::Brown, WID_GRAPH_BACKGROUND), SetMinimalSize(568, 128),
-		NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_HEADER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetStringTip(STR_GRAPH_CARGO_PAYMENT_RATES_TITLE), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+		NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_HEADER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetStringTip(STR_GRAPH_CARGO_PAYMENT_RATES_TITLE), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 		NWidget(NWID_HORIZONTAL),
 			NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(495, 0), SetFill(1, 1), SetResize(1, 1),
 			NWidget(NWID_VERTICAL),
@@ -1462,7 +1479,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_cargo_payment_rates_
 			NWidget(NWID_SPACER), SetMinimalSize(5, 0), SetFill(0, 1), SetResize(0, 1),
 		EndContainer(),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -1471,7 +1488,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_cargo_payment_rates_
 /** Window definition for the cargo payment rates graph window. */
 static WindowDesc _cargo_payment_rates_desc(
 	WindowPosition::Automatic, "graph_cargo_payment_rates", 0, 0,
-	WC_PAYMENT_RATES, WC_NONE,
+	WindowClass::CargoPaymentRatesGraph, WindowClass::None,
 	{},
 	_nested_cargo_payment_rates_widgets
 );
@@ -1525,7 +1542,7 @@ struct PerformanceRatingDetailWindow : Window {
 				size.height = this->bar_height + WidgetDimensions::scaled.matrix.Vertical();
 
 				uint score_info_width = 0;
-				for (ScoreID i = ScoreID::Begin; i < ScoreID::End; i++) {
+				for (ScoreID i : EnumRange(ScoreID::End)) {
 					score_info_width = std::max(score_info_width, GetStringBoundingBox(STR_PERFORMANCE_DETAIL_VEHICLES + to_underlying(i)).width);
 				}
 				score_info_width += GetStringBoundingBox(GetString(STR_JUST_COMMA, GetParamMaxValue(1000))).width + WidgetDimensions::scaled.hsep_wide;
@@ -1599,7 +1616,7 @@ struct PerformanceRatingDetailWindow : Window {
 
 		/* ScoreID::Total has its own rules ;) */
 		if (score_type == ScoreID::Total) {
-			for (ScoreID i = ScoreID::Begin; i < ScoreID::End; i++) score += _score_info[i].score;
+			for (ScoreID i : EnumRange(ScoreID::End)) score += _score_info[i].score;
 			needed = SCORE_MAX;
 		}
 
@@ -1609,7 +1626,7 @@ struct PerformanceRatingDetailWindow : Window {
 		DrawString(this->score_info_left, this->score_info_right, text_top, STR_PERFORMANCE_DETAIL_VEHICLES + to_underlying(score_type));
 
 		/* Draw the score */
-		DrawString(this->score_info_left, this->score_info_right, text_top, GetString(STR_JUST_COMMA, score), TC_BLACK, SA_RIGHT);
+		DrawString(this->score_info_left, this->score_info_right, text_top, GetString(STR_JUST_COMMA, score), TextColour::Black, AlignmentH::End);
 
 		/* Calculate the %-bar */
 		uint x = Clamp<int64_t>(val, 0, needed) * this->bar_width / needed;
@@ -1625,7 +1642,7 @@ struct PerformanceRatingDetailWindow : Window {
 		if (x != this->bar_right) GfxFillRect(x,              bar_top, this->bar_right, bar_top + this->bar_height - 1, rtl ? colour_done : colour_notdone);
 
 		/* Draw it */
-		DrawString(this->bar_left, this->bar_right, text_top, GetString(STR_PERFORMANCE_DETAIL_PERCENT, Clamp<int64_t>(val, 0, needed) * 100 / needed), TC_FROMSTRING, SA_HOR_CENTER);
+		DrawString(this->bar_left, this->bar_right, text_top, GetString(STR_PERFORMANCE_DETAIL_PERCENT, Clamp<int64_t>(val, 0, needed) * 100 / needed), TextColour::FromString, AlignmentH::Centre);
 
 		/* ScoreID::Loan is inverted */
 		if (score_type == ScoreID::Loan) val = needed - val;
@@ -1710,11 +1727,11 @@ CompanyID PerformanceRatingDetailWindow::company = CompanyID::Invalid();
 /*******************************/
 
 struct IndustryProductionGraphWindow : BaseCargoGraphWindow {
-	static inline constexpr StringID RANGE_LABELS[] = {
-		STR_GRAPH_INDUSTRY_RANGE_PRODUCED,
-		STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED,
-		STR_GRAPH_INDUSTRY_RANGE_DELIVERED,
-		STR_GRAPH_INDUSTRY_RANGE_WAITING,
+	static inline constexpr GraphRange RANGE_LABELS[] = {
+		{STR_GRAPH_INDUSTRY_RANGE_PRODUCED, STR_GRAPH_INDUSTRY_RANGE_PRODUCED_TOOLTIP},
+		{STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED, STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED_TOOLTIP},
+		{STR_GRAPH_INDUSTRY_RANGE_DELIVERED, STR_GRAPH_INDUSTRY_RANGE_DELIVERED_TOOLTIP},
+		{STR_GRAPH_INDUSTRY_RANGE_WAITING, STR_GRAPH_INDUSTRY_RANGE_WAITING_TOOLTIP},
 	};
 
 	static inline CargoTypes excluded_cargo_types{};
@@ -1851,7 +1868,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_industry_production_
 			NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(495, 0), SetFill(1, 1), SetResize(1, 1),
 			NWidget(NWID_VERTICAL),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 24), SetFill(0, 1),
-				NWidget(WWT_MATRIX, Colours::Brown, WID_GRAPH_RANGE_MATRIX), SetFill(1, 0), SetResize(0, 0), SetMatrixDataTip(1, 0, STR_GRAPH_TOGGLE_RANGE),
+				NWidget(WWT_MATRIX, Colours::Brown, WID_GRAPH_RANGE_MATRIX), SetFill(1, 0), SetResize(0, 0), SetMatrixDataTip(1, 0),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 4),
 				NWidget(WWT_PUSHTXTBTN, Colours::Brown, WID_GRAPH_ENABLE_CARGOES), SetStringTip(STR_GRAPH_CARGO_ENABLE_ALL, STR_GRAPH_CARGO_TOOLTIP_ENABLE_ALL), SetFill(1, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Brown, WID_GRAPH_DISABLE_CARGOES), SetStringTip(STR_GRAPH_CARGO_DISABLE_ALL, STR_GRAPH_CARGO_TOOLTIP_DISABLE_ALL), SetFill(1, 0),
@@ -1867,7 +1884,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_industry_production_
 			NWidget(NWID_SPACER), SetMinimalSize(5, 0), SetFill(0, 1), SetResize(0, 1),
 		EndContainer(),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -1876,7 +1893,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_industry_production_
 /** Window definition for the industry production graph window. */
 static WindowDesc _industry_production_desc(
 	WindowPosition::Automatic, "graph_industry_production", 0, 0,
-	WC_INDUSTRY_PRODUCTION, WC_INDUSTRY_VIEW,
+	WindowClass::IndustryProductionGraph, WindowClass::IndustryView,
 	{},
 	_nested_industry_production_widgets
 );
@@ -1887,10 +1904,10 @@ void ShowIndustryProductionGraph(WindowNumber window_number)
 }
 
 struct TownCargoGraphWindow : BaseCargoGraphWindow {
-	static inline constexpr StringID RANGE_LABELS[] = {
-		STR_GRAPH_TOWN_RANGE_PRODUCED,
-		STR_GRAPH_TOWN_RANGE_TRANSPORTED,
-		STR_GRAPH_TOWN_RANGE_DELIVERED,
+	static inline constexpr GraphRange RANGE_LABELS[] = {
+		{STR_GRAPH_TOWN_RANGE_PRODUCED, STR_GRAPH_TOWN_RANGE_PRODUCED_TOOLTIP},
+		{STR_GRAPH_TOWN_RANGE_TRANSPORTED, STR_GRAPH_TOWN_RANGE_TRANSPORTED_TOOLTIP},
+		{STR_GRAPH_TOWN_RANGE_DELIVERED, STR_GRAPH_TOWN_RANGE_DELIVERED_TOOLTIP},
 	};
 
 	static inline CargoTypes excluded_cargo_types{};
@@ -2015,7 +2032,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_town_cargo_graph_wid
 			NWidget(WWT_EMPTY, Colours::Invalid, WID_GRAPH_GRAPH), SetMinimalSize(495, 0), SetFill(1, 1), SetResize(1, 1),
 			NWidget(NWID_VERTICAL),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 24), SetFill(0, 1),
-				NWidget(WWT_MATRIX, Colours::Brown, WID_GRAPH_RANGE_MATRIX), SetFill(1, 0), SetResize(0, 0), SetMatrixDataTip(1, 0, STR_GRAPH_CARGO_PAYMENT_TOGGLE_CARGO),
+				NWidget(WWT_MATRIX, Colours::Brown, WID_GRAPH_RANGE_MATRIX), SetFill(1, 0), SetResize(0, 0), SetMatrixDataTip(1, 0),
 				NWidget(NWID_SPACER), SetMinimalSize(0, 4),
 				NWidget(WWT_PUSHTXTBTN, Colours::Brown, WID_GRAPH_ENABLE_CARGOES), SetStringTip(STR_GRAPH_CARGO_ENABLE_ALL, STR_GRAPH_CARGO_TOOLTIP_ENABLE_ALL), SetFill(1, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Brown, WID_GRAPH_DISABLE_CARGOES), SetStringTip(STR_GRAPH_CARGO_DISABLE_ALL, STR_GRAPH_CARGO_TOOLTIP_DISABLE_ALL), SetFill(1, 0),
@@ -2031,7 +2048,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_town_cargo_graph_wid
 			NWidget(NWID_SPACER), SetMinimalSize(5, 0), SetFill(0, 1), SetResize(0, 1),
 		EndContainer(),
 		NWidget(NWID_HORIZONTAL),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TC_BLACK, FontSize::Small), SetAlignment(SA_CENTER),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_GRAPH_FOOTER), SetFill(1, 0), SetResize(1, 0), SetPadding(2, 0, 2, 0), SetTextStyle(TextColour::Black, FontSize::Small), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 			NWidget(WWT_RESIZEBOX, Colours::Brown, WID_GRAPH_RESIZE), SetResizeWidgetTypeTip(ResizeWidgetType::HideBevel, STR_TOOLTIP_RESIZE),
 		EndContainer(),
 	EndContainer(),
@@ -2040,7 +2057,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_town_cargo_graph_wid
 /** Window definition for the town cargo graph window. */
 static WindowDesc _town_cargo_graph_desc(
 	WindowPosition::Automatic, "graph_town_cargo", 0, 0,
-	WC_TOWN_CARGO_GRAPH, WC_TOWN_VIEW,
+	WindowClass::TownCargoGraph, WindowClass::TownView,
 	{},
 	_nested_town_cargo_graph_widgets
 );
@@ -2104,7 +2121,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_performance_rating_d
 /** Window definition for the performance rating details window. */
 static WindowDesc _performance_rating_detail_desc(
 	WindowPosition::Automatic, "league_details", 0, 0,
-	WC_PERFORMANCE_DETAIL, WC_NONE,
+	WindowClass::PerformanceDetail, WindowClass::None,
 	{},
 	_nested_performance_rating_detail_widgets
 );

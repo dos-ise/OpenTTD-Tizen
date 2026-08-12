@@ -15,7 +15,7 @@
 #include "music/music_driver.hpp"
 #include "sound/sound_driver.hpp"
 #include "video/video_driver.hpp"
-#include "saveload/saveload.h"
+#include "saveload/saveload_func.h"
 #include "screenshot.h"
 #include "network/network_survey.h"
 #include "news_func.h"
@@ -259,7 +259,7 @@ bool CrashLog::WriteScreenshot()
  */
 void CrashLog::SendSurvey() const
 {
-	if (_game_mode == GM_NORMAL) {
+	if (_game_mode == GameMode::Normal) {
 		_survey.Transmit(NetworkSurveyHandler::Reason::Crash, true);
 	}
 }

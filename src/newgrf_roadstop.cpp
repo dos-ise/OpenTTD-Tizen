@@ -103,7 +103,7 @@ uint32_t RoadStopScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] u
 			return 2;
 
 		/* Terrain type */
-		case 0x42: return this->tile == INVALID_TILE ? 0 : (GetTileSlope(this->tile) << 8 | GetTerrainType(this->tile, TCX_NORMAL));
+		case 0x42: return this->tile == INVALID_TILE ? 0 : (GetTileSlope(this->tile) << 8 | GetTerrainType(this->tile, TileContext::Normal));
 
 		/* Road type */
 		case 0x43: return get_road_type_variable(RoadTramType::Road);
@@ -166,7 +166,7 @@ uint32_t RoadStopScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] u
 
 			if (!IsAnyRoadStopTile(nearby_tile)) return 0xFFFFFFFF;
 
-			uint32_t grfid = this->st->roadstop_speclist[GetCustomRoadStopSpecIndex(this->tile)].grfid;
+			GrfID grfid = this->st->roadstop_speclist[GetCustomRoadStopSpecIndex(this->tile)].grfid;
 			bool same_orientation = GetStationGfx(this->tile) == GetStationGfx(nearby_tile);
 			bool same_station = GetStationIndex(nearby_tile) == this->st->index;
 			uint32_t res = GetStationGfx(nearby_tile) << 12 | !same_orientation << 11 | !!same_station << 10;
@@ -191,7 +191,7 @@ uint32_t RoadStopScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] u
 			if (!IsCustomRoadStopSpecIndex(nearby_tile)) return 0;
 
 			const auto &sm = BaseStation::GetByTile(nearby_tile)->roadstop_speclist[GetCustomRoadStopSpecIndex(nearby_tile)];
-			return sm.grfid;
+			return FlattenNewGRFLabel(sm.grfid);
 		}
 
 		/* 16 bit road stop ID of nearby tiles */
@@ -202,7 +202,7 @@ uint32_t RoadStopScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] u
 			if (!IsAnyRoadStopTile(nearby_tile)) return 0xFFFFFFFF;
 			if (!IsCustomRoadStopSpecIndex(nearby_tile)) return 0xFFFE;
 
-			uint32_t grfid = this->st->roadstop_speclist[GetCustomRoadStopSpecIndex(this->tile)].grfid;
+			GrfID grfid = this->st->roadstop_speclist[GetCustomRoadStopSpecIndex(this->tile)].grfid;
 
 			const auto &sm = BaseStation::GetByTile(nearby_tile)->roadstop_speclist[GetCustomRoadStopSpecIndex(nearby_tile)];
 			if (sm.grfid == grfid) {
@@ -611,7 +611,7 @@ std::optional<uint8_t> AllocateSpecToRoadStop(const RoadStopSpec *spec, BaseStat
 
 	/* Try to find an unused spec slot */
 	for (i = 1; i < st->roadstop_speclist.size() && i < NUM_ROADSTOPSPECS_PER_STATION; i++) {
-		if (st->roadstop_speclist[i].spec == nullptr && st->roadstop_speclist[i].grfid == 0) break;
+		if (st->roadstop_speclist[i].spec == nullptr && st->roadstop_speclist[i].grfid.Empty()) break;
 	}
 
 	if (i == NUM_ROADSTOPSPECS_PER_STATION) {
@@ -659,14 +659,14 @@ void DeallocateSpecFromRoadStop(BaseStation *st, uint8_t specindex)
 
 	/* This specindex is no longer in use, so deallocate it */
 	st->roadstop_speclist[specindex].spec     = nullptr;
-	st->roadstop_speclist[specindex].grfid    = 0;
+	st->roadstop_speclist[specindex].grfid = {};
 	st->roadstop_speclist[specindex].localidx = 0;
 
 	/* If this was the highest spec index, reallocate */
 	if (specindex == st->roadstop_speclist.size() - 1) {
 		size_t num_specs;
 		for (num_specs = st->roadstop_speclist.size() - 1; num_specs > 0; num_specs--) {
-			if (st->roadstop_speclist[num_specs].grfid != 0) break;
+			if (!st->roadstop_speclist[num_specs].grfid.Empty()) break;
 		}
 
 		if (num_specs > 0) {

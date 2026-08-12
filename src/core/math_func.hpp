@@ -252,6 +252,10 @@ constexpr bool IsInsideBS(const T x, const size_t base, const size_t size)
 	return static_cast<size_t>(x - base) < size;
 }
 
+/** Specialization of IsInsideBS for #ConvertibleThroughBase. @copydoc IsInsideBS(const T, const size_t, const size_t) */
+template <ConvertibleThroughBase T>
+constexpr bool IsInsideBS(const T x, const T base, const size_t size) noexcept { return IsInsideBS(x.base(), base.base(), size); }
+
 /**
  * Checks if a value is in an interval.
  *
@@ -270,6 +274,10 @@ constexpr bool IsInsideMM(const size_t x, const size_t min, const size_t max) no
 
 /** Specialization of IsInsideMM for #ConvertibleThroughBase. @copydoc IsInsideMM(const size_t, const size_t, const size_t) */
 constexpr bool IsInsideMM(const ConvertibleThroughBase auto x, const size_t min, const size_t max) noexcept { return IsInsideMM(x.base(), min, max); }
+
+/** Specialization of IsInsideMM for #ConvertibleThroughBase. @copydoc IsInsideMM(const size_t, const size_t, const size_t) */
+template <ConvertibleThroughBase T>
+constexpr bool IsInsideMM(const T x, const T min, const T max) noexcept { return IsInsideMM(x.base(), min.base(), max.base()); }
 
 /** Specialization of IsInsideMM for enums. @copydoc IsInsideMM(const size_t, const size_t, const size_t) */
 template <typename enum_type, std::enable_if_t<std::is_enum_v<enum_type>, bool> = true>
@@ -355,5 +363,30 @@ constexpr uint64_t PowerOfTen(int power)
 }
 
 uint32_t IntSqrt(uint32_t num);
+
+/**
+ * Scale a number by the required percentage.
+ *
+ * Calculation is performed in the type U of the num parameter.
+ * The result is clamped to the limits of type T if needed.
+ *
+ * @param num The number to scale.
+ * @param percentage The percentage value. 100% = don't scale.
+ * @return The number scaled by the percentage value.
+ */
+template <typename T, typename U>
+constexpr T ScaleByPercentage(U num, uint16_t percentage)
+{
+	U scaled;
+	/* We might not need to do anything. */
+	if (percentage == 100) {
+		scaled = num;
+	} else {
+		scaled = (num * static_cast<U>(percentage)) / 100;
+	}
+
+	/* Make sure the value fits resulting type T. */
+	return ClampTo<T>(scaled);
+}
 
 #endif /* MATH_FUNC_HPP */

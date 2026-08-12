@@ -10,6 +10,8 @@
 #ifndef NEWGRF_CLASS_H
 #define NEWGRF_CLASS_H
 
+#include "core/label_type.hpp"
+#include "newgrf_type.h"
 #include "strings_type.h"
 
 /** Base for each type of NewGRF spec to be used with NewGRFClass. */
@@ -44,12 +46,17 @@ private:
 public:
 	using spec_type = Tspec;
 	using index_type = Tindex;
+	using GlobalID = Label<NewGRFClass<Tspec, Tindex>>; ///< Type for the global identifier of the class.
 
-	uint32_t global_id; ///< Global ID for class, e.g. 'DFLT', 'WAYP', etc.
-	StringID name;    ///< Name of this class.
+	GlobalID global_id; ///< Global ID for class, e.g. 'DFLT', 'WAYP', etc.
+	StringID name; ///< Name of this class.
 
-	/* Public constructor as emplace_back needs access. */
-	NewGRFClass(uint32_t global_id, StringID name) : global_id(global_id), name(name) { }
+	/**
+	 * Create the class.
+	 * @param global_id The globally unique identifier of the class.
+	 * @param name The name of the class.
+	 */
+	NewGRFClass(GlobalID global_id, StringID name) : global_id(global_id), name(name) { }
 
 	/**
 	 * Get read-only span of specs of this class.
@@ -89,13 +96,13 @@ public:
 	bool IsUIAvailable(uint index) const;
 
 	static void Reset();
-	static Tindex Allocate(uint32_t global_id);
+	static Tindex Allocate(GlobalID global_id);
 	static void Assign(Tspec *spec);
 	static uint GetClassCount();
 	static uint GetUIClassCount();
 	static NewGRFClass *Get(Tindex class_index);
 
-	static const Tspec *GetByGrf(uint32_t grfid, uint16_t local_id);
+	static const Tspec *GetByGrf(GrfID grfid, uint16_t local_id);
 };
 
 #endif /* NEWGRF_CLASS_H */

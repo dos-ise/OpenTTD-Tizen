@@ -46,8 +46,8 @@ static bool IsPossibleCrossing(const TileIndex tile, Axis ax)
 {
 	return (IsTileType(tile, TileType::Railway) &&
 		GetRailTileType(tile) == RailTileType::Normal &&
-		GetTrackBits(tile) == (ax == AXIS_X ? TRACK_BIT_Y : TRACK_BIT_X) &&
-		std::get<0>(GetFoundationSlope(tile)) == SLOPE_FLAT);
+		GetTrackBits(tile) == AxisToTrack(OtherAxis(ax)) &&
+		std::get<Slope>(GetFoundationSlope(tile)) == SLOPE_FLAT);
 }
 
 /**
@@ -59,7 +59,7 @@ static bool IsPossibleCrossing(const TileIndex tile, Axis ax)
 RoadBits CleanUpRoadBits(const TileIndex tile, RoadBits org_rb)
 {
 	if (!IsValidTile(tile)) return {};
-	for (DiagDirection dir = DIAGDIR_BEGIN; dir < DIAGDIR_END; dir++) {
+	for (DiagDirection dir : EnumRange(DiagDirection::End)) {
 		const TileIndex neighbour_tile = TileAddByDiagDir(tile, dir);
 
 		/* Get the Roadbit pointing to the neighbour_tile */
@@ -122,9 +122,9 @@ RoadBits CleanUpRoadBits(const TileIndex tile, RoadBits org_rb)
  */
 bool HasRoadTypeAvail(const CompanyID company, RoadType roadtype)
 {
-	if (company == OWNER_DEITY || company == OWNER_TOWN || _game_mode == GM_EDITOR || _generating_world) {
+	if (company == OWNER_DEITY || company == OWNER_TOWN || _game_mode == GameMode::Editor || _generating_world) {
 		const RoadTypeInfo *rti = GetRoadTypeInfo(roadtype);
-		if (rti->label == 0) return false;
+		if (rti->label.Empty()) return false;
 
 		/* Not yet introduced at this date. */
 		if (IsInsideMM(rti->introduction_date, 0, CalendarTime::MAX_DATE.base()) && rti->introduction_date > TimerGameCalendar::date) return false;
@@ -178,10 +178,10 @@ RoadTypes AddDateIntroducedRoadTypes(RoadTypes current, TimerGameCalendar::Date 
 {
 	RoadTypes rts = current;
 
-	for (RoadType rt = ROADTYPE_BEGIN; rt != ROADTYPE_END; rt++) {
+	for (RoadType rt : EnumRange(ROADTYPE_END)) {
 		const RoadTypeInfo *rti = GetRoadTypeInfo(rt);
 		/* Unused road type. */
-		if (rti->label == 0) continue;
+		if (rti->label.Empty()) continue;
 
 		/* Not date introduced. */
 		if (!IsInsideMM(rti->introduction_date, 0, CalendarTime::MAX_DATE.base())) continue;
@@ -265,7 +265,7 @@ RoadTypes GetRoadTypes(bool introduces)
 RoadType GetRoadTypeByLabel(RoadTypeLabel label, bool allow_alternate_labels)
 {
 	extern RoadTypeInfo _roadtypes[ROADTYPE_END];
-	if (label == 0) return INVALID_ROADTYPE;
+	if (label.Empty()) return INVALID_ROADTYPE;
 
 	auto it = std::ranges::find(_roadtypes, label, &RoadTypeInfo::label);
 	if (it == std::end(_roadtypes) && allow_alternate_labels) {

@@ -111,8 +111,8 @@ static constexpr std::initializer_list<NWidgetPart> _nested_normal_news_widgets 
 					NWidget(NWID_HORIZONTAL), SetPIPRatio(0, 1, 0),
 						NWidget(WWT_CLOSEBOX, Colours::White, WID_N_CLOSEBOX),
 						NWidget(WWT_LABEL, Colours::Invalid, WID_N_DATE),
-								SetTextStyle(TC_BLACK, FontSize::Small),
-								SetAlignment(SA_RIGHT | SA_TOP),
+								SetTextStyle(TextColour::Black, FontSize::Small),
+								SetAlignment({AlignmentH::End, AlignmentV::Top}),
 					EndContainer(),
 				EndContainer(),
 				/* Layer 2 */
@@ -120,7 +120,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_normal_news_widgets 
 						SetMinimalTextLines(8, 0, FontSize::Large),
 						SetMinimalSize(400, 0),
 						SetPadding(WidgetDimensions::unscaled.hsep_indent, WidgetDimensions::unscaled.vsep_wide),
-						SetTextStyle(TC_BLACK, FontSize::Large),
+						SetTextStyle(TextColour::Black, FontSize::Large),
 			EndContainer(),
 		EndContainer(),
 	EndContainer(),
@@ -129,7 +129,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_normal_news_widgets 
 /** Window definition for the normal news window. */
 static WindowDesc _normal_news_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_NEWS_WINDOW, WC_NONE,
+	WindowClass::News, WindowClass::None,
 	{},
 	_nested_normal_news_widgets
 );
@@ -152,7 +152,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_vehicle_news_widgets
 						SetMinimalSize(400, 0),
 						SetPadding(WidgetDimensions::unscaled.hsep_indent, WidgetDimensions::unscaled.vsep_wide),
 						SetStringTip(STR_EMPTY),
-						SetTextStyle(TC_BLACK, FontSize::Large),
+						SetTextStyle(TextColour::Black, FontSize::Large),
 			EndContainer(),
 			NWidget(WWT_PANEL, Colours::White, WID_N_VEH_BKGND), SetPadding(WidgetDimensions::unscaled.fullbevel),
 				NWidget(NWID_VERTICAL),
@@ -178,7 +178,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_vehicle_news_widgets
 /** Window definition for the vehicle news window. */
 static WindowDesc _vehicle_news_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_NEWS_WINDOW, WC_NONE,
+	WindowClass::News, WindowClass::None,
 	{},
 	_nested_vehicle_news_widgets
 );
@@ -200,7 +200,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_news_widgets
 						SetMinimalTextLines(1, 0, FontSize::Large),
 						SetMinimalSize(400, 0),
 						SetPadding(WidgetDimensions::unscaled.hsep_indent, WidgetDimensions::unscaled.vsep_normal),
-						SetTextStyle(TC_BLACK, FontSize::Large),
+						SetTextStyle(TextColour::Black, FontSize::Large),
 			EndContainer(),
 			NWidget(NWID_HORIZONTAL),
 				NWidget(NWID_VERTICAL), SetPIP(0, WidgetDimensions::unscaled.vsep_normal, 0), SetPadding(2),
@@ -215,7 +215,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_news_widgets
 						SetFill(1, 1),
 						SetPadding(WidgetDimensions::unscaled.hsep_indent, WidgetDimensions::unscaled.vsep_wide),
 						SetMinimalSize(300, 0),
-						SetTextStyle(TC_BLACK, FontSize::Large),
+						SetTextStyle(TextColour::Black, FontSize::Large),
 			EndContainer(),
 		EndContainer(),
 	EndContainer(),
@@ -224,7 +224,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_news_widgets
 /** Window definition for the company news window. */
 static WindowDesc _company_news_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_NEWS_WINDOW, WC_NONE,
+	WindowClass::News, WindowClass::None,
 	{},
 	_nested_company_news_widgets
 );
@@ -239,8 +239,8 @@ static constexpr std::initializer_list<NWidgetPart> _nested_thin_news_widgets = 
 					NWidget(NWID_HORIZONTAL), SetPIPRatio(0, 1, 0),
 						NWidget(WWT_CLOSEBOX, Colours::White, WID_N_CLOSEBOX),
 						NWidget(WWT_LABEL, Colours::Invalid, WID_N_DATE),
-								SetTextStyle(TC_BLACK, FontSize::Small),
-								SetAlignment(SA_RIGHT | SA_TOP),
+								SetTextStyle(TextColour::Black, FontSize::Small),
+								SetAlignment({AlignmentH::End, AlignmentV::Top}),
 					EndContainer(),
 				EndContainer(),
 				/* Layer 2 */
@@ -248,7 +248,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_thin_news_widgets = 
 						SetMinimalTextLines(3, 0, FontSize::Large),
 						SetMinimalSize(400, 0),
 						SetPadding(WidgetDimensions::unscaled.hsep_indent, WidgetDimensions::unscaled.vsep_normal),
-						SetTextStyle(TC_BLACK, FontSize::Large),
+						SetTextStyle(TextColour::Black, FontSize::Large),
 			EndContainer(),
 			NWidget(NWID_VIEWPORT, Colours::Invalid, WID_N_VIEWPORT), SetMinimalSize(426, 70),
 					SetPadding(WidgetDimensions::unscaled.fullbevel),
@@ -259,7 +259,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_thin_news_widgets = 
 /** Window definition for the thin news window. */
 static WindowDesc _thin_news_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_NEWS_WINDOW, WC_NONE,
+	WindowClass::News, WindowClass::None,
 	{},
 	_nested_thin_news_widgets
 );
@@ -290,7 +290,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_small_news_widgets =
 			NWidget(WWT_EMPTY, Colours::Invalid, WID_N_MESSAGE),
 					SetMinimalTextLines(2, 0),
 					SetMinimalSize(275, 0),
-					SetTextStyle(TC_WHITE, FontSize::Normal),
+					SetTextStyle(TextColour::White, FontSize::Normal),
 		EndContainer(),
 	EndContainer(),
 };
@@ -298,7 +298,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_small_news_widgets =
 /** Window definition for the small news window. */
 static WindowDesc _small_news_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_NEWS_WINDOW, WC_NONE,
+	WindowClass::News, WindowClass::None,
 	{},
 	_nested_small_news_widgets
 );
@@ -324,7 +324,7 @@ static WindowDesc &GetNewsWindowLayout(NewsStyle style)
 /**
  * Per-NewsType data
  */
-static const NewsTypeData _news_type_data[] = {
+static constexpr EnumIndexArray<NewsTypeData, NewsType, NewsType::End> _news_type_data{
 	/*            name,                           age, sound,          */
 	NewsTypeData("news_display.arrival_player",    60, SND_1D_APPLAUSE ),  ///< NewsType::ArrivalCompany
 	NewsTypeData("news_display.arrival_other",     60, SND_1D_APPLAUSE ),  ///< NewsType::ArrivalOther
@@ -343,8 +343,6 @@ static const NewsTypeData _news_type_data[] = {
 	NewsTypeData("news_display.subsidies",        180, SND_BEGIN       ),  ///< NewsType::Subsidies
 	NewsTypeData("news_display.general",           60, SND_BEGIN       ),  ///< NewsType::General
 };
-
-static_assert(std::size(_news_type_data) == to_underlying(NewsType::End));
 
 /**
  * Return the news display option.
@@ -367,9 +365,9 @@ struct NewsWindow : Window {
 	NewsWindow(WindowDesc &desc, const NewsItem *ni) : Window(desc), ni(ni)
 	{
 		NewsWindow::duration = 16650;
-		const Window *w = FindWindowByClass(WC_SEND_NETWORK_MSG);
+		const Window *w = FindWindowByClass(WindowClass::NetworkChat);
 		this->chat_height = (w != nullptr) ? w->height : 0;
-		this->status_height = FindWindowById(WC_STATUS_BAR, 0)->height;
+		this->status_height = FindWindowById(WindowClass::Statusbar, 0)->height;
 
 		this->flags.Set(WindowFlag::DisableVpScroll);
 
@@ -515,7 +513,7 @@ struct NewsWindow : Window {
 	{
 		switch (widget) {
 			case WID_N_CAPTION:
-				DrawCaption(r, Colours::LightBlue, this->owner, TC_FROMSTRING, GetString(STR_NEWS_MESSAGE_CAPTION), SA_CENTER, FontSize::Normal);
+				DrawCaption(r, Colours::LightBlue, this->owner, TextColour::FromString, GetString(STR_NEWS_MESSAGE_CAPTION), {AlignmentH::Centre, AlignmentV::Middle}, FontSize::Normal);
 				break;
 
 			case WID_N_PANEL:
@@ -525,7 +523,7 @@ struct NewsWindow : Window {
 			case WID_N_MESSAGE:
 			case WID_N_COMPANY_MSG: {
 				const NWidgetLeaf &nwid = *this->GetWidget<NWidgetLeaf>(widget);
-				DrawStringMultiLine(r, this->ni->headline.GetDecodedString(), nwid.GetTextColour(), SA_CENTER, false, nwid.GetFontSize());
+				DrawStringMultiLine(r, this->ni->headline.GetDecodedString(), nwid.GetTextColour(), {AlignmentH::Centre, AlignmentV::Middle}, false, nwid.GetFontSize());
 				break;
 			}
 
@@ -537,7 +535,7 @@ struct NewsWindow : Window {
 			}
 			case WID_N_MGR_NAME: {
 				const CompanyNewsInformation *cni = static_cast<const CompanyNewsInformation*>(this->ni->data.get());
-				DrawStringMultiLine(r, GetString(STR_JUST_RAW_STRING, cni->president_name), TC_FROMSTRING, SA_CENTER);
+				DrawStringMultiLine(r, GetString(STR_JUST_RAW_STRING, cni->president_name), TextColour::FromString, {AlignmentH::Centre, AlignmentV::Middle});
 				break;
 			}
 
@@ -547,20 +545,20 @@ struct NewsWindow : Window {
 
 			case WID_N_VEH_NAME:
 			case WID_N_VEH_TITLE:
-				DrawStringMultiLine(r, this->GetNewVehicleMessageString(widget), TC_FROMSTRING, SA_CENTER);
+				DrawStringMultiLine(r, this->GetNewVehicleMessageString(widget), TextColour::FromString, {AlignmentH::Centre, AlignmentV::Middle});
 				break;
 
 			case WID_N_VEH_SPR: {
 				assert(std::holds_alternative<EngineID>(ni->ref1));
 				EngineID engine = std::get<EngineID>(this->ni->ref1);
-				DrawVehicleEngine(r.left, r.right, CentreBounds(r.left, r.right, 0), CentreBounds(r.top, r.bottom, 0), engine, GetEnginePalette(engine, _local_company), EIT_PREVIEW);
+				DrawVehicleEngine(r.left, r.right, CentreBounds(r.left, r.right, 0), CentreBounds(r.top, r.bottom, 0), engine, GetEnginePalette(engine, _local_company), EngineImageType::Preview);
 				GfxFillRect(r, PALETTE_NEWSPAPER, FillRectMode::Recolour);
 				break;
 			}
 			case WID_N_VEH_INFO: {
 				assert(std::holds_alternative<EngineID>(ni->ref1));
 				EngineID engine = std::get<EngineID>(this->ni->ref1);
-				DrawStringMultiLine(r, GetEngineInfoString(engine), TC_BLACK, SA_CENTER);
+				DrawStringMultiLine(r, GetEngineInfoString(engine), TextColour::Black, {AlignmentH::Centre, AlignmentV::Middle});
 				break;
 			}
 		}
@@ -703,7 +701,7 @@ private:
  */
 static void ShowNewspaper(const NewsItem *ni)
 {
-	SoundFx sound = _news_type_data[to_underlying(ni->type)].sound;
+	SoundFx sound = _news_type_data[ni->type].sound;
 	if (sound != 0 && _settings_client.sound.news_full) SndPlayFx(sound);
 
 	new NewsWindow(GetNewsWindowLayout(ni->style), ni);
@@ -718,7 +716,7 @@ static void ShowTicker(NewsIterator ni)
 	if (_settings_client.sound.news_ticker) SndPlayFx(SND_16_NEWS_TICKER);
 
 	_statusbar_news = ni;
-	InvalidateWindowData(WC_STATUS_BAR, 0, SBI_SHOW_TICKER);
+	InvalidateWindowData(WindowClass::Statusbar, 0, SBI_SHOW_TICKER);
 }
 
 /** Initialize the news-items data structures */
@@ -756,7 +754,7 @@ static bool ReadyForNextNewsItem()
 	if (_forced_news == std::end(_news) && _current_news == std::end(_news)) return true;
 
 	/* neither newsticker nor newspaper are running */
-	return (NewsWindow::duration <= 0 || FindWindowById(WC_NEWS_WINDOW, 0) == nullptr);
+	return (NewsWindow::duration <= 0 || FindWindowById(WindowClass::News, 0) == nullptr);
 }
 
 /** Move to the next ticker item */
@@ -765,7 +763,7 @@ static void MoveToNextTickerItem()
 	/* There is no status bar, so no reason to show news;
 	 * especially important with the end game screen when
 	 * there is no status bar but possible news. */
-	if (FindWindowById(WC_STATUS_BAR, 0) == nullptr) return;
+	if (FindWindowById(WindowClass::Statusbar, 0) == nullptr) return;
 
 	/* No news to move to. */
 	if (std::empty(_news)) return;
@@ -776,12 +774,12 @@ static void MoveToNextTickerItem()
 		const NewsType type = _statusbar_news->type;
 
 		/* check the date, don't show too old items */
-		if (TimerGameEconomy::date - _news_type_data[to_underlying(type)].age > _statusbar_news->economy_date) continue;
+		if (TimerGameEconomy::date - _news_type_data[type].age > _statusbar_news->economy_date) continue;
 
-		switch (_news_type_data[to_underlying(type)].GetDisplay()) {
+		switch (_news_type_data[type].GetDisplay()) {
 			default: NOT_REACHED();
 			case NewsDisplay::Off: // Show nothing only a small reminder in the status bar.
-				InvalidateWindowData(WC_STATUS_BAR, 0, SBI_SHOW_REMINDER);
+				InvalidateWindowData(WindowClass::Statusbar, 0, SBI_SHOW_REMINDER);
 				return;
 
 			case NewsDisplay::Summary: // Show ticker.
@@ -800,9 +798,9 @@ static void MoveToNextNewsItem()
 	/* There is no status bar, so no reason to show news;
 	 * especially important with the end game screen when
 	 * there is no status bar but possible news. */
-	if (FindWindowById(WC_STATUS_BAR, 0) == nullptr) return;
+	if (FindWindowById(WindowClass::Statusbar, 0) == nullptr) return;
 
-	CloseWindowById(WC_NEWS_WINDOW, 0); // close the newspapers window if shown
+	CloseWindowById(WindowClass::News, 0); // close the newspapers window if shown
 	_forced_news = std::end(_news);
 
 	/* No news to move to. */
@@ -814,9 +812,9 @@ static void MoveToNextNewsItem()
 		const NewsType type = _current_news->type;
 
 		/* check the date, don't show too old items */
-		if (TimerGameEconomy::date - _news_type_data[to_underlying(type)].age > _current_news->economy_date) continue;
+		if (TimerGameEconomy::date - _news_type_data[type].age > _current_news->economy_date) continue;
 
-		switch (_news_type_data[to_underlying(type)].GetDisplay()) {
+		switch (_news_type_data[type].GetDisplay()) {
 			default: NOT_REACHED();
 			case NewsDisplay::Off: // Show nothing only a small reminder in the status bar, skipped here.
 				break;
@@ -865,7 +863,7 @@ static std::list<NewsItem>::iterator DeleteNewsItem(std::list<NewsItem>::iterato
 
 	if (update_statusbar_news) {
 		/* About to remove the currently displayed item (ticker, or just a reminder) */
-		InvalidateWindowData(WC_STATUS_BAR, 0, SBI_NEWS_DELETED); // invalidate the statusbar
+		InvalidateWindowData(WindowClass::Statusbar, 0, SBI_NEWS_DELETED); // invalidate the statusbar
 		MoveToNextTickerItem();
 	}
 
@@ -918,7 +916,7 @@ std::string NewsItem::GetStatusText() const
  */
 void AddNewsItem(EncodedString &&headline, NewsType type, NewsStyle style, NewsFlags flags, NewsReference ref1, NewsReference ref2, std::unique_ptr<NewsAllocatedData> &&data, AdviceType advice_type)
 {
-	if (_game_mode == GM_MENU) return;
+	if (_game_mode == GameMode::Menu) return;
 
 	/* Create new news item node */
 	_news.emplace_front(std::move(headline), type, style, flags, ref1, ref2, std::move(data), advice_type);
@@ -928,7 +926,7 @@ void AddNewsItem(EncodedString &&headline, NewsType type, NewsStyle style, NewsF
 		DeleteNewsItem(std::prev(std::end(_news)));
 	}
 
-	InvalidateWindowData(WC_MESSAGE_HISTORY, 0);
+	InvalidateWindowData(WindowClass::MessageHistory, 0);
 }
 
 /**
@@ -1010,7 +1008,7 @@ void DeleteNews(Tpredicate predicate)
 			++it;
 		}
 	}
-	if (dirty) InvalidateWindowData(WC_MESSAGE_HISTORY, 0);
+	if (dirty) InvalidateWindowData(WindowClass::MessageHistory, 0);
 }
 
 template <typename T>
@@ -1082,7 +1080,7 @@ void DeleteInvalidEngineNews()
 static void RemoveOldNewsItems()
 {
 	DeleteNews<MIN_NEWS_AMOUNT>([](const auto &ni) {
-		return TimerGameEconomy::date - _news_type_data[to_underlying(ni.type)].age * _settings_client.gui.news_message_timeout > ni.economy_date;
+		return TimerGameEconomy::date - _news_type_data[ni.type].age * _settings_client.gui.news_message_timeout > ni.economy_date;
 	});
 }
 
@@ -1133,13 +1131,13 @@ static void ShowNewsMessage(NewsIterator ni)
 	assert(!std::empty(_news));
 
 	/* Delete the news window */
-	CloseWindowById(WC_NEWS_WINDOW, 0);
+	CloseWindowById(WindowClass::News, 0);
 
 	/* setup forced news item */
 	_forced_news = ni;
 
 	if (_forced_news != std::end(_news)) {
-		CloseWindowById(WC_NEWS_WINDOW, 0);
+		CloseWindowById(WindowClass::News, 0);
 		ShowNewspaper(&*ni);
 	}
 }
@@ -1150,7 +1148,7 @@ static void ShowNewsMessage(NewsIterator ni)
  */
 bool HideActiveNewsMessage()
 {
-	NewsWindow *w = dynamic_cast<NewsWindow *>(FindWindowById(WC_NEWS_WINDOW, 0));
+	NewsWindow *w = dynamic_cast<NewsWindow *>(FindWindowById(WindowClass::News, 0));
 	if (w == nullptr) return false;
 	w->Close();
 	return true;
@@ -1170,7 +1168,7 @@ void ShowLastNewsMessage()
 			 * Treat this as if _forced_news reached the oldest news; so, wrap around and start anew with the latest. */
 			ni = std::begin(_news);
 		} else {
-			const Window *w = FindWindowById(WC_NEWS_WINDOW, 0);
+			const Window *w = FindWindowById(WindowClass::News, 0);
 			ni = (w == nullptr || (std::next(_current_news) == std::end(_news))) ? _current_news : std::next(_current_news);
 		}
 	} else if (std::next(_forced_news) == std::end(_news)) {
@@ -1182,7 +1180,7 @@ void ShowLastNewsMessage()
 	}
 	bool wrap = false;
 	for (;;) {
-		if (_news_type_data[to_underlying(ni->type)].GetDisplay() != NewsDisplay::Off) {
+		if (_news_type_data[ni->type].GetDisplay() != NewsDisplay::Off) {
 			ShowNewsMessage(ni);
 			break;
 		}
@@ -1257,9 +1255,9 @@ struct MessageHistoryWindow : Window {
 
 		auto [first, last] = this->vscroll->GetVisibleRangeIterators(_news);
 		for (auto ni = first; ni != last; ++ni) {
-			DrawString(date.left, date.right, y, GetString(STR_JUST_DATE_TINY, ni->date), TC_WHITE);
+			DrawString(date.left, date.right, y, GetString(STR_JUST_DATE_TINY, ni->date), TextColour::White);
 
-			DrawNewsString(news.left, news.right, y, TC_WHITE, *ni);
+			DrawNewsString(news.left, news.right, y, TextColour::White, *ni);
 			y += this->line_height;
 		}
 	}
@@ -1317,7 +1315,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_message_history = {
 /** Window definition for the news message history window. */
 static WindowDesc _message_history_desc(
 	WindowPosition::Automatic, "list_news", 400, 140,
-	WC_MESSAGE_HISTORY, WC_NONE,
+	WindowClass::MessageHistory, WindowClass::None,
 	{},
 	_nested_message_history
 );
@@ -1325,6 +1323,6 @@ static WindowDesc _message_history_desc(
 /** Display window with news messages history */
 void ShowMessageHistory()
 {
-	CloseWindowById(WC_MESSAGE_HISTORY, 0);
+	CloseWindowById(WindowClass::MessageHistory, 0);
 	new MessageHistoryWindow(_message_history_desc);
 }

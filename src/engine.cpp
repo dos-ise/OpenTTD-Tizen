@@ -30,6 +30,7 @@
 #include "articulated_vehicles.h"
 #include "error.h"
 #include "engine_base.h"
+#include "script/api/script_event_types.hpp"
 #include "timer/timer.h"
 #include "timer/timer_game_tick.h"
 #include "timer/timer_game_calendar.h"
@@ -179,10 +180,10 @@ bool Engine::IsEnabled() const
  * This is the GRF providing the Action 3.
  * @return GRF ID of the associated NewGRF.
  */
-uint32_t Engine::GetGRFID() const
+GrfID Engine::GetGRFID() const
 {
 	const GRFFile *file = this->GetGRF();
-	return file == nullptr ? 0 : file->grfid;
+	return file == nullptr ? GrfID{} : file->grfid;
 }
 
 /**
@@ -535,7 +536,7 @@ bool Engine::IsVariantHidden(CompanyID c) const
 void EngineOverrideManager::ResetToDefaultMapping()
 {
 	EngineID id = EngineID::Begin();
-	for (VehicleType type = VehicleType::Train; type <= VehicleType::Aircraft; type++) {
+	for (VehicleType type : EnumRange(VehicleType::CompanyEnd)) {
 		auto &map = this->mappings[type];
 		map.clear();
 		for (uint internal_id = 0; internal_id < GetOriginalEngineCount(type); internal_id++, ++id) {
@@ -553,7 +554,7 @@ void EngineOverrideManager::ResetToDefaultMapping()
  *              If dynamic_engines is disabled, all newgrf share the same ID scope identified by INVALID_GRFID.
  * @return The engine ID if present, or EngineID::Invalid() if not.
  */
-EngineID EngineOverrideManager::GetID(VehicleType type, uint16_t grf_local_id, uint32_t grfid)
+EngineID EngineOverrideManager::GetID(VehicleType type, uint16_t grf_local_id, GrfID grfid)
 {
 	const auto &map = this->mappings[type];
 	const auto key = EngineIDMapping::Key(grfid, grf_local_id);
@@ -572,7 +573,7 @@ EngineID EngineOverrideManager::GetID(VehicleType type, uint16_t grf_local_id, u
  * @param static_access Whether to actually reserve the EngineID.
  * @return The engine ID if present and now reserved, or EngineID::Invalid() if not.
  */
-EngineID EngineOverrideManager::UseUnreservedID(VehicleType type, uint16_t grf_local_id, uint32_t grfid, bool static_access)
+EngineID EngineOverrideManager::UseUnreservedID(VehicleType type, uint16_t grf_local_id, GrfID grfid, bool static_access)
 {
 	auto &map = _engine_mngr.mappings[type];
 	const auto key = EngineIDMapping::Key(INVALID_GRFID, grf_local_id);
@@ -591,7 +592,15 @@ EngineID EngineOverrideManager::UseUnreservedID(VehicleType type, uint16_t grf_l
 	return it->engine;
 }
 
-void EngineOverrideManager::SetID(VehicleType type, uint16_t grf_local_id, uint32_t grfid, uint8_t substitute_id, EngineID engine)
+/**
+ * Create an override to the given engine. If the override already exists, it will be overwritten.
+ * @param type The vehicle type.
+ * @param grf_local_id The NewGRF internal identifier.
+ * @param grfid The unique identifier of the NewGRF.
+ * @param substitute_id The fallback original engine.
+ * @param engine The engine this override is for.
+ */
+void EngineOverrideManager::SetID(VehicleType type, uint16_t grf_local_id, GrfID grfid, uint8_t substitute_id, EngineID engine)
 {
 	auto &map = this->mappings[type];
 	const auto key = EngineIDMapping::Key(grfid, grf_local_id);
@@ -626,10 +635,10 @@ bool EngineOverrideManager::ResetToCurrentNewGRFConfig()
  */
 void SetupEngines()
 {
-	CloseWindowByClass(WC_ENGINE_PREVIEW);
+	CloseWindowByClass(WindowClass::EnginePreview);
 	_engine_pool.CleanPool();
 
-	for (VehicleType type = VehicleType::Begin; type != VehicleType::CompanyEnd; type++) {
+	for (VehicleType type : EnumRange(VehicleType::CompanyEnd)) {
 		const auto &mapping = _engine_mngr.mappings[type];
 
 		/* Verify that the engine override manager has at least been set up with the default engines. */
@@ -679,13 +688,13 @@ void CalcEngineReliability(Engine *e, bool new_month)
 		re = Engine::Get(re->info.variant_id);
 	}
 
-	uint32_t age = re->age;
+	int age = re->age;
 	if (new_month && re->index > e->index && age != INT32_MAX) age++; /* parent variant's age has not yet updated. */
 
 	/* Check for early retirement */
 	if (e->company_avail.Any() && !_settings_game.vehicle.never_expire_vehicles && e->info.base_life != 0xFF) {
 		int retire_early = e->info.retire_early;
-		uint retire_early_max_age = std::max(0, e->duration_phase_1 + e->duration_phase_2 - retire_early * 12);
+		int retire_early_max_age = e->duration_phase_1 + e->duration_phase_2 - retire_early * 12;
 		if (retire_early != 0 && age >= retire_early_max_age) {
 			/* Early retirement is enabled and we're past the date... */
 			e->company_avail = CompanyMask{};
@@ -695,15 +704,16 @@ void CalcEngineReliability(Engine *e, bool new_month)
 	}
 
 	if (age < e->duration_phase_1) {
-		uint start = e->reliability_start;
+		int start = e->reliability_start;
 		e->reliability = age * (e->reliability_max - start) / e->duration_phase_1 + start;
 	} else if ((age -= e->duration_phase_1) < e->duration_phase_2 || _settings_game.vehicle.never_expire_vehicles || e->info.base_life == 0xFF) {
 		/* We are at the peak of this engines life. It will have max reliability.
 		 * This is also true if the engines never expire. They will not go bad over time */
 		e->reliability = e->reliability_max;
 	} else if ((age -= e->duration_phase_2) < e->duration_phase_3) {
-		uint max = e->reliability_max;
-		e->reliability = (int)age * (int)(e->reliability_final - max) / e->duration_phase_3 + max;
+		/* Linearly scale remaining age between the maximum and final reliability. */
+		int max = e->reliability_max;
+		e->reliability = age * (e->reliability_final - max) / e->duration_phase_3 + max;
 	} else {
 		/* time's up for this engine.
 		 * We will now completely retire this design */
@@ -758,7 +768,7 @@ void StartupOneEngine(Engine *e, const TimerGameCalendar::YearMonthDay &aging_ym
 	SetRandomSeed(_settings_game.game_creation.generation_seed ^ seed ^
 	              ei->base_intro.base() ^
 	              to_underlying(e->type) ^
-	              e->GetGRFID());
+	              FlattenNewGRFLabel(e->GetGRFID()));
 	uint32_t r = Random();
 
 	/* Don't randomise the start-date in the first two years after gamestart to ensure availability
@@ -785,7 +795,7 @@ void StartupOneEngine(Engine *e, const TimerGameCalendar::YearMonthDay &aging_ym
 	              (re->index.base() << 16) ^ (re->info.base_intro.base() << 12) ^ (re->info.decay_speed << 8) ^
 	              (re->info.lifelength.base() << 4) ^ re->info.retire_early ^
 	              to_underlying(e->type) ^
-	              e->GetGRFID());
+	              FlattenNewGRFLabel(e->GetGRFID()));
 
 	/* Base reliability defined as a percentage of UINT16_MAX. */
 	const uint16_t RELIABILITY_START = UINT16_MAX * 48 / 100;
@@ -844,10 +854,10 @@ void StartupEngines()
 	}
 
 	/* Invalidate any open purchase lists */
-	InvalidateWindowClassesData(WC_BUILD_VEHICLE);
+	InvalidateWindowClassesData(WindowClass::BuildVehicle);
 
-	SetWindowClassesDirty(WC_BUILD_VEHICLE);
-	SetWindowClassesDirty(WC_REPLACE_VEHICLE);
+	SetWindowClassesDirty(WindowClass::BuildVehicle);
+	SetWindowClassesDirty(WindowClass::ReplaceVehicle);
 }
 
 /**
@@ -871,10 +881,10 @@ static void EnableEngineForCompany(EngineID eid, CompanyID company)
 		AddRemoveEngineFromAutoreplaceAndBuildWindows(e->type);
 
 		/* Update the toolbar. */
-		InvalidateWindowData(WC_MAIN_TOOLBAR, 0);
-		if (e->type == VehicleType::Road) InvalidateWindowData(WC_BUILD_TOOLBAR, TRANSPORT_ROAD);
-		if (e->type == VehicleType::Ship) InvalidateWindowData(WC_BUILD_TOOLBAR, TRANSPORT_WATER);
-		if (e->type == VehicleType::Aircraft) InvalidateWindowData(WC_BUILD_TOOLBAR, TRANSPORT_AIR);
+		InvalidateWindowData(WindowClass::MainToolbar, 0);
+		if (e->type == VehicleType::Road) InvalidateWindowData(WindowClass::BuildToolbar, TransportType::Road);
+		if (e->type == VehicleType::Ship) InvalidateWindowData(WindowClass::BuildToolbar, TransportType::Water);
+		if (e->type == VehicleType::Aircraft) InvalidateWindowData(WindowClass::BuildToolbar, TransportType::Air);
 	}
 }
 
@@ -921,7 +931,7 @@ static void AcceptEnginePreview(EngineID eid, CompanyID company, int recursion_d
 	 *       In singleplayer this function is called from the preview window, so
 	 *       we have to use the GUI-scope scheduling of InvalidateWindowData.
 	 */
-	InvalidateWindowClassesData(WC_ENGINE_PREVIEW);
+	InvalidateWindowClassesData(WindowClass::EnginePreview);
 
 	/* Don't search for variants to include if we are 10 levels deep already. */
 	if (recursion_depth >= 10) return;
@@ -1000,7 +1010,7 @@ static const IntervalTimer<TimerGameCalendar> _calendar_engines_daily({TimerGame
 		if (e->flags.Test(EngineFlag::ExclusivePreview)) {
 			if (e->preview_company != CompanyID::Invalid()) {
 				if (!--e->preview_wait) {
-					InvalidateWindowClassesData(WC_ENGINE_PREVIEW);
+					InvalidateWindowClassesData(WindowClass::EnginePreview);
 					e->preview_company = CompanyID::Invalid();
 				}
 			} else if (e->preview_asked.Count() < MAX_COMPANIES) {
@@ -1155,12 +1165,12 @@ static void NewVehicleAvailable(Engine *e)
 	}
 
 	/* Update the toolbar. */
-	if (e->type == VehicleType::Road) InvalidateWindowData(WC_BUILD_TOOLBAR, TRANSPORT_ROAD);
-	if (e->type == VehicleType::Ship) InvalidateWindowData(WC_BUILD_TOOLBAR, TRANSPORT_WATER);
-	if (e->type == VehicleType::Aircraft) InvalidateWindowData(WC_BUILD_TOOLBAR, TRANSPORT_AIR);
+	if (e->type == VehicleType::Road) InvalidateWindowData(WindowClass::BuildToolbar, TransportType::Road);
+	if (e->type == VehicleType::Ship) InvalidateWindowData(WindowClass::BuildToolbar, TransportType::Water);
+	if (e->type == VehicleType::Aircraft) InvalidateWindowData(WindowClass::BuildToolbar, TransportType::Air);
 
 	/* Remove from preview windows */
-	InvalidateWindowClassesData(WC_ENGINE_PREVIEW);
+	InvalidateWindowClassesData(WindowClass::EnginePreview);
 }
 
 /** Monthly update of the availability, reliability, and preview offers of the engines. */
@@ -1202,11 +1212,11 @@ void CalendarEnginesMonthlyLoop()
 			}
 		}
 
-		InvalidateWindowClassesData(WC_BUILD_VEHICLE); // rebuild the purchase list (esp. when sorted by reliability)
+		InvalidateWindowClassesData(WindowClass::BuildVehicle); // rebuild the purchase list (esp. when sorted by reliability)
 
 		if (refresh) {
-			SetWindowClassesDirty(WC_BUILD_VEHICLE);
-			SetWindowClassesDirty(WC_REPLACE_VEHICLE);
+			SetWindowClassesDirty(WindowClass::BuildVehicle);
+			SetWindowClassesDirty(WindowClass::ReplaceVehicle);
 		}
 	}
 }
@@ -1355,9 +1365,9 @@ void CheckEngines()
 
 	if (min_date < INT32_MAX) {
 		ShowErrorMessage(GetEncodedString(STR_ERROR_NO_VEHICLES_AVAILABLE_YET),
-			GetEncodedString(STR_ERROR_NO_VEHICLES_AVAILABLE_YET_EXPLANATION, min_date), WL_WARNING);
+			GetEncodedString(STR_ERROR_NO_VEHICLES_AVAILABLE_YET_EXPLANATION, min_date), WarningLevel::Warning);
 	} else {
 		ShowErrorMessage(GetEncodedString(STR_ERROR_NO_VEHICLES_AVAILABLE_AT_ALL),
-			GetEncodedString(STR_ERROR_NO_VEHICLES_AVAILABLE_AT_ALL_EXPLANATION), WL_WARNING);
+			GetEncodedString(STR_ERROR_NO_VEHICLES_AVAILABLE_AT_ALL_EXPLANATION), WarningLevel::Warning);
 	}
 }

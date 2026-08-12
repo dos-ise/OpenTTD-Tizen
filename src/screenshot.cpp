@@ -16,7 +16,7 @@
 #include "screenshot_gui.h"
 #include "blitter/factory.hpp"
 #include "zoom_func.h"
-#include "saveload/saveload.h"
+#include "saveload/saveload_func.h"
 #include "company_func.h"
 #include "strings_func.h"
 #include "error.h"
@@ -144,7 +144,7 @@ static std::string_view MakeScreenshotName(std::string_view default_fn, std::str
 	bool generate = _screenshot_name.empty();
 
 	if (generate) {
-		if (_game_mode == GM_EDITOR || _game_mode == GM_MENU || _local_company == COMPANY_SPECTATOR) {
+		if (_game_mode == GameMode::Editor || _game_mode == GameMode::Menu || _local_company == COMPANY_SPECTATOR) {
 			_screenshot_name = default_fn;
 		} else {
 			_screenshot_name = GenerateDefaultSaveName();
@@ -444,12 +444,12 @@ static bool RealMakeScreenshot(ScreenshotType t, const std::string &name, uint32
 
 	if (ret) {
 		if (t == SC_HEIGHTMAP) {
-			ShowErrorMessage(GetEncodedString(STR_MESSAGE_HEIGHTMAP_SUCCESSFULLY, _screenshot_name, _heightmap_highest_peak), {}, WL_WARNING);
+			ShowErrorMessage(GetEncodedString(STR_MESSAGE_HEIGHTMAP_SUCCESSFULLY, _screenshot_name, _heightmap_highest_peak), {}, WarningLevel::Warning);
 		} else {
-			ShowErrorMessage(GetEncodedString(STR_MESSAGE_SCREENSHOT_SUCCESSFULLY, _screenshot_name), {}, WL_WARNING);
+			ShowErrorMessage(GetEncodedString(STR_MESSAGE_SCREENSHOT_SUCCESSFULLY, _screenshot_name), {}, WarningLevel::Warning);
 		}
 	} else {
-		ShowErrorMessage(GetEncodedString(STR_ERROR_SCREENSHOT_FAILED), {}, WL_ERROR);
+		ShowErrorMessage(GetEncodedString(STR_ERROR_SCREENSHOT_FAILED), {}, WarningLevel::Error);
 	}
 
 	return ret;

@@ -55,7 +55,7 @@ void Waypoint::UpdateVirtCoord()
 	_viewport_sign_kdtree.Insert(ViewportSignKdtreeItem::MakeWaypoint(this->index));
 
 	/* Recenter viewport */
-	InvalidateWindowData(WC_WAYPOINT_VIEW, this->index);
+	InvalidateWindowData(WindowClass::WaypointView, this->index);
 }
 
 /**
@@ -109,13 +109,12 @@ Axis GetAxisForNewRailWaypoint(TileIndex tile)
 	if (IsRailWaypointTile(tile)) return GetRailStationAxis(tile);
 
 	/* Non-plain rail type, no valid axis for waypoints. */
-	if (!IsTileType(tile, TileType::Railway) || GetRailTileType(tile) != RailTileType::Normal) return INVALID_AXIS;
+	if (!IsTileType(tile, TileType::Railway) || GetRailTileType(tile) != RailTileType::Normal) return Axis::Invalid;
 
-	switch (GetTrackBits(tile)) {
-		case TRACK_BIT_X: return AXIS_X;
-		case TRACK_BIT_Y: return AXIS_Y;
-		default:          return INVALID_AXIS;
-	}
+	TrackBits bits = GetTrackBits(tile);
+	if (bits == Track::X) return Axis::X;
+	if (bits == Track::Y) return Axis::Y;
+	return Axis::Invalid;
 }
 
 /**
@@ -131,14 +130,14 @@ Axis GetAxisForNewRoadWaypoint(TileIndex tile)
 	if (IsRoadWaypointTile(tile)) return GetDriveThroughStopAxis(tile);
 
 	/* Non-plain road type, no valid axis for waypoints. */
-	if (!IsNormalRoadTile(tile)) return INVALID_AXIS;
+	if (!IsNormalRoadTile(tile)) return Axis::Invalid;
 
 	RoadBits bits = GetAllRoadBits(tile);
 
-	if (!bits.Any(ROAD_Y)) return AXIS_X;
-	if (!bits.Any(ROAD_X)) return AXIS_Y;
+	if (!bits.Any(ROAD_Y)) return Axis::X;
+	if (!bits.Any(ROAD_X)) return Axis::Y;
 
-	return INVALID_AXIS;
+	return Axis::Invalid;
 }
 
 extern CommandCost ClearTile_Station(TileIndex tile, DoCommandFlags flags);
@@ -177,7 +176,7 @@ static CommandCost IsValidTileForWaypoint(TileIndex tile, Axis axis, StationID *
 
 	Slope tileh = GetTileSlope(tile);
 	if (tileh != SLOPE_FLAT &&
-			(!_settings_game.construction.build_on_slopes || IsSteepSlope(tileh) || !(tileh & (0x3 << axis)) || !(tileh & ~(0x3 << axis)))) {
+			(!_settings_game.construction.build_on_slopes || IsSteepSlope(tileh) || !(tileh & (0x3 << to_underlying(axis))) || !(tileh & ~(0x3 << to_underlying(axis))))) {
 		return CommandCost(STR_ERROR_FLAT_LAND_REQUIRED);
 	}
 
@@ -226,9 +225,9 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 	if (spec_index >= cls->GetSpecCount()) return CMD_ERROR;
 
 	/* The number of parts to build */
-	uint8_t count = axis == AXIS_X ? height : width;
+	uint8_t count = axis == Axis::X ? height : width;
 
-	if ((axis == AXIS_X ? width : height) != 1) return CMD_ERROR;
+	if ((axis == Axis::X ? width : height) != 1) return CMD_ERROR;
 	if (count == 0 || count > _settings_game.station.station_spread) return CMD_ERROR;
 
 	bool reuse = (station_to_join != NEW_STATION);
@@ -257,7 +256,15 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 		CommandCost ret = IsValidTileForWaypoint(tile, axis, &est);
 		if (ret.Failed()) return ret;
 
-		ret = IsRailStationBridgeAboveOk(tile, spec, StationType::RailWaypoint, *it + axis);
+		StationGfx gfx = *it + to_underlying(axis);
+		if (spec != nullptr) {
+			uint32_t platinfo = GetPlatformInfo(gfx, count, 1, i, 0, false);
+			/* As the station is not yet completely finished, the station does not yet exist. */
+			uint16_t callback = GetStationCallback(CBID_STATION_BUILD_TILE_LAYOUT, platinfo, 0, spec, nullptr, INVALID_TILE);
+			if (callback != CALLBACK_FAILED && callback <= UINT8_MAX) gfx = (callback & ~1) + to_underlying(axis);
+		}
+
+		ret = IsRailStationBridgeAboveOk(tile, spec, StationType::RailWaypoint, gfx);
 		if (ret.Failed()) return ret;
 	}
 
@@ -317,10 +324,24 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 			uint8_t old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
 			if (!HasStationTileRail(tile)) c->infrastructure.station++;
 			bool reserved = IsTileType(tile, TileType::Railway) ?
-					HasBit(GetRailReservationTrackBits(tile), AxisToTrack(axis)) :
+					GetRailReservationTrackBits(tile).Test(AxisToTrack(axis)) :
 					HasStationReservation(tile);
 			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, GetRailType(tile));
 			SetCustomStationSpecIndex(tile, *specindex);
+
+			if (spec != nullptr) {
+				uint32_t platinfo = GetPlatformInfo(*it + to_underlying(axis), count, 1, i, 0, false);
+
+				/* As the station is not yet completely finished, the station does not yet exist. */
+				uint16_t callback = GetStationCallback(CBID_STATION_BUILD_TILE_LAYOUT, platinfo, 0, spec, nullptr, tile);
+				if (callback != CALLBACK_FAILED) {
+					if (callback <= UINT8_MAX) {
+						SetStationGfx(tile, (callback & ~1) + to_underlying(axis));
+					} else {
+						ErrorUnknownCallbackResult(spec->grf_prop.grfid, CBID_STATION_BUILD_TILE_LAYOUT, callback);
+					}
+				}
+			}
 
 			SetRailStationTileFlags(tile, spec);
 
@@ -362,9 +383,9 @@ CommandCost CmdBuildRoadWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 	const RoadStopSpec *roadstopspec = RoadStopClass::Get(spec_class)->GetSpec(spec_index);
 
 	/* The number of parts to build */
-	uint8_t count = axis == AXIS_X ? height : width;
+	uint8_t count = axis == Axis::X ? height : width;
 
-	if ((axis == AXIS_X ? width : height) != 1) return CMD_ERROR;
+	if ((axis == Axis::X ? width : height) != 1) return CMD_ERROR;
 	if (count == 0 || count > _settings_game.station.station_spread) return CMD_ERROR;
 
 	bool reuse = (station_to_join != NEW_STATION);
@@ -507,7 +528,7 @@ CommandCost CmdBuildBuoy(DoCommandFlags flags, TileIndex tile)
 		} else {
 			/* Move existing (recently deleted) buoy to the new location */
 			wp->xy = tile;
-			InvalidateWindowData(WC_WAYPOINT_VIEW, wp->index);
+			InvalidateWindowData(WindowClass::WaypointView, wp->index);
 		}
 		wp->rect.BeforeAddTile(tile, StationRect::ADD_TRY);
 
@@ -526,7 +547,7 @@ CommandCost CmdBuildBuoy(DoCommandFlags flags, TileIndex tile)
 		ClearNeighbourNonFloodingStates(tile);
 
 		wp->UpdateVirtCoord();
-		InvalidateWindowData(WC_WAYPOINT_VIEW, wp->index);
+		InvalidateWindowData(WindowClass::WaypointView, wp->index);
 	}
 
 	return cost;
@@ -556,7 +577,7 @@ CommandCost RemoveBuoy(TileIndex tile, DoCommandFlags flags)
 	if (flags.Test(DoCommandFlag::Execute)) {
 		wp->facilities.Reset(StationFacility::Dock);
 
-		InvalidateWindowData(WC_WAYPOINT_VIEW, wp->index);
+		InvalidateWindowData(WindowClass::WaypointView, wp->index);
 
 		/* We have to set the water tile's state to the same state as before the
 		 * buoy was placed. Otherwise one could plant a buoy on a canal edge,

@@ -36,7 +36,7 @@ static const uint NETWORK_CHAT_LINE_SPACING = 3;
 /** Container for a message. */
 struct ChatMessage {
 	std::string message; ///< The action message.
-	TextColour colour;  ///< The colour of the message.
+	ExtendedTextColour colour;  ///< The colour of the message.
 	std::chrono::steady_clock::time_point remove_time; ///< The time to remove the message.
 };
 
@@ -82,17 +82,13 @@ static inline bool HaveChatMessages(bool show_all)
  * @param duration The duration of the chat message in seconds
  * @param message message itself
  */
-void CDECL NetworkAddChatMessage(TextColour colour, uint duration, const std::string &message)
+void CDECL NetworkAddChatMessage(ExtendedTextColour colour, uint duration, const std::string &message)
 {
 	if (_chatmsg_list.size() == MAX_CHAT_MESSAGES) {
 		_chatmsg_list.pop_back();
 	}
 
-	ChatMessage *cmsg = &_chatmsg_list.emplace_front();
-	cmsg->message = message;
-	cmsg->colour = colour;
-	cmsg->remove_time = std::chrono::steady_clock::now() + std::chrono::seconds(duration);
-
+	_chatmsg_list.emplace_front(message, colour, std::chrono::steady_clock::now() + std::chrono::seconds(duration));
 	_chatmessage_dirty_time = std::chrono::steady_clock::now();
 	_chatmessage_dirty = true;
 }
@@ -182,13 +178,13 @@ void NetworkDrawChatMessage()
 	Blitter *blitter = BlitterFactory::GetCurrentBlitter();
 	if (!_chatmessage_dirty) return;
 
-	const Window *w = FindWindowByClass(WC_SEND_NETWORK_MSG);
+	const Window *w = FindWindowByClass(WindowClass::NetworkChat);
 	bool show_all = (w != nullptr);
 
 	/* First undraw if needed */
 	NetworkUndrawChatMessage();
 
-	if (_iconsole_mode == ICONSOLE_FULL) return;
+	if (_iconsole_mode == IConsoleMode::Full) return;
 
 	/* Check if we have anything to draw at all */
 	if (!HaveChatMessages(show_all)) return;
@@ -233,7 +229,7 @@ void NetworkDrawChatMessage()
 
 	for (auto &cmsg : _chatmsg_list) {
 		if (!show_all && cmsg.remove_time < now) continue;
-		ypos = DrawStringMultiLine(_chatmsg_box.x + ScaleGUITrad(3), _chatmsg_box.x + _chatmsg_box.width - 1, top, ypos, cmsg.message, cmsg.colour, SA_LEFT | SA_BOTTOM | SA_FORCE) - NETWORK_CHAT_LINE_SPACING;
+		ypos = DrawStringMultiLine(_chatmsg_box.x + ScaleGUITrad(3), _chatmsg_box.x + _chatmsg_box.width - 1, top, ypos, cmsg.message, cmsg.colour, {AlignmentH::ForceLeft, AlignmentV::Bottom}) - NETWORK_CHAT_LINE_SPACING;
 		if (ypos < top) break;
 	}
 
@@ -265,7 +261,7 @@ static void SendChat(std::string_view buf, NetworkChatDestinationType type, int 
 	if (!_network_server) {
 		MyClient::SendChat(action, type, dest, buf, 0);
 	} else {
-		NetworkServerSendChat(action, type, dest, buf, CLIENT_ID_SERVER);
+		NetworkServerSendChat(action, type, dest, buf, ClientID::Server);
 	}
 }
 
@@ -328,14 +324,14 @@ struct NetworkChatWindow : public Window {
 		this->FinishInitNested(type);
 
 		this->SetFocusedWidget(WID_NC_TEXTBOX);
-		InvalidateWindowData(WC_NEWS_WINDOW, 0, this->height);
+		InvalidateWindowData(WindowClass::News, 0, this->height);
 
 		PositionNetworkChatWindow(this);
 	}
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		InvalidateWindowData(WC_NEWS_WINDOW, 0, 0);
+		InvalidateWindowData(WindowClass::News, 0, 0);
 		this->Window::Close();
 	}
 
@@ -356,7 +352,7 @@ struct NetworkChatWindow : public Window {
 
 	Point OnInitialPosition([[maybe_unused]] int16_t sm_width, [[maybe_unused]] int16_t sm_height, [[maybe_unused]] int window_number) override
 	{
-		Point pt = { 0, _screen.height - sm_height - FindWindowById(WC_STATUS_BAR, 0)->height };
+		Point pt = { 0, _screen.height - sm_height - FindWindowById(WindowClass::Statusbar, 0)->height };
 		return pt;
 	}
 
@@ -386,10 +382,10 @@ struct NetworkChatWindow : public Window {
 
 	EventState OnKeyPress([[maybe_unused]] char32_t key, uint16_t keycode) override
 	{
-		EventState state = ES_NOT_HANDLED;
+		EventState state = EventState::NotHandled;
 		if (keycode == WKC_TAB) {
 			ChatTabCompletion();
-			state = ES_HANDLED;
+			state = EventState::Handled;
 		}
 		return state;
 	}
@@ -418,7 +414,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_chat_window_widgets 
 		NWidget(WWT_CLOSEBOX, Colours::Grey, WID_NC_CLOSE),
 		NWidget(WWT_PANEL, Colours::Grey, WID_NC_BACKGROUND),
 			NWidget(NWID_HORIZONTAL),
-				NWidget(WWT_TEXT, Colours::Invalid, WID_NC_DESTINATION), SetMinimalSize(62, 12), SetPadding(1, 0, 1, 0), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
+				NWidget(WWT_TEXT, Colours::Invalid, WID_NC_DESTINATION), SetMinimalSize(62, 12), SetPadding(1, 0, 1, 0), SetAlignment({AlignmentH::End, AlignmentV::Middle}),
 				NWidget(WWT_EDITBOX, Colours::Grey, WID_NC_TEXTBOX), SetMinimalSize(100, 0), SetPadding(1, 0, 1, 0), SetResize(1, 0),
 																	SetStringTip(STR_NETWORK_CHAT_OSKTITLE),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_NC_SENDBUTTON), SetMinimalSize(62, 12), SetPadding(1, 0, 1, 0), SetStringTip(STR_NETWORK_CHAT_SEND),
@@ -430,7 +426,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_chat_window_widgets 
 /** The description of the chat window. */
 static WindowDesc _chat_window_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_SEND_NETWORK_MSG, WC_NONE,
+	WindowClass::NetworkChat, WindowClass::None,
 	{},
 	_nested_chat_window_widgets
 );
@@ -443,6 +439,6 @@ static WindowDesc _chat_window_desc(
  */
 void ShowNetworkChatQueryWindow(NetworkChatDestinationType type, int dest)
 {
-	CloseWindowByClass(WC_SEND_NETWORK_MSG);
+	CloseWindowByClass(WindowClass::NetworkChat);
 	new NetworkChatWindow(_chat_window_desc, type, dest);
 }

@@ -252,7 +252,7 @@ public:
 							str = GetGRFStringWithTextStack(spec->grf_prop.grffile, GRFSTR_MISC_GRF_TEXT + callback_res, regs100);
 						}
 						if (!str.empty()) {
-							tr.top = DrawStringMultiLine(tr, str, TC_ORANGE);
+							tr.top = DrawStringMultiLine(tr, str, TextColour::Orange);
 						}
 					}
 				}
@@ -365,13 +365,13 @@ public:
 	/**
 	 * Handler for global hotkeys of the BuildObjectWindow.
 	 * @param hotkey Hotkey
-	 * @return ES_HANDLED if hotkey was accepted.
+	 * @return EventState::Handled if hotkey was accepted.
 	 */
 	static EventState BuildObjectGlobalHotkeys(int hotkey)
 	{
-		if (_game_mode == GM_MENU) return ES_NOT_HANDLED;
+		if (_game_mode == GameMode::Menu) return EventState::NotHandled;
 		Window *w = ShowBuildObjectPicker();
-		if (w == nullptr) return ES_NOT_HANDLED;
+		if (w == nullptr) return EventState::NotHandled;
 		return w->OnHotkey(hotkey);
 	}
 
@@ -399,7 +399,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_object_widgets
 							NWidget(WWT_PANEL, Colours::Grey, WID_BO_OBJECT_SPRITE), SetToolTip(STR_OBJECT_BUILD_PREVIEW_TOOLTIP), EndContainer(),
 							EndContainer(),
 						EndContainer(),
-						NWidget(WWT_TEXT, Colours::Invalid, WID_BO_OBJECT_SIZE), SetAlignment(SA_CENTER),
+						NWidget(WWT_TEXT, Colours::Invalid, WID_BO_OBJECT_SIZE), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}),
 						NWidget(WWT_EMPTY, Colours::Invalid, WID_BO_INFO), SetFill(1, 0), SetResize(1, 0),
 					EndContainer(),
 				EndContainer(),
@@ -411,7 +411,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_object_widgets
 /** Window definition for the build object window. */
 static WindowDesc _build_object_desc(
 	WindowPosition::Automatic, "build_object", 0, 0,
-	WC_BUILD_OBJECT, WC_BUILD_TOOLBAR,
+	WindowClass::BuildObject, WindowClass::BuildToolbar,
 	WindowDefaultFlag::Construction,
 	_nested_build_object_widgets,
 	&BuildObjectWindow::hotkeys

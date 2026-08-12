@@ -297,7 +297,7 @@ public:
 private:
 	/* set by constructor, const afterwards */
 	uint max_radius;
-	std::array<uint, DIAGDIR_END> extent;
+	DiagDirectionIndexArray<uint> extent;
 
 	/* mutable iterator state */
 	uint cur_radius;
@@ -315,7 +315,7 @@ private:
 	 */
 	bool IsEnd() const
 	{
-		return this->cur_radius == this->max_radius && this->dir != INVALID_DIAGDIR;
+		return this->cur_radius == this->max_radius && this->dir != DiagDirection::Invalid;
 	}
 };
 

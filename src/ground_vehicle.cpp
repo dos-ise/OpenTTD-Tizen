@@ -64,8 +64,8 @@ void GroundVehicle<T, Type>::PowerChanged()
 
 		this->gcache.cached_power = total_power;
 		this->gcache.cached_max_te = max_te;
-		SetWindowDirty(WC_VEHICLE_DETAILS, this->index);
-		SetWindowWidgetDirty(WC_VEHICLE_VIEW, this->index, WID_VV_START_STOP);
+		SetWindowDirty(WindowClass::VehicleDetails, this->index);
+		SetWindowWidgetDirty(WindowClass::VehicleView, this->index, WID_VV_START_STOP);
 	}
 
 	this->gcache.cached_max_track_speed = max_track_speed;
@@ -191,8 +191,8 @@ bool GroundVehicle<T, Type>::IsChainInDepot() const
 {
 	const T *v = this->First();
 	/* Is the front engine stationary in the depot? */
-	static_assert(to_underlying(TRANSPORT_RAIL) == to_underlying(VehicleType::Train));
-	static_assert(to_underlying(TRANSPORT_ROAD) == to_underlying(VehicleType::Road));
+	static_assert(to_underlying(TransportType::Rail) == to_underlying(VehicleType::Train));
+	static_assert(to_underlying(TransportType::Road) == to_underlying(VehicleType::Road));
 	if (!IsDepotTypeTile(v->tile, (TransportType)Type) || v->cur_speed != 0) return false;
 
 	/* Check whether the rest is also already trying to enter the depot. */

@@ -37,7 +37,7 @@ void PrepareOldDiffCustom()
 void HandleOldDiffCustom(bool savegame)
 {
 	/* Savegames before v4 didn't have "town_council_tolerance" in savegame yet. */
-	bool has_no_town_council_tolerance = savegame && IsSavegameVersionBefore(SLV_4);
+	bool has_no_town_council_tolerance = savegame && IsSavegameVersionBefore(SaveLoadVersion::TownTolerancePauseMode);
 	uint options_to_load = GAME_DIFFICULTY_NUM - (has_no_town_council_tolerance ? 1 : 0);
 
 	if (!savegame) {
@@ -83,9 +83,9 @@ static std::vector<SaveLoad> GetSettingsDesc(const SettingTable &settings, bool 
 		if (sd->flags.Test(SettingFlag::NotInSave)) continue;
 
 		if (is_loading && sd->flags.Test(SettingFlag::NoNetworkSync) && _networking && !_network_server) {
-			if (IsSavegameVersionBefore(SLV_TABLE_CHUNKS)) {
+			if (IsSavegameVersionBefore(SaveLoadVersion::TableChunks)) {
 				/* We don't want to read this setting, so we do need to skip over it. */
-				saveloads.emplace_back(sd->GetName(), sd->save.cmd, GetVarFileType(sd->save.conv) | SLE_VAR_NULL, sd->save.length, sd->save.version_from, sd->save.version_to, nullptr, 0, nullptr);
+				saveloads.emplace_back(sd->GetName(), sd->save.cmd, sd->save.conv.file | VarMemType::Null, sd->save.length, sd->save.version_from, sd->save.version_to, nullptr, 0, nullptr);
 			}
 			continue;
 		}
@@ -107,9 +107,9 @@ static void LoadSettings(const SettingTable &settings, void *object, const SaveL
 {
 	const std::vector<SaveLoad> slt = SlCompatTableHeader(GetSettingsDesc(settings, true), slct);
 
-	if (!IsSavegameVersionBefore(SLV_RIFF_TO_ARRAY) && SlIterateArray() == -1) return;
+	if (!IsSavegameVersionBefore(SaveLoadVersion::RiffToArray) && SlIterateArray() == -1) return;
 	SlObject(object, slt);
-	if (!IsSavegameVersionBefore(SLV_RIFF_TO_ARRAY) && SlIterateArray() != -1) SlErrorCorrupt("Too many settings entries");
+	if (!IsSavegameVersionBefore(SaveLoadVersion::RiffToArray) && SlIterateArray() != -1) SlErrorCorrupt("Too many settings entries");
 
 	/* Ensure all IntSettings are valid (min/max could have changed between versions etc). */
 	for (auto &desc : settings) {
@@ -142,7 +142,7 @@ static void SaveSettings(const SettingTable &settings, void *object)
 }
 
 struct OPTSChunkHandler : ChunkHandler {
-	OPTSChunkHandler() : ChunkHandler('OPTS', CH_READONLY) {}
+	OPTSChunkHandler() : ChunkHandler("OPTS", ChunkType::ReadOnly) {}
 
 	void Load() const override
 	{
@@ -156,7 +156,7 @@ struct OPTSChunkHandler : ChunkHandler {
 };
 
 struct PATSChunkHandler : ChunkHandler {
-	PATSChunkHandler() : ChunkHandler('PATS', CH_TABLE) {}
+	PATSChunkHandler() : ChunkHandler("PATS", ChunkType::Table) {}
 
 	void Load() const override
 	{

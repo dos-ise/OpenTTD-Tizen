@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "debug.h"
 #include "gui.h"
+#include "querystring_gui.h"
 #include "textbuf_gui.h"
 #include "company_func.h"
 #include "command_func.h"
@@ -88,7 +89,7 @@ int DrawStationCoverageAreaText(const Rect &r, StationCoverageType sct, int rad,
 		}
 
 		/* Convert cargo counts to a set of cargo bits, and draw the result. */
-		for (CargoType cargo{}; cargo < NUM_CARGO; ++cargo) {
+		for (CargoType cargo : EnumRange(NUM_CARGO)) {
 			switch (sct) {
 				case SCT_PASSENGERS_ONLY: if (!IsCargoInClass(cargo, CargoClass::Passengers)) continue; break;
 				case SCT_NON_PASSENGERS_ONLY: if (IsCargoInClass(cargo, CargoClass::Passengers)) continue; break;
@@ -245,7 +246,7 @@ static void StationsWndShowStationRating(int left, int right, int y, CargoType c
 		}
 	}
 
-	DrawString(left + padding, right, y, cs->abbrev, tc, SA_CENTER, false, FontSize::Small);
+	DrawString(left + padding, right, y, cs->abbrev, tc, {AlignmentH::Centre, AlignmentV::Middle}, false, FontSize::Small);
 
 	/* Draw green/red ratings bar (fits under the waiting bar) */
 	y += height + padding + 1;
@@ -259,8 +260,7 @@ typedef GUIList<const Station*, const CargoTypes &> GUIStationList;
 /**
  * The list of stations per company.
  */
-class CompanyStationsWindow : public Window
-{
+class CompanyStationsWindow : public Window {
 protected:
 	/** Runtime saved values. */
 	struct FilterState {
@@ -288,6 +288,9 @@ protected:
 	};
 	static const std::initializer_list<GUIStationList::SortFunction * const> sorter_funcs; ///< Functions to sort stations.
 
+	StringFilter string_filter{}; ///< Filter for name
+	QueryString name_editbox; ///< Filter editbox
+
 	FilterState filter{};
 	GUIStationList stations{filter.cargoes};
 	Scrollbar *vscroll = nullptr;
@@ -314,12 +317,16 @@ protected:
 		for (const Station *st : Station::Iterate()) {
 			if (this->filter.facilities.Any(st->facilities)) { // only stations with selected facilities
 				if (st->owner == owner || (st->owner == OWNER_NONE && HasStationInUse(st->index, true, owner))) {
+					this->string_filter.ResetState();
+					this->string_filter.AddLine(st->GetCachedName());
+					if (!this->string_filter.GetState()) continue;
+
 					bool has_rating = false;
 					/* Add to the station/cargo counts. */
-					for (CargoType cargo{}; cargo < NUM_CARGO; ++cargo) {
+					for (CargoType cargo : EnumRange(NUM_CARGO)) {
 						if (st->goods[cargo].HasRating()) this->stations_per_cargo_type[cargo]++;
 					}
-					for (CargoType cargo{}; cargo < NUM_CARGO; ++cargo) {
+					for (CargoType cargo : EnumRange(NUM_CARGO)) {
 						if (st->goods[cargo].HasRating()) {
 							has_rating = true;
 							if (this->filter.cargoes.Test(cargo)) {
@@ -418,7 +425,7 @@ protected:
 	}
 
 public:
-	CompanyStationsWindow(WindowDesc &desc, WindowNumber window_number) : Window(desc)
+	CompanyStationsWindow(WindowDesc &desc, WindowNumber window_number) : Window(desc), name_editbox(MAX_LENGTH_STATION_NAME_CHARS * MAX_CHAR_LENGTH, MAX_LENGTH_STATION_NAME_CHARS)
 	{
 		/* Load initial filter state. */
 		this->filter = CompanyStationsWindow::initial_state;
@@ -434,6 +441,9 @@ public:
 		this->vscroll = this->GetScrollbar(WID_STL_SCROLLBAR);
 		this->FinishInitNested(window_number);
 		this->owner = this->window_number;
+
+		this->querystrings[WID_STL_FILTER] = &this->name_editbox;
+		this->name_editbox.cancel_button = QueryString::ACTION_CLEAR;
 
 		if (this->filter.cargoes == ALL_CARGOTYPES) this->filter.cargoes = _cargo_mask;
 
@@ -499,7 +509,7 @@ public:
 		switch (widget) {
 			case WID_STL_SORTBY:
 				/* draw arrow pointing up/down for ascending/descending sorting */
-				this->DrawSortButtonState(WID_STL_SORTBY, this->stations.IsDescSortOrder() ? SBS_DOWN : SBS_UP);
+				this->DrawSortButton(WID_STL_SORTBY, this->stations.IsDescSortOrder());
 				break;
 
 			case WID_STL_LIST: {
@@ -721,7 +731,7 @@ public:
 			}
 
 			/* Always close the list if ctrl is not pressed. */
-			if (!_ctrl_pressed) this->CloseChildWindows(WC_DROPDOWN_MENU);
+			if (!_ctrl_pressed) this->CloseChildWindows(WindowClass::DropdownMenu);
 		}
 	}
 
@@ -736,6 +746,14 @@ public:
 	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_STL_LIST, WidgetDimensions::scaled.framerect.Vertical());
+	}
+
+	void OnEditboxChanged(WidgetID wid) override
+	{
+		if (wid == WID_STL_FILTER) {
+			this->string_filter.SetFilterTerm(this->name_editbox.text.GetText());
+			this->InvalidateData(TDIWD_FORCE_REBUILD);
+		}
 	}
 
 	/**
@@ -778,15 +796,15 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_stations_wid
 		NWidget(WWT_TEXTBTN, Colours::Grey, WID_STL_BUS), SetAspect(WidgetDimensions::ASPECT_VEHICLE_ICON), SetStringTip(STR_BUS, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE_TOOLTIP), SetFill(0, 1),
 		NWidget(WWT_TEXTBTN, Colours::Grey, WID_STL_SHIP), SetAspect(WidgetDimensions::ASPECT_VEHICLE_ICON), SetStringTip(STR_SHIP, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE_TOOLTIP), SetFill(0, 1),
 		NWidget(WWT_TEXTBTN, Colours::Grey, WID_STL_AIRPLANE), SetAspect(WidgetDimensions::ASPECT_VEHICLE_ICON), SetStringTip(STR_PLANE, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE_TOOLTIP), SetFill(0, 1),
-		NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_STL_FACILALL), SetAspect(WidgetDimensions::ASPECT_VEHICLE_ICON), SetStringTip(STR_ABBREV_ALL, STR_STATION_LIST_SELECT_ALL_FACILITIES_TOOLTIP), SetTextStyle(TC_BLACK, FontSize::Small), SetFill(0, 1),
+		NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_STL_FACILALL), SetAspect(WidgetDimensions::ASPECT_VEHICLE_ICON), SetStringTip(STR_ABBREV_ALL, STR_STATION_LIST_SELECT_ALL_FACILITIES_TOOLTIP), SetTextStyle(TextColour::Black, FontSize::Small), SetFill(0, 1),
 		NWidget(WWT_PANEL, Colours::Grey), SetMinimalSize(5, 0), SetFill(0, 1), EndContainer(),
 		NWidget(WWT_DROPDOWN, Colours::Grey, WID_STL_CARGODROPDOWN), SetFill(1, 0), SetToolTip(STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE_TOOLTIP),
 		NWidget(WWT_PANEL, Colours::Grey), SetResize(1, 0), SetFill(1, 1), EndContainer(),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
-		NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_STL_SORTBY), SetMinimalSize(81, 12), SetStringTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
-		NWidget(WWT_DROPDOWN, Colours::Grey, WID_STL_SORTDROPBTN), SetMinimalSize(163, 12), SetStringTip(STR_SORT_BY_NAME, STR_TOOLTIP_SORT_CRITERIA), // widget_data gets overwritten.
-		NWidget(WWT_PANEL, Colours::Grey), SetResize(1, 0), SetFill(1, 1), EndContainer(),
+		NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_STL_SORTBY), SetMinimalSize(0, 12), SetStringTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
+		NWidget(WWT_DROPDOWN, Colours::Grey, WID_STL_SORTDROPBTN), SetMinimalSize(0, 12), SetStringTip(STR_SORT_BY_NAME, STR_TOOLTIP_SORT_CRITERIA), // widget_data gets overwritten.
+		NWidget(WWT_EDITBOX, Colours::Grey, WID_STL_FILTER), SetFill(1, 0), SetResize(1, 0), SetStringTip(STR_LIST_FILTER_OSKTITLE, STR_LIST_FILTER_TOOLTIP),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_PANEL, Colours::Grey, WID_STL_LIST), SetMinimalSize(346, 125), SetResize(1, 10), SetToolTip(STR_STATION_LIST_TOOLTIP), SetScrollbar(WID_STL_SCROLLBAR), EndContainer(),
@@ -800,7 +818,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_company_stations_wid
 /** Window definition for the company stations window. */
 static WindowDesc _company_stations_desc(
 	WindowPosition::Automatic, "list_stations", 358, 162,
-	WC_STATION_LIST, WC_NONE,
+	WindowClass::StationList, WindowClass::None,
 	{},
 	_nested_company_stations_widgets
 );
@@ -1362,10 +1380,10 @@ struct StationViewWindow : public Window {
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		CloseWindowById(WC_TRAINS_LIST,   VehicleListIdentifier(VL_STATION_LIST, VehicleType::Train,    this->owner, this->window_number).ToWindowNumber(), false);
-		CloseWindowById(WC_ROADVEH_LIST,  VehicleListIdentifier(VL_STATION_LIST, VehicleType::Road,     this->owner, this->window_number).ToWindowNumber(), false);
-		CloseWindowById(WC_SHIPS_LIST,    VehicleListIdentifier(VL_STATION_LIST, VehicleType::Ship,     this->owner, this->window_number).ToWindowNumber(), false);
-		CloseWindowById(WC_AIRCRAFT_LIST, VehicleListIdentifier(VL_STATION_LIST, VehicleType::Aircraft, this->owner, this->window_number).ToWindowNumber(), false);
+		CloseWindowById(WindowClass::TrainList, VehicleListIdentifier(VehicleListType::Station, VehicleType::Train, this->owner, this->window_number).ToWindowNumber(), false);
+		CloseWindowById(WindowClass::RoadVehicleList, VehicleListIdentifier(VehicleListType::Station, VehicleType::Road, this->owner, this->window_number).ToWindowNumber(), false);
+		CloseWindowById(WindowClass::ShipList, VehicleListIdentifier(VehicleListType::Station, VehicleType::Ship, this->owner, this->window_number).ToWindowNumber(), false);
+		CloseWindowById(WindowClass::AircraftList, VehicleListIdentifier(VehicleListType::Station, VehicleType::Aircraft, this->owner, this->window_number).ToWindowNumber(), false);
 
 		SetViewportCatchmentStation(Station::Get(this->window_number), false);
 		this->Window::Close();
@@ -1475,7 +1493,7 @@ struct StationViewWindow : public Window {
 			}
 
 			/* Draw arrow pointing up/down for ascending/descending sorting */
-			this->DrawSortButtonState(WID_SV_SORT_ORDER, sort_orders[1] == SO_ASCENDING ? SBS_UP : SBS_DOWN);
+			this->DrawSortButton(WID_SV_SORT_ORDER, sort_orders[1] != SO_ASCENDING);
 
 			int pos = this->vscroll->GetPosition();
 
@@ -1668,7 +1686,7 @@ struct StationViewWindow : public Window {
 	 */
 	void BuildCargoList(CargoDataEntry *entry, const Station *st)
 	{
-		for (CargoType cargo{}; cargo < NUM_CARGO; ++cargo) {
+		for (CargoType cargo : EnumRange(NUM_CARGO)) {
 
 			if (this->cached_destinations.Retrieve(cargo) == nullptr) {
 				this->RecalcDestinations(cargo);
@@ -1870,7 +1888,7 @@ struct StationViewWindow : public Window {
 							}
 						}
 					}
-					if (!sym.empty()) DrawString(shrink.left, shrink.right, y + text_y_offset, sym, TC_YELLOW);
+					if (!sym.empty()) DrawString(shrink.left, shrink.right, y + text_y_offset, sym, TextColour::Yellow);
 				}
 				this->SetDisplayedRow(cd);
 			}
@@ -1969,7 +1987,7 @@ struct StationViewWindow : public Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		Window *w = FindWindowByClass(WC_QUERY_STRING);
+		Window *w = FindWindowByClass(WindowClass::QueryString);
 
 		switch (widget) {
 			case WID_SV_WAITING:
@@ -1980,8 +1998,8 @@ struct StationViewWindow : public Window {
 				SetViewportCatchmentStation(Station::Get(this->window_number), !this->IsWidgetLowered(WID_SV_CATCHMENT));
 
 				if (w != nullptr && this->IsWidgetLowered(WID_SV_CATCHMENT)) {
-					if (w->parent->window_class == WC_STATION_VIEW && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportStationRect(Station::Get(w->parent->window_number), true);
-					if (w->parent->window_class == WC_WAYPOINT_VIEW && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportWaypointRect(Waypoint::Get(w->parent->window_number), true);
+					if (w->parent->window_class == WindowClass::StationView && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportStationRect(Station::Get(w->parent->window_number), true);
+					if (w->parent->window_class == WindowClass::WaypointView && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportWaypointRect(Waypoint::Get(w->parent->window_number), true);
 				}
 				break;
 
@@ -2069,20 +2087,20 @@ struct StationViewWindow : public Window {
 	void SelectSortBy(int index)
 	{
 		_settings_client.gui.station_gui_sort_by = index;
-		switch (StationViewWindow::sort_names[index]) {
-			case STR_STATION_VIEW_WAITING_STATION:
+		switch (StationViewWindow::sort_names[index].base()) {
+			case STR_STATION_VIEW_WAITING_STATION.base():
 				this->current_mode = MODE_WAITING;
 				this->sortings[1] = this->sortings[2] = this->sortings[3] = CargoSortType::AsGrouping;
 				break;
-			case STR_STATION_VIEW_WAITING_AMOUNT:
+			case STR_STATION_VIEW_WAITING_AMOUNT.base():
 				this->current_mode = MODE_WAITING;
 				this->sortings[1] = this->sortings[2] = this->sortings[3] = CargoSortType::Count;
 				break;
-			case STR_STATION_VIEW_PLANNED_STATION:
+			case STR_STATION_VIEW_PLANNED_STATION.base():
 				this->current_mode = MODE_PLANNED;
 				this->sortings[1] = this->sortings[2] = this->sortings[3] = CargoSortType::AsGrouping;
 				break;
-			case STR_STATION_VIEW_PLANNED_AMOUNT:
+			case STR_STATION_VIEW_PLANNED_AMOUNT.base():
 				this->current_mode = MODE_PLANNED;
 				this->sortings[1] = this->sortings[2] = this->sortings[3] = CargoSortType::Count;
 				break;
@@ -2103,33 +2121,33 @@ struct StationViewWindow : public Window {
 		this->grouping_index = index;
 		_settings_client.gui.station_gui_group_order = index;
 		this->GetWidget<NWidgetCore>(WID_SV_GROUP_BY)->SetString(StationViewWindow::group_names[index]);
-		switch (StationViewWindow::group_names[index]) {
-			case STR_STATION_VIEW_GROUP_S_V_D:
+		switch (StationViewWindow::group_names[index].base()) {
+			case STR_STATION_VIEW_GROUP_S_V_D.base():
 				this->groupings[1] = GR_SOURCE;
 				this->groupings[2] = GR_NEXT;
 				this->groupings[3] = GR_DESTINATION;
 				break;
-			case STR_STATION_VIEW_GROUP_S_D_V:
+			case STR_STATION_VIEW_GROUP_S_D_V.base():
 				this->groupings[1] = GR_SOURCE;
 				this->groupings[2] = GR_DESTINATION;
 				this->groupings[3] = GR_NEXT;
 				break;
-			case STR_STATION_VIEW_GROUP_V_S_D:
+			case STR_STATION_VIEW_GROUP_V_S_D.base():
 				this->groupings[1] = GR_NEXT;
 				this->groupings[2] = GR_SOURCE;
 				this->groupings[3] = GR_DESTINATION;
 				break;
-			case STR_STATION_VIEW_GROUP_V_D_S:
+			case STR_STATION_VIEW_GROUP_V_D_S.base():
 				this->groupings[1] = GR_NEXT;
 				this->groupings[2] = GR_DESTINATION;
 				this->groupings[3] = GR_SOURCE;
 				break;
-			case STR_STATION_VIEW_GROUP_D_S_V:
+			case STR_STATION_VIEW_GROUP_D_S_V.base():
 				this->groupings[1] = GR_DESTINATION;
 				this->groupings[2] = GR_SOURCE;
 				this->groupings[3] = GR_NEXT;
 				break;
-			case STR_STATION_VIEW_GROUP_D_V_S:
+			case STR_STATION_VIEW_GROUP_D_V_S.base():
 				this->groupings[1] = GR_DESTINATION;
 				this->groupings[2] = GR_NEXT;
 				this->groupings[3] = GR_SOURCE;
@@ -2179,7 +2197,7 @@ struct StationViewWindow : public Window {
 /** Window definition for the station view window. */
 static WindowDesc _station_view_desc(
 	WindowPosition::Automatic, "view_station", 249, 117,
-	WC_STATION_VIEW, WC_NONE,
+	WindowClass::StationView, WindowClass::None,
 	{},
 	_nested_station_view_widgets
 );
@@ -2284,7 +2302,7 @@ static void FindStationsNearby(TileArea ta, bool distant_join)
 	if (distant_join && std::min(ta.w, ta.h) >= _settings_game.station.station_spread) return;
 	uint max_dist = distant_join ? _settings_game.station.station_spread - std::min(ta.w, ta.h) : 1;
 
-	for (auto tile : SpiralTileSequence(TileAddByDir(ctx.tile, DIR_N), max_dist, ta.w, ta.h)) {
+	for (auto tile : SpiralTileSequence(TileAddByDir(ctx.tile, Direction::N), max_dist, ta.w, ta.h)) {
 		AddNearbyStation<T>(tile, &ctx);
 	}
 }
@@ -2387,7 +2405,7 @@ struct SelectStationWindow : Window {
 		this->select_station_proc(false, *it);
 
 		/* Close Window; this might cause double frees! */
-		CloseWindowById(WC_SELECT_STATION, 0);
+		CloseWindowById(WindowClass::JoinStation, 0);
 	}
 
 	void OnRealtimeTick([[maybe_unused]] uint delta_ms) override
@@ -2433,7 +2451,7 @@ struct SelectStationWindow : Window {
 /** Window definition for the station selection window for (distant) joining. */
 static WindowDesc _select_station_desc(
 	WindowPosition::Automatic, "build_station_join", 200, 180,
-	WC_SELECT_STATION, WC_NONE,
+	WindowClass::JoinStation, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_select_station_widgets
 );
@@ -2451,7 +2469,7 @@ static bool StationJoinerNeeded(const StationPickerCmdProc &proc)
 
 	/* If a window is already opened and we didn't ctrl-click,
 	 * return true (i.e. just flash the old window) */
-	Window *selection_window = FindWindowById(WC_SELECT_STATION, 0);
+	Window *selection_window = FindWindowById(WindowClass::JoinStation, 0);
 	if (selection_window != nullptr) {
 		/* Abort current distant-join and start new one */
 		selection_window->Close();

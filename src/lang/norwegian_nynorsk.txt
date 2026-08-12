@@ -1012,9 +1012,9 @@ STR_RIVERS_MODERATE                                             :Middels
 STR_RIVERS_LOT                                                  :Mange
 
 ###length 3
-STR_DISASTER_NONE                                               :Ingen
-STR_DISASTER_REDUCED                                            :Redusert
-STR_DISASTER_NORMAL                                             :Normalt
+STR_BREAKDOWNS_NONE                                             :Ingen
+STR_BREAKDOWNS_REDUCED                                          :Redusert
+STR_BREAKDOWNS_NORMAL                                           :Normalt
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1.5
@@ -1287,6 +1287,8 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES                        :Køyretøy utg�
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Autoforny køyretøy når det vert gamalt: {STRING}
 
 STR_CONFIG_SETTING_AUTORENEW_MONTHS                             :Automatisk fornying når køyretøy er {STRING} maks alder
@@ -1456,12 +1458,7 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE             :Syne ankomst og
 
 STR_CONFIG_SETTING_QUICKGOTO                                    :Hurtig-laging av køyretøy-ordrar: {STRING}
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Standard jernbanetype (etter nytt/lasta spel): {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Jernbanetype vald etter oppstart eller innlasting av spel. 'fyrste tilgjengelege' vel den eldste typen jernbane, 'sist tilgjengelege' vel den nyaste typen jernbane, og 'mest brukt' vel den typen som for øyeblikket er mest nytta
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :Første tilgjengelege
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :Siste tilgjengelege
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :Mest brukte
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :Syne reserverte spor: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :Gi reserverte sport ein anna farge for å assistera ved problem med tog som nektar å køyra inn på spor-baserte delar
@@ -3001,6 +2998,7 @@ STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Klikk på mål for å gå til industri/by/rute. Ctrl+klikk åpner eit nytt tilleggsvindauge over industrien/byen/ruta sin lokasjon.
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :Spørsmål
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :Informasjon
 STR_GOAL_QUESTION_CAPTION_WARNING                               :Åtvaring

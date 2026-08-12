@@ -51,9 +51,6 @@ public:
 	virtual std::string_view GetName() const = 0;
 };
 
-DECLARE_INCREMENT_DECREMENT_OPERATORS(Driver::Type)
-
-
 /** Base for all driver factories. */
 class DriverFactoryBase {
 private:
@@ -85,8 +82,8 @@ private:
 	 */
 	static std::unique_ptr<Driver> &GetActiveDriver(Driver::Type type)
 	{
-		static std::array<std::unique_ptr<Driver>, to_underlying(Driver::Type::End)> s_driver{};
-		return s_driver[to_underlying(type)];
+		static EnumIndexArray<std::unique_ptr<Driver>, Driver::Type, Driver::Type::End> s_driver{};
+		return s_driver[type];
 	}
 
 	/**
@@ -96,8 +93,10 @@ private:
 	 */
 	static std::string_view GetDriverTypeName(Driver::Type type)
 	{
-		static const std::string_view driver_type_name[] = { "music", "sound", "video" };
-		return driver_type_name[to_underlying(type)];
+		static constexpr EnumIndexArray<std::string_view, Driver::Type, Driver::Type::End> driver_type_name{
+			"music", "sound", "video"
+		};
+		return driver_type_name[type];
 	}
 
 	static bool SelectDriverImpl(const std::string &name, Driver::Type type);
@@ -125,7 +124,7 @@ public:
 	 */
 	static void ShutdownDrivers()
 	{
-		for (Driver::Type dt = Driver::Type::Begin; dt != Driver::Type::End; ++dt) {
+		for (Driver::Type dt : EnumRange(Driver::Type::End)) {
 			auto &driver = GetActiveDriver(dt);
 			if (driver != nullptr) driver->Stop();
 		}

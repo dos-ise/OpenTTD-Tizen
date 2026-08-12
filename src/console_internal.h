@@ -15,10 +15,10 @@
 static const uint ICON_CMDLN_SIZE     = 1024; ///< maximum length of a typed in command
 
 /** Return values of console hooks (#IConsoleHook). */
-enum ConsoleHookResult : uint8_t {
-	CHR_ALLOW,    ///< Allow command execution.
-	CHR_DISALLOW, ///< Disallow command execution.
-	CHR_HIDE,     ///< Hide the existence of the command.
+enum class ConsoleHookResult : uint8_t {
+	Allow, ///< Allow command execution.
+	Disallow, ///< Disallow command execution.
+	Hide, ///< Hide the existence of the command.
 };
 
 /**
@@ -94,6 +94,6 @@ void IConsoleStdLibRegister();
 
 void IConsoleGUIInit();
 void IConsoleGUIFree();
-void IConsoleGUIPrint(TextColour colour_code, const std::string &string);
+void IConsoleGUIPrint(ExtendedTextColour colour_code, const std::string &string);
 
 #endif /* CONSOLE_INTERNAL_H */

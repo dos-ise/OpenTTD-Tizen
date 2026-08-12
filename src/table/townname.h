@@ -1735,6 +1735,7 @@ enum class CzechAllowFlag : uint8_t {
 	Long,
 };
 
+/** Bitset of \c CzechAllowFlag elements. */
 using CzechAllowFlags = EnumBitSet<CzechAllowFlag, uint8_t>;
 
 static constexpr CzechAllowFlags CZA_ALL = {CzechAllowFlag::Short, CzechAllowFlag::Middle, CzechAllowFlag::Long};
@@ -1746,6 +1747,7 @@ enum class CzechChooseFlag : uint8_t {
 	NoPostfix, ///< Matched if no postfix was inserted.
 };
 
+/** Bitset of \c CzechChooseFlag elements. */
 using CzechChooseFlags = EnumBitSet<CzechChooseFlag, uint8_t>;
 
 static constexpr CzechChooseFlags CZC_ANY = {CzechChooseFlag::Colour, CzechChooseFlag::Postfix, CzechChooseFlag::NoPostfix};
@@ -2450,7 +2452,7 @@ static const std::string_view _name_hungarian_3[] = {
 	"fa",
 	"f\u00f6ld",
 	"hegyes",
-	"kak",
+	"lak",
 	"kereszt",
 	"k\u00fcrt",
 	"lad\u00e1ny",

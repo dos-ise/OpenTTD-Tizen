@@ -25,6 +25,8 @@
 #include "vehicle_func.h"
 #include "sound_func.h"
 #include "terraform_gui.h"
+#include "object.h"
+#include "newgrf_object.h"
 #include "strings_func.h"
 #include "company_func.h"
 #include "company_gui.h"
@@ -50,6 +52,7 @@
 #include "highscore.h"
 #include "game/game.hpp"
 #include "goal_base.h"
+#include "goal_gui.h"
 #include "story_base.h"
 #include "toolbar_gui.h"
 #include "framerate_type.h"
@@ -62,6 +65,7 @@
 #include "timer/timer_game_calendar.h"
 #include "help_gui.h"
 #include "core/string_consumer.hpp"
+#include "screensaver.h"
 
 #include "widgets/toolbar_widget.h"
 
@@ -205,7 +209,7 @@ static CallBackFunction SelectSignTool()
 		ResetObjectToPlace();
 		return CallBackFunction::None;
 	} else {
-		SetObjectToPlace(SPR_CURSOR_SIGN, PAL_NONE, HT_RECT, WC_MAIN_TOOLBAR, 0);
+		SetObjectToPlace(SPR_CURSOR_SIGN, PAL_NONE, HT_RECT, WindowClass::MainToolbar, 0);
 		return CallBackFunction::PlaceSign;
 	}
 }
@@ -282,26 +286,26 @@ static CallBackFunction ToolbarOptionsClick(Window *w)
 		list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_GAMESCRIPT_SETTINGS, OptionMenuEntries::GameScriptSettings));
 	}
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_NEWGRF_SETTINGS, OptionMenuEntries::NewGRFSettings));
-	if (_game_mode != GM_EDITOR && !_networking) {
+	if (_game_mode != GameMode::Editor && !_networking) {
 		list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_SANDBOX_OPTIONS, OptionMenuEntries::SandboxOptions));
 	}
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS, OptionMenuEntries::Transparencies));
 	list.push_back(MakeDropDownListDividerItem());
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_SHOW_TOWN_NAMES), STR_SETTINGS_MENU_TOWN_NAMES_DISPLAYED, OptionMenuEntries::ShowTownNames));
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_SHOW_STATION_NAMES), STR_SETTINGS_MENU_STATION_NAMES_DISPLAYED, OptionMenuEntries::ShowStationNames));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::ShowTownNames), STR_SETTINGS_MENU_TOWN_NAMES_DISPLAYED, OptionMenuEntries::ShowTownNames));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::ShowStationNames), STR_SETTINGS_MENU_STATION_NAMES_DISPLAYED, OptionMenuEntries::ShowStationNames));
 	list.push_back(MakeDropDownListCheckedItem(_facility_display_opt.Test(StationFacility::Train), STR_SETTINGS_MENU_STATION_NAMES_TRAIN, OptionMenuEntries::ShowTrainStationNames, false, false, 1));
 	list.push_back(MakeDropDownListCheckedItem(_facility_display_opt.Test(StationFacility::TruckStop), STR_SETTINGS_MENU_STATION_NAMES_LORRY, OptionMenuEntries::ShowLorryStationNames, false, false, 1));
 	list.push_back(MakeDropDownListCheckedItem(_facility_display_opt.Test(StationFacility::BusStop), STR_SETTINGS_MENU_STATION_NAMES_BUS, OptionMenuEntries::ShowBusStationNames, false, false, 1));
 	list.push_back(MakeDropDownListCheckedItem(_facility_display_opt.Test(StationFacility::Dock), STR_SETTINGS_MENU_STATION_NAMES_SHIP, OptionMenuEntries::ShowDockNames, false, false, 1));
 	list.push_back(MakeDropDownListCheckedItem(_facility_display_opt.Test(StationFacility::Airport), STR_SETTINGS_MENU_STATION_NAMES_PLANE, OptionMenuEntries::ShowAirportNames, false, false, 1));
 	list.push_back(MakeDropDownListCheckedItem(_facility_display_opt.Test(STATION_FACILITY_GHOST), STR_SETTINGS_MENU_STATION_NAMES_GHOST, OptionMenuEntries::ShowGhostStationNames, false, false, 1));
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_SHOW_WAYPOINT_NAMES), STR_SETTINGS_MENU_WAYPOINTS_DISPLAYED, OptionMenuEntries::ShowWaypointNames));
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_SHOW_SIGNS), STR_SETTINGS_MENU_SIGNS_DISPLAYED, OptionMenuEntries::ShowSigns));
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_SHOW_COMPETITOR_SIGNS), STR_SETTINGS_MENU_SHOW_COMPETITOR_SIGNS, OptionMenuEntries::ShowCompetitorSigns));
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_FULL_ANIMATION), STR_SETTINGS_MENU_FULL_ANIMATION, OptionMenuEntries::FullAnimation));
-	list.push_back(MakeDropDownListCheckedItem(HasBit(_display_opt, DO_FULL_DETAIL), STR_SETTINGS_MENU_FULL_DETAIL, OptionMenuEntries::FullDetails));
-	list.push_back(MakeDropDownListCheckedItem(IsTransparencySet(TO_HOUSES), STR_SETTINGS_MENU_TRANSPARENT_BUILDINGS, OptionMenuEntries::TransparentBuildings));
-	list.push_back(MakeDropDownListCheckedItem(IsTransparencySet(TO_SIGNS), STR_SETTINGS_MENU_TRANSPARENT_SIGNS, OptionMenuEntries::TransparentStationSigns));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::ShowWaypointNames), STR_SETTINGS_MENU_WAYPOINTS_DISPLAYED, OptionMenuEntries::ShowWaypointNames));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::ShowSigns), STR_SETTINGS_MENU_SIGNS_DISPLAYED, OptionMenuEntries::ShowSigns));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::ShowCompetitorSigns), STR_SETTINGS_MENU_SHOW_COMPETITOR_SIGNS, OptionMenuEntries::ShowCompetitorSigns));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::FullAnimation), STR_SETTINGS_MENU_FULL_ANIMATION, OptionMenuEntries::FullAnimation));
+	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::FullDetail), STR_SETTINGS_MENU_FULL_DETAIL, OptionMenuEntries::FullDetails));
+	list.push_back(MakeDropDownListCheckedItem(IsTransparencySet(TransparencyOption::Houses), STR_SETTINGS_MENU_TRANSPARENT_BUILDINGS, OptionMenuEntries::TransparentBuildings));
+	list.push_back(MakeDropDownListCheckedItem(IsTransparencySet(TransparencyOption::Signs), STR_SETTINGS_MENU_TRANSPARENT_SIGNS, OptionMenuEntries::TransparentStationSigns));
 
 	ShowDropDownList(w, std::move(list), 0, WID_TN_SETTINGS, 140, GetToolbarDropDownOptions());
 	return CallBackFunction::None;
@@ -323,24 +327,24 @@ static CallBackFunction MenuClickSettings(int index)
 		case OptionMenuEntries::SandboxOptions: ShowCheatWindow(); break;
 		case OptionMenuEntries::Transparencies: ShowTransparencyToolbar(); break;
 
-		case OptionMenuEntries::ShowTownNames: ToggleBit(_display_opt, DO_SHOW_TOWN_NAMES); break;
-		case OptionMenuEntries::ShowStationNames: ToggleBit(_display_opt, DO_SHOW_STATION_NAMES); break;
+		case OptionMenuEntries::ShowTownNames: _display_opt.Flip(DisplayOption::ShowTownNames); break;
+		case OptionMenuEntries::ShowStationNames: _display_opt.Flip(DisplayOption::ShowStationNames); break;
 		case OptionMenuEntries::ShowTrainStationNames: _facility_display_opt.Flip(StationFacility::Train); break;
 		case OptionMenuEntries::ShowLorryStationNames: _facility_display_opt.Flip(StationFacility::TruckStop); break;
 		case OptionMenuEntries::ShowBusStationNames: _facility_display_opt.Flip(StationFacility::BusStop); break;
 		case OptionMenuEntries::ShowDockNames: _facility_display_opt.Flip(StationFacility::Dock); break;
 		case OptionMenuEntries::ShowAirportNames: _facility_display_opt.Flip(StationFacility::Airport); break;
 		case OptionMenuEntries::ShowGhostStationNames: _facility_display_opt.Flip(STATION_FACILITY_GHOST); break;
-		case OptionMenuEntries::ShowWaypointNames: ToggleBit(_display_opt, DO_SHOW_WAYPOINT_NAMES); break;
-		case OptionMenuEntries::ShowSigns: ToggleBit(_display_opt, DO_SHOW_SIGNS); break;
+		case OptionMenuEntries::ShowWaypointNames: _display_opt.Flip(DisplayOption::ShowWaypointNames); break;
+		case OptionMenuEntries::ShowSigns: _display_opt.Flip(DisplayOption::ShowSigns); break;
 		case OptionMenuEntries::ShowCompetitorSigns:
-			ToggleBit(_display_opt, DO_SHOW_COMPETITOR_SIGNS);
-			InvalidateWindowClassesData(WC_SIGN_LIST, -1);
+			_display_opt.Flip(DisplayOption::ShowCompetitorSigns);
+			InvalidateWindowClassesData(WindowClass::SignList, -1);
 			break;
-		case OptionMenuEntries::FullAnimation: ToggleBit(_display_opt, DO_FULL_ANIMATION); CheckBlitter(); break;
-		case OptionMenuEntries::FullDetails: ToggleBit(_display_opt, DO_FULL_DETAIL); break;
-		case OptionMenuEntries::TransparentBuildings: ToggleTransparency(TO_HOUSES); break;
-		case OptionMenuEntries::TransparentStationSigns: ToggleTransparency(TO_SIGNS); break;
+		case OptionMenuEntries::FullAnimation: _display_opt.Flip(DisplayOption::FullAnimation); CheckBlitter(); break;
+		case OptionMenuEntries::FullDetails: _display_opt.Flip(DisplayOption::FullDetail); break;
+		case OptionMenuEntries::TransparentBuildings: ToggleTransparency(TransparencyOption::Houses); break;
+		case OptionMenuEntries::TransparentStationSigns: ToggleTransparency(TransparencyOption::Signs); break;
 	}
 	MarkWholeScreenDirty();
 	return CallBackFunction::None;
@@ -403,7 +407,7 @@ static CallBackFunction ToolbarScenSaveOrLoad(Window *w)
  */
 static CallBackFunction MenuClickSaveLoad(int index = 0)
 {
-	if (_game_mode == GM_EDITOR) {
+	if (_game_mode == GameMode::Editor) {
 		switch (SaveLoadEditorMenuEntries(index)) {
 			case SaveLoadEditorMenuEntries::SaveScenario: ShowSaveLoadDialog(AbstractFileType::Scenario, SaveLoadOperation::Save); break;
 			case SaveLoadEditorMenuEntries::LoadScenario: ShowSaveLoadDialog(AbstractFileType::Scenario, SaveLoadOperation::Load); break;
@@ -490,7 +494,7 @@ static CallBackFunction ToolbarTownClick(Window *w)
 {
 	DropDownList list;
 	list.push_back(MakeDropDownListStringItem(STR_TOWN_MENU_TOWN_DIRECTORY, TownMenuEntries::ShowDirectory));
-	if (_settings_game.economy.found_town != TF_FORBIDDEN) list.push_back(MakeDropDownListStringItem(STR_TOWN_MENU_FOUND_TOWN, TownMenuEntries::ShowFoundTown));
+	if (_settings_game.economy.found_town != TownFounding::Forbidden) list.push_back(MakeDropDownListStringItem(STR_TOWN_MENU_FOUND_TOWN, TownMenuEntries::ShowFoundTown));
 	if (_settings_game.economy.place_houses != PlaceHouses::Forbidden) list.push_back(MakeDropDownListStringItem(STR_SCENEDIT_TOWN_MENU_PACE_HOUSE, TownMenuEntries::ShowPlaceHouses));
 
 	PopupMainToolbarMenu(w, WID_TN_TOWNS, std::move(list), 0);
@@ -509,7 +513,7 @@ static CallBackFunction MenuClickTown(int index)
 	switch (TownMenuEntries(index)) {
 		case TownMenuEntries::ShowDirectory: ShowTownDirectory(); break;
 		case TownMenuEntries::ShowFoundTown: // Setting could be changed when the dropdown was open
-			if (_settings_game.economy.found_town != TF_FORBIDDEN) ShowFoundTownWindow();
+			if (_settings_game.economy.found_town != TownFounding::Forbidden) ShowFoundTownWindow();
 			break;
 		case TownMenuEntries::ShowPlaceHouses: // Setting could be changed when the dropdown was open
 			if (_settings_game.economy.place_houses != PlaceHouses::Forbidden) ShowBuildHousePicker(nullptr);
@@ -601,7 +605,7 @@ static CallBackFunction MenuClickCompany(int index)
 
 			case CTMN_SPECTATE:
 				if (_network_server) {
-					NetworkServerDoMove(CLIENT_ID_SERVER, COMPANY_SPECTATOR);
+					NetworkServerDoMove(ClientID::Server, COMPANY_SPECTATOR);
 					MarkWholeScreenDirty();
 				} else {
 					NetworkClientRequestMove(COMPANY_SPECTATOR);
@@ -866,7 +870,7 @@ static CallBackFunction MenuClickShowAir(int index)
 static CallBackFunction ToolbarZoomInClick(Window *w)
 {
 	if (DoZoomInOutWindow(ZOOM_IN, GetMainWindow())) {
-		w->HandleButtonClick((_game_mode == GM_EDITOR) ? (WidgetID)WID_TE_ZOOM_IN : (WidgetID)WID_TN_ZOOM_IN);
+		w->HandleButtonClick((_game_mode == GameMode::Editor) ? (WidgetID)WID_TE_ZOOM_IN : (WidgetID)WID_TN_ZOOM_IN);
 	}
 	return CallBackFunction::None;
 }
@@ -876,7 +880,7 @@ static CallBackFunction ToolbarZoomInClick(Window *w)
 static CallBackFunction ToolbarZoomOutClick(Window *w)
 {
 	if (DoZoomInOutWindow(ZOOM_OUT, GetMainWindow())) {
-		w->HandleButtonClick((_game_mode == GM_EDITOR) ? (WidgetID)WID_TE_ZOOM_OUT : (WidgetID)WID_TN_ZOOM_OUT);
+		w->HandleButtonClick((_game_mode == GameMode::Editor) ? (WidgetID)WID_TE_ZOOM_OUT : (WidgetID)WID_TN_ZOOM_OUT);
 	}
 	return CallBackFunction::None;
 }
@@ -998,6 +1002,9 @@ static CallBackFunction ToolbarForestClick(Window *w)
 	list.push_back(MakeDropDownListIconItem(SPR_IMG_LANDSCAPING, PAL_NONE, STR_LANDSCAPING_MENU_LANDSCAPING, 0));
 	list.push_back(MakeDropDownListIconItem(SPR_IMG_PLANTTREES, PAL_NONE, STR_LANDSCAPING_MENU_PLANT_TREES, 1));
 	list.push_back(MakeDropDownListIconItem(SPR_IMG_SIGN, PAL_NONE, STR_LANDSCAPING_MENU_PLACE_SIGN, 2));
+	if (ObjectClass::GetUIClassCount() != 0) {
+		list.push_back(MakeDropDownListIconItem(SPR_IMG_TRANSMITTER, PAL_NONE, STR_LANDSCAPING_MENU_PLACE_OBJECT, 3));
+	}
 	ShowDropDownList(w, std::move(list), 0, WID_TN_LANDSCAPE, 100, GetToolbarDropDownOptions());
 	return CallBackFunction::None;
 }
@@ -1014,6 +1021,7 @@ static CallBackFunction MenuClickForest(int index)
 		case 0: ShowTerraformToolbar();  break;
 		case 1: ShowBuildTreesToolbar(); break;
 		case 2: return SelectSignTool();
+		case 3: ShowBuildObjectPicker(); break;
 	}
 	return CallBackFunction::None;
 }
@@ -1022,7 +1030,7 @@ static CallBackFunction MenuClickForest(int index)
 
 static CallBackFunction ToolbarMusicClick(Window *w)
 {
-	PopupMainToolbarMenu(w, _game_mode == GM_EDITOR ? (WidgetID)WID_TE_MUSIC_SOUND : (WidgetID)WID_TN_MUSIC_SOUND, {STR_TOOLBAR_SOUND_MUSIC});
+	PopupMainToolbarMenu(w, _game_mode == GameMode::Editor ? (WidgetID)WID_TE_MUSIC_SOUND : (WidgetID)WID_TN_MUSIC_SOUND, {STR_TOOLBAR_SOUND_MUSIC});
 	return CallBackFunction::None;
 }
 
@@ -1069,7 +1077,7 @@ static CallBackFunction PlaceLandBlockInfo()
 		ResetObjectToPlace();
 		return CallBackFunction::None;
 	} else {
-		SetObjectToPlace(SPR_CURSOR_QUERY, PAL_NONE, HT_RECT, WC_MAIN_TOOLBAR, 0);
+		SetObjectToPlace(SPR_CURSOR_QUERY, PAL_NONE, HT_RECT, WindowClass::MainToolbar, 0);
 		return CallBackFunction::PlaceLandInfo;
 	}
 }
@@ -1077,14 +1085,15 @@ static CallBackFunction PlaceLandBlockInfo()
 static CallBackFunction ToolbarHelpClick(Window *w)
 {
 	if (_settings_client.gui.newgrf_developer_tools) {
-		PopupMainToolbarMenu(w, _game_mode == GM_EDITOR ? (WidgetID)WID_TE_HELP : (WidgetID)WID_TN_HELP, {STR_ABOUT_MENU_LAND_BLOCK_INFO,
-				STR_ABOUT_MENU_HELP, STR_NULL, STR_ABOUT_MENU_TOGGLE_CONSOLE, STR_ABOUT_MENU_AI_DEBUG,
+		PopupMainToolbarMenu(w, _game_mode == GameMode::Editor ? (WidgetID)WID_TE_HELP : (WidgetID)WID_TN_HELP, {STR_ABOUT_MENU_LAND_BLOCK_INFO,
+				STR_ABOUT_MENU_HELP, STR_NULL, STR_ABOUT_MENU_ENTER_SCREENSAVER_MODE,
+				STR_ABOUT_MENU_TOGGLE_CONSOLE, STR_ABOUT_MENU_AI_DEBUG,
 				STR_ABOUT_MENU_SCREENSHOT, STR_ABOUT_MENU_SHOW_FRAMERATE, STR_ABOUT_MENU_ABOUT_OPENTTD,
 				STR_ABOUT_MENU_SPRITE_ALIGNER, STR_ABOUT_MENU_TOGGLE_BOUNDING_BOXES, STR_ABOUT_MENU_TOGGLE_DIRTY_BLOCKS,
 				STR_ABOUT_MENU_TOGGLE_WIDGET_OUTLINES});
 	} else {
-		PopupMainToolbarMenu(w, _game_mode == GM_EDITOR ? (WidgetID)WID_TE_HELP : (WidgetID)WID_TN_HELP, {STR_ABOUT_MENU_LAND_BLOCK_INFO,
-				STR_ABOUT_MENU_HELP, STR_NULL, STR_ABOUT_MENU_TOGGLE_CONSOLE, STR_ABOUT_MENU_AI_DEBUG,
+		PopupMainToolbarMenu(w, _game_mode == GameMode::Editor ? (WidgetID)WID_TE_HELP : (WidgetID)WID_TN_HELP, {STR_ABOUT_MENU_LAND_BLOCK_INFO,
+				STR_ABOUT_MENU_HELP, STR_NULL, STR_ABOUT_MENU_ENTER_SCREENSAVER_MODE, STR_ABOUT_MENU_TOGGLE_CONSOLE, STR_ABOUT_MENU_AI_DEBUG,
 				STR_ABOUT_MENU_SCREENSHOT, STR_ABOUT_MENU_SHOW_FRAMERATE, STR_ABOUT_MENU_ABOUT_OPENTTD});
 	}
 	return CallBackFunction::None;
@@ -1167,17 +1176,18 @@ void SetStartingYear(TimerGameCalendar::Year year)
 static CallBackFunction MenuClickHelp(int index)
 {
 	switch (index) {
-		case  0: return PlaceLandBlockInfo();
-		case  1: ShowHelpWindow();                 break;
-		case  2: IConsoleSwitch();                 break;
-		case  3: ShowScriptDebugWindow(CompanyID::Invalid(), _ctrl_pressed); break;
-		case  4: ShowScreenshotWindow();           break;
-		case  5: ShowFramerateWindow();            break;
-		case  6: ShowAboutWindow();                break;
-		case  7: ShowSpriteAlignerWindow();        break;
-		case  8: ToggleBoundingBoxes();            break;
-		case  9: ToggleDirtyBlocks();              break;
-		case 10: ToggleWidgetOutlines();           break;
+		case 0: return PlaceLandBlockInfo();
+		case 1: ShowHelpWindow(); break;
+		case 2: ToggleScreensaverMode(); break;
+		case 3: IConsoleSwitch(); break;
+		case 4: ShowScriptDebugWindow(CompanyID::Invalid(), _ctrl_pressed); break;
+		case 5: ShowScreenshotWindow(); break;
+		case 6: ShowFramerateWindow(); break;
+		case 7: ShowAboutWindow(); break;
+		case 8: ShowSpriteAlignerWindow(); break;
+		case 9: ToggleBoundingBoxes(); break;
+		case 10: ToggleDirtyBlocks(); break;
+		case 11: ToggleWidgetOutlines(); break;
 	}
 	return CallBackFunction::None;
 }
@@ -1193,7 +1203,7 @@ static CallBackFunction ToolbarSwitchClick(Window *w)
 	}
 
 	w->ReInit();
-	w->SetWidgetLoweredState(_game_mode == GM_EDITOR ? (WidgetID)WID_TE_SWITCH_BAR : (WidgetID)WID_TN_SWITCH_BAR, _toolbar_mode == ToolbarMode::Lower);
+	w->SetWidgetLoweredState(_game_mode == GameMode::Editor ? (WidgetID)WID_TE_SWITCH_BAR : (WidgetID)WID_TN_SWITCH_BAR, _toolbar_mode == ToolbarMode::Lower);
 	SndClickBeep();
 	return CallBackFunction::None;
 }
@@ -2030,7 +2040,7 @@ struct MainToolbarWindow : Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (_game_mode != GM_MENU && !this->IsWidgetDisabled(widget)) _toolbar_button_procs[widget](this);
+		if (_game_mode != GameMode::Menu && !this->IsWidgetDisabled(widget)) _toolbar_button_procs[widget](this);
 	}
 
 	void OnDropdownSelect(WidgetID widget, int index, int) override
@@ -2083,10 +2093,10 @@ struct MainToolbarWindow : Window {
 			case MTHK_CLIENT_LIST: if (_networking) ShowClientList(); break;
 			case MTHK_SIGN_LIST: ShowSignList(); break;
 			case MTHK_LANDINFO: cbf = PlaceLandBlockInfo(); break;
-			default: return ES_NOT_HANDLED;
+			default: return EventState::NotHandled;
 		}
 		if (cbf != CallBackFunction::None) _last_started_action = cbf;
-		return ES_HANDLED;
+		return EventState::Handled;
 	}
 
 	void OnPlaceObject([[maybe_unused]] Point pt, TileIndex tile) override
@@ -2259,7 +2269,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_toolbar_normal_widge
 /** Window definition for the normal (top) toolbar. */
 static WindowDesc _toolb_normal_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_MAIN_TOOLBAR, WC_NONE,
+	WindowClass::MainToolbar, WindowClass::None,
 	{WindowDefaultFlag::NoFocus, WindowDefaultFlag::NoClose},
 	_nested_toolbar_normal_widgets,
 	&MainToolbarWindow::hotkeys
@@ -2394,10 +2404,10 @@ struct ScenarioEditorToolbarWindow : Window {
 			case WID_TE_SPACER: {
 				int height = r.Height();
 				if (height > 2 * GetCharacterHeight(FontSize::Normal)) {
-					DrawString(r.left, r.right, height / 2 - GetCharacterHeight(FontSize::Normal), STR_SCENEDIT_TOOLBAR_OPENTTD, TC_FROMSTRING, SA_HOR_CENTER);
-					DrawString(r.left, r.right, height / 2, STR_SCENEDIT_TOOLBAR_SCENARIO_EDITOR, TC_FROMSTRING, SA_HOR_CENTER);
+					DrawString(r.left, r.right, height / 2 - GetCharacterHeight(FontSize::Normal), STR_SCENEDIT_TOOLBAR_OPENTTD, TextColour::FromString, AlignmentH::Centre);
+					DrawString(r.left, r.right, height / 2, STR_SCENEDIT_TOOLBAR_SCENARIO_EDITOR, TextColour::FromString, AlignmentH::Centre);
 				} else {
-					DrawString(r.left, r.right, (height - GetCharacterHeight(FontSize::Normal)) / 2, STR_SCENEDIT_TOOLBAR_SCENARIO_EDITOR, TC_FROMSTRING, SA_HOR_CENTER);
+					DrawString(r.left, r.right, (height - GetCharacterHeight(FontSize::Normal)) / 2, STR_SCENEDIT_TOOLBAR_SCENARIO_EDITOR, TextColour::FromString, AlignmentH::Centre);
 				}
 				break;
 			}
@@ -2419,7 +2429,7 @@ struct ScenarioEditorToolbarWindow : Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (_game_mode == GM_MENU) return;
+		if (_game_mode == GameMode::Menu) return;
 		CallBackFunction cbf = _scen_toolbar_button_procs[widget](this);
 		if (cbf != CallBackFunction::None) _last_started_action = cbf;
 	}
@@ -2450,13 +2460,13 @@ struct ScenarioEditorToolbarWindow : Window {
 				case MainToolbarEditorHotkeys::GenerateTown: ShowFoundTownWindow(); break;
 				case MainToolbarEditorHotkeys::BuildRoad: ShowBuildRoadScenToolbar(_last_built_roadtype); break;
 				case MainToolbarEditorHotkeys::BuildTram: ShowBuildRoadScenToolbar(_last_built_tramtype); break;
-				default: return ES_NOT_HANDLED;
+				default: return EventState::NotHandled;
 			}
 			if (cbf != CallBackFunction::None) _last_started_action = cbf;
 		} else {
 			this->OnClick({}, hotkey, 0);
 		}
-		return ES_HANDLED;
+		return EventState::Handled;
 	}
 
 	void OnPlaceObject([[maybe_unused]] Point pt, TileIndex tile) override
@@ -2567,7 +2577,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_toolb_scen_inner_wid
 	NWidget(WWT_PANEL, Colours::Grey, WID_TE_DATE_PANEL),
 		NWidget(NWID_HORIZONTAL), SetPIP(2, 2, 2), SetPadding(1),
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_TE_DATE_BACKWARD), SetSpriteTip(SPR_ARROW_DOWN, STR_SCENEDIT_TOOLBAR_MOVE_THE_STARTING_DATE_BACKWARD_TOOLTIP), SetFill(0, 1),
-			NWidget(WWT_TEXT, Colours::Invalid, WID_TE_DATE), SetToolTip(STR_SCENEDIT_TOOLBAR_SET_DATE_TOOLTIP), SetTextStyle(TC_WHITE), SetAlignment(SA_CENTER), SetFill(0, 1),
+			NWidget(WWT_TEXT, Colours::Invalid, WID_TE_DATE), SetToolTip(STR_SCENEDIT_TOOLBAR_SET_DATE_TOOLTIP), SetTextStyle(TextColour::White), SetAlignment({AlignmentH::Centre, AlignmentV::Middle}), SetFill(0, 1),
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_TE_DATE_FORWARD), SetSpriteTip(SPR_ARROW_UP, STR_SCENEDIT_TOOLBAR_MOVE_THE_STARTING_DATE_FORWARD_TOOLTIP), SetFill(0, 1),
 		EndContainer(),
 	EndContainer(),
@@ -2603,7 +2613,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_toolb_scen_widgets =
 /** Window definition for the scenario editor (top) toolbar window. */
 static WindowDesc _toolb_scen_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_MAIN_TOOLBAR, WC_NONE,
+	WindowClass::MainToolbar, WindowClass::None,
 	{WindowDefaultFlag::NoFocus, WindowDefaultFlag::NoClose},
 	_nested_toolb_scen_widgets,
 	&ScenarioEditorToolbarWindow::hotkeys
@@ -2612,11 +2622,7 @@ static WindowDesc _toolb_scen_desc(
 /** Allocate the toolbar. */
 void AllocateToolbar()
 {
-	/* Clean old GUI values; railtype is (re)set by rail_gui.cpp */
-	_last_built_roadtype = ROADTYPE_ROAD;
-	_last_built_tramtype = ROADTYPE_TRAM;
-
-	if (_game_mode == GM_EDITOR) {
+	if (_game_mode == GameMode::Editor) {
 		new ScenarioEditorToolbarWindow(_toolb_scen_desc);
 	} else {
 		new MainToolbarWindow(_toolb_normal_desc);

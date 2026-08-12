@@ -31,15 +31,15 @@
 /* static */ void Game::GameLoop()
 {
 	if (_networking && !_network_server) {
-		PerformanceMeasurer::SetInactive(PFE_GAMESCRIPT);
+		PerformanceMeasurer::SetInactive(PerformanceElement::GameScript);
 		return;
 	}
 	if (Game::instance == nullptr) {
-		PerformanceMeasurer::SetInactive(PFE_GAMESCRIPT);
+		PerformanceMeasurer::SetInactive(PerformanceElement::GameScript);
 		return;
 	}
 
-	PerformanceMeasurer framerate(PFE_GAMESCRIPT);
+	PerformanceMeasurer framerate(PerformanceElement::GameScript);
 
 	Game::frame_counter++;
 
@@ -72,7 +72,7 @@
 	if (Game::instance != nullptr) return;
 
 	/* Don't start GameScripts in intro */
-	if (_game_mode == GM_MENU) return;
+	if (_game_mode == GameMode::Menu) return;
 
 	/* Clients shouldn't start GameScripts */
 	if (_networking && !_network_server) return;
@@ -91,7 +91,7 @@
 	Game::instance->LoadOnStack(config->GetToLoadData());
 	config->SetToLoadData(nullptr);
 
-	InvalidateWindowClassesData(WC_SCRIPT_DEBUG, -1);
+	InvalidateWindowClassesData(WindowClass::ScriptDebug, -1);
 }
 
 /* static */ void Game::Uninitialize(bool keepConfig)
@@ -176,10 +176,10 @@
 	Game::scanner_library->RescanDir();
 	ResetConfig();
 
-	InvalidateWindowData(WC_SCRIPT_LIST, 0, 1);
-	SetWindowClassesDirty(WC_SCRIPT_DEBUG);
-	InvalidateWindowClassesData(WC_SCRIPT_SETTINGS);
-	InvalidateWindowClassesData(WC_GAME_OPTIONS);
+	InvalidateWindowData(WindowClass::ScriptList, 0, 1);
+	SetWindowClassesDirty(WindowClass::ScriptDebug);
+	InvalidateWindowClassesData(WindowClass::ScriptSettings);
+	InvalidateWindowClassesData(WindowClass::GameOptions);
 }
 
 

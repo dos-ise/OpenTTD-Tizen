@@ -22,6 +22,8 @@
 #include "ai_info.hpp"
 #include "../script/script_gui.h"
 
+#include "../widgets/ai_widget.h"
+
 #include "table/strings.h"
 
 #include "../safeguards.h"
@@ -70,11 +72,11 @@ static constexpr std::initializer_list<NWidgetPart> _nested_ai_config_widgets = 
 				NWidget(NWID_VERTICAL, NWidContainerFlag::EqualSize),
 					NWidget(NWID_HORIZONTAL, NWidContainerFlag::EqualSize),
 						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_OPEN_URL), SetResize(1, 0), SetFill(1, 0), SetStringTip(STR_CONTENT_OPEN_URL, STR_CONTENT_OPEN_URL_TOOLTIP),
-						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_TEXTFILE + TFT_README), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_README, STR_TEXTFILE_VIEW_README_TOOLTIP),
+						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_TEXTFILE + TextfileType::Readme), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_README, STR_TEXTFILE_VIEW_README_TOOLTIP),
 					EndContainer(),
 					NWidget(NWID_HORIZONTAL, NWidContainerFlag::EqualSize),
-						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_TEXTFILE + TFT_CHANGELOG), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_CHANGELOG, STR_TEXTFILE_VIEW_CHANGELOG_TOOLTIP),
-						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_TEXTFILE + TFT_LICENSE), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_LICENCE, STR_TEXTFILE_VIEW_LICENCE_TOOLTIP),
+						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_TEXTFILE + TextfileType::Changelog), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_CHANGELOG, STR_TEXTFILE_VIEW_CHANGELOG_TOOLTIP),
+						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_AIC_TEXTFILE + TextfileType::License), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_LICENCE, STR_TEXTFILE_VIEW_LICENCE_TOOLTIP),
 					EndContainer(),
 				EndContainer(),
 			EndContainer(),
@@ -85,7 +87,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_ai_config_widgets = 
 /** Window definition for the configure AI window. */
 static WindowDesc _ai_config_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_GAME_OPTIONS, WC_NONE,
+	WindowClass::GameOptions, WindowClass::None,
 	{},
 	_nested_ai_config_widgets
 );
@@ -100,7 +102,7 @@ struct AIConfigWindow : public Window {
 
 	AIConfigWindow() : Window(_ai_config_desc)
 	{
-		this->InitNested(WN_GAME_OPTIONS_AI); // Initializes 'this->line_height' as a side effect.
+		this->InitNested(GameOptionsWindowNumber::AI); // Initializes 'this->line_height' as a side effect.
 		this->vscroll = this->GetScrollbar(WID_AIC_SCROLLBAR);
 		this->selected_slot = CompanyID::Invalid();
 		NWidgetCore *nwi = this->GetWidget<NWidgetCore>(WID_AIC_LIST);
@@ -111,8 +113,8 @@ struct AIConfigWindow : public Window {
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		CloseWindowByClass(WC_SCRIPT_LIST);
-		CloseWindowByClass(WC_SCRIPT_SETTINGS);
+		CloseWindowByClass(WindowClass::ScriptList);
+		CloseWindowByClass(WindowClass::ScriptSettings);
 		this->Window::Close();
 	}
 
@@ -155,7 +157,7 @@ struct AIConfigWindow : public Window {
 	 */
 	static bool IsEditable(CompanyID slot)
 	{
-		if (_game_mode != GM_NORMAL) {
+		if (_game_mode != GameMode::Normal) {
 			return slot > 0 && slot < MAX_COMPANIES;
 		}
 		return slot < MAX_COMPANIES && !Company::IsValidID(slot);
@@ -168,7 +170,7 @@ struct AIConfigWindow : public Window {
 	 */
 	std::string GetSlotText(CompanyID cid) const
 	{
-		if ((_game_mode != GM_NORMAL && cid == 0) || (_game_mode == GM_NORMAL && Company::IsValidHumanID(cid))) return GetString(STR_AI_CONFIG_HUMAN_PLAYER);
+		if ((_game_mode != GameMode::Normal && cid == 0) || (_game_mode == GameMode::Normal && Company::IsValidHumanID(cid))) return GetString(STR_AI_CONFIG_HUMAN_PLAYER);
 		if (const AIInfo *info = AIConfig::GetConfig(cid)->GetInfo(); info != nullptr) return info->GetName();
 		return GetString(STR_AI_CONFIG_RANDOM_AI);
 	}
@@ -181,10 +183,10 @@ struct AIConfigWindow : public Window {
 	 */
 	TextColour GetSlotColour(CompanyID cid, CompanyID max_slot) const
 	{
-		if (this->selected_slot == cid) return TC_WHITE;
-		if (IsEditable(cid)) return cid < max_slot ? TC_ORANGE : TC_SILVER;
-		if (Company::IsValidAiID(cid)) return TC_GREEN;
-		return TC_SILVER;
+		if (this->selected_slot == cid) return TextColour::White;
+		if (IsEditable(cid)) return cid < max_slot ? TextColour::Orange : TextColour::Silver;
+		if (Company::IsValidAiID(cid)) return TextColour::Green;
+		return TextColour::Silver;
 	}
 
 	void DrawWidget(const Rect &r, WidgetID widget) const override
@@ -193,7 +195,7 @@ struct AIConfigWindow : public Window {
 			case WID_AIC_LIST: {
 				Rect tr = r.Shrink(WidgetDimensions::scaled.matrix);
 				int max_slot = GetGameSettings().difficulty.max_no_competitors;
-				if (_game_mode == GM_NORMAL) {
+				if (_game_mode == GameMode::Normal) {
 					for (const Company *c : Company::Iterate()) {
 						if (c->is_ai) max_slot--;
 					}
@@ -215,7 +217,7 @@ struct AIConfigWindow : public Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (widget >= WID_AIC_TEXTFILE && widget < WID_AIC_TEXTFILE + TFT_CONTENT_END) {
+		if (widget >= WID_AIC_TEXTFILE && widget < WID_AIC_TEXTFILE + TextfileType::ContentEnd) {
 			if (this->selected_slot == CompanyID::Invalid() || AIConfig::GetConfig(this->selected_slot) == nullptr) return;
 
 			ShowScriptTextfileWindow(this, static_cast<TextfileType>(widget - WID_AIC_TEXTFILE), this->selected_slot);
@@ -293,7 +295,7 @@ struct AIConfigWindow : public Window {
 
 			case WID_AIC_CONTENT_DOWNLOAD:
 				if (!_network_available) {
-					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WL_ERROR);
+					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WarningLevel::Error);
 				} else {
 					ShowNetworkContentListWindow(nullptr, ContentType::Ai);
 				}
@@ -326,7 +328,7 @@ struct AIConfigWindow : public Window {
 		this->SetWidgetDisabledState(WID_AIC_MOVE_DOWN, !IsEditable(this->selected_slot) || !IsEditable(static_cast<CompanyID>(this->selected_slot + 1)));
 
 		this->SetWidgetDisabledState(WID_AIC_OPEN_URL, this->selected_slot == CompanyID::Invalid() || config->GetInfo() == nullptr || config->GetInfo()->GetURL().empty());
-		for (TextfileType tft = TFT_CONTENT_BEGIN; tft < TFT_CONTENT_END; tft++) {
+		for (TextfileType tft : EnumRange(TextfileType::ContentBegin, TextfileType::ContentEnd)) {
 			this->SetWidgetDisabledState(WID_AIC_TEXTFILE + tft, this->selected_slot == CompanyID::Invalid() || !config->GetTextfile(tft, this->selected_slot).has_value());
 		}
 	}
@@ -335,7 +337,7 @@ struct AIConfigWindow : public Window {
 /** Open the AI config window. */
 void ShowAIConfigWindow()
 {
-	CloseWindowByClass(WC_GAME_OPTIONS);
+	CloseWindowByClass(WindowClass::GameOptions);
 	new AIConfigWindow();
 }
 

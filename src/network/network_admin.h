@@ -44,7 +44,7 @@ protected:
 	NetworkRecvStatus SendAuthRequest();
 	NetworkRecvStatus SendEnableEncryption();
 public:
-	std::array<AdminUpdateFrequencies, ADMIN_UPDATE_END> update_frequency{}; ///< Admin requested update intervals.
+	EnumIndexArray<AdminUpdateFrequencies, AdminUpdateType, AdminUpdateType::End> update_frequency{}; ///< Admin requested update intervals.
 	std::chrono::steady_clock::time_point connect_time{}; ///< Time of connection.
 	NetworkAddress address{}; ///< Address of the admin.
 
@@ -96,9 +96,9 @@ public:
 		/**
 		 * Check whether the given admin is active.
 		 * @param index The index of the admin.
-		 * @return \c true iff the admin's status is #ADMIN_STATUS_ACTIVE.
+		 * @return \c true iff the admin's status is #AdminStatus::Active.
 		 */
-		bool operator() (size_t index) { return ServerNetworkAdminSocketHandler::Get(index)->GetAdminStatus() == ADMIN_STATUS_ACTIVE; }
+		bool operator() (size_t index) { return ServerNetworkAdminSocketHandler::Get(index)->GetAdminStatus() == AdminStatus::Active; }
 	};
 
 	/**
@@ -122,7 +122,7 @@ void NetworkAdminCompanyRemove(CompanyID company_id, AdminCompanyRemoveReason bc
 
 void NetworkAdminChat(NetworkAction action, NetworkChatDestinationType desttype, ClientID client_id, std::string_view msg, int64_t data = 0, bool from_admin = false);
 void NetworkAdminUpdate(AdminUpdateFrequency freq);
-void NetworkServerSendAdminRcon(AdminID admin_index, TextColour colour_code, std::string_view string);
+void NetworkServerSendAdminRcon(AdminID admin_index, ExtendedTextColour colour_code, std::string_view string);
 void NetworkAdminConsole(std::string_view origin, std::string_view string);
 void NetworkAdminGameScript(std::string_view json);
 void NetworkAdminCmdLogging(const NetworkClientSocket *owner, const CommandPacket &cp);

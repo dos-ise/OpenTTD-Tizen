@@ -27,6 +27,7 @@
 #include "win32_v.h"
 #include <windows.h>
 #include <imm.h>
+#include <objbase.h>
 #include <versionhelpers.h>
 #if defined(_MSC_VER) && defined(NTDDI_WIN10_RS4)
 #include <winrt/Windows.UI.ViewManagement.h>
@@ -331,7 +332,7 @@ static void SetCandidatePos(HWND hwnd)
 			Point pt = _focused_window->GetCaretPosition();
 			cf.ptCurrentPos.x = _focused_window->left + pt.x;
 			cf.ptCurrentPos.y = _focused_window->top  + pt.y;
-			if (_focused_window->window_class == WC_CONSOLE) {
+			if (_focused_window->window_class == WindowClass::Console) {
 				cf.rcArea.left   = _focused_window->left;
 				cf.rcArea.top    = _focused_window->top;
 				cf.rcArea.right  = _focused_window->left + _focused_window->width;
@@ -960,8 +961,11 @@ static void FindResolutions(uint8_t bpp)
 	SortResolutions();
 }
 
-void VideoDriver_Win32Base::Initialize()
+std::optional<std::string_view> VideoDriver_Win32Base::Initialize()
 {
+	/* Initialize COM */
+	if (FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED))) return "COM initialization failed";
+
 	this->UpdateAutoResolution();
 
 	RegisterWndClass();
@@ -972,6 +976,7 @@ void VideoDriver_Win32Base::Initialize()
 	this->height = this->height_org = _cur_resolution.height;
 
 	Debug(driver, 2, "Resolution for display: {}x{}", _cur_resolution.width, _cur_resolution.height);
+	return std::nullopt;
 }
 
 void VideoDriver_Win32Base::Stop()
@@ -1076,7 +1081,7 @@ bool VideoDriver_Win32Base::ToggleFullscreen(bool full_screen)
 {
 	bool res = this->MakeWindow(full_screen);
 
-	InvalidateWindowClassesData(WC_GAME_OPTIONS, 3);
+	InvalidateWindowClassesData(WindowClass::GameOptions, 3);
 	return res;
 }
 
@@ -1146,7 +1151,8 @@ std::optional<std::string_view> VideoDriver_Win32GDI::Start(const StringList &pa
 {
 	if (BlitterFactory::GetCurrentBlitter()->GetScreenDepth() == 0) return "Only real blitters supported";
 
-	this->Initialize();
+	auto err = this->Initialize();
+	if (err) return err;
 
 	this->MakePalette();
 	this->AllocateBackingStore(_cur_resolution.width, _cur_resolution.height);
@@ -1259,7 +1265,7 @@ void VideoDriver_Win32GDI::PaletteChanged(HWND hWnd)
 
 void VideoDriver_Win32GDI::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
 	if (IsEmptyRect(this->dirty_rect)) return;
 
@@ -1439,11 +1445,16 @@ std::optional<std::string_view> VideoDriver_Win32OpenGL::Start(const StringList 
 
 	LoadWGLExtensions();
 
-	this->Initialize();
+	auto err = this->Initialize();
+	if (err) {
+		this->Stop();
+		_cur_resolution = old_res;
+		return err;
+	}
 	this->MakeWindow(_fullscreen);
 
 	/* Create and initialize OpenGL context. */
-	auto err = this->AllocateContext();
+	err = this->AllocateContext();
 	if (err) {
 		this->Stop();
 		_cur_resolution = old_res;
@@ -1609,7 +1620,7 @@ void VideoDriver_Win32OpenGL::ReleaseVideoPointer()
 
 void VideoDriver_Win32OpenGL::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
 	if (_local_palette.count_dirty != 0) {
 		Blitter *blitter = BlitterFactory::GetCurrentBlitter();

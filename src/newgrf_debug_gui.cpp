@@ -81,19 +81,19 @@ static inline uint GetInspectWindowNumber(GrfSpecFeature feature, ConvertibleThr
  * The type of a property to show. This is used to
  * provide an appropriate representation in the GUI.
  */
-enum NIType : uint8_t {
-	NIT_INT,   ///< The property is a simple integer
-	NIT_CARGO, ///< The property is a cargo
+enum class NIType : uint8_t {
+	Integer, ///< The property is a simple integer
+	Cargo, ///< The property is a cargo
 };
 
 using NIReadProc = uint32_t(const void *b);
 
 /** Representation of the data from a NewGRF property. */
 struct NIProperty {
-	std::string_view name;          ///< A (human readable) name for the property
+	std::string_view name; ///< A (human readable) name for the property
 	NIReadProc *read_proc; ///< Callback proc to get the actual variable from memory
-	uint8_t prop;                 ///< The number of the property
-	uint8_t type;
+	uint8_t prop; ///< The number of the property
+	NIType type; ///< Type of property for chosing the appropriate representation.
 };
 
 
@@ -171,7 +171,7 @@ public:
 	 * @param index index to check.
 	 * @return GRFID of the item. 0 means that the item is not inspectable.
 	 */
-	virtual uint32_t GetGRFID(uint index) const = 0;
+	virtual GrfID GetGRFID(uint index) const = 0;
 
 	/**
 	 * Get the list of badges of this item.
@@ -205,7 +205,7 @@ public:
 	 * @param grfid Parameter for the PSA. Only required for items with parameters.
 	 * @return Span of the storage array or an empty span when not present.
 	 */
-	virtual const std::span<int32_t> GetPSA([[maybe_unused]] uint index, [[maybe_unused]] uint32_t grfid) const
+	virtual const std::span<int32_t> GetPSA([[maybe_unused]] uint index, [[maybe_unused]] GrfID grfid) const
 	{
 		return {};
 	}
@@ -261,7 +261,7 @@ struct NewGRFInspectWindow : Window {
 	static inline EnumIndexArray<std::array<uint32_t, 0x20>, GrfSpecFeature, GrfSpecFeature::FakeEnd> var60params{};
 
 	/** GRFID of the caller of this window, 0 if it has no caller. */
-	uint32_t caller_grfid = 0;
+	GrfID caller_grfid{};
 
 	/** For ground vehicles: Index in vehicle chain. */
 	uint chain_index = 0;
@@ -285,7 +285,7 @@ struct NewGRFInspectWindow : Window {
 	 * Set the GRFID of the item opening this window.
 	 * @param grfid GRFID of the item opening this window, or 0 if not opened by other window.
 	 */
-	void SetCallerGRFID(uint32_t grfid)
+	void SetCallerGRFID(GrfID grfid)
 	{
 		this->caller_grfid = grfid;
 		this->SetDirty();
@@ -370,7 +370,7 @@ struct NewGRFInspectWindow : Window {
 		switch (widget) {
 			case WID_NGRFI_VEH_CHAIN:
 				assert(this->HasChainIndex());
-				size.height = std::max(size.height, GetVehicleImageCellSize(this->GetVehicleTypeForWindow(), EIT_IN_DEPOT).height + 2 + WidgetDimensions::scaled.bevel.Vertical());
+				size.height = std::max(size.height, GetVehicleImageCellSize(this->GetVehicleTypeForWindow(), EngineImageType::InDepot).height + 2 + WidgetDimensions::scaled.bevel.Vertical());
 				break;
 
 			case WID_NGRFI_MAINPANEL:
@@ -393,7 +393,7 @@ struct NewGRFInspectWindow : Window {
 		offset -= this->vscroll->GetPosition();
 		if (offset < 0 || offset >= this->vscroll->GetCapacity()) return;
 
-		::DrawString(r.Shrink(WidgetDimensions::scaled.frametext).Shrink(0, offset * this->resize.step_height, 0, 0), string, TC_BLACK);
+		::DrawString(r.Shrink(WidgetDimensions::scaled.frametext).Shrink(0, offset * this->resize.step_height, 0, 0), string, TextColour::Black);
 	}
 
 	/**
@@ -424,9 +424,9 @@ struct NewGRFInspectWindow : Window {
 			if (sel_center > width / 2) skip = std::min(total_width - width, sel_center - width / 2);
 		}
 
-		int h = GetVehicleImageCellSize(this->GetVehicleTypeForWindow(), EIT_IN_DEPOT).height;
+		int h = GetVehicleImageCellSize(this->GetVehicleTypeForWindow(), EngineImageType::InDepot).height;
 		int y = CentreBounds(br.top, br.bottom, h);
-		DrawVehicleImage(v->First(), br, VehicleID::Invalid(), EIT_IN_DETAILS, skip);
+		DrawVehicleImage(v->First(), br, VehicleID::Invalid(), EngineImageType::InDetails, skip);
 
 		/* Highlight the articulated part (this is different to the whole-vehicle highlighting of DrawVehicleImage */
 		if (_current_text_dir == TD_RTL) {
@@ -439,8 +439,8 @@ struct NewGRFInspectWindow : Window {
 	std::string GetPropertyString(const NIProperty &nip, uint value) const
 	{
 		switch (nip.type) {
-			case NIT_INT: return GetString(STR_JUST_INT, value);
-			case NIT_CARGO: return GetString(IsValidCargoType(static_cast<CargoType>(value)) ? CargoSpec::Get(value)->name : STR_QUANTITY_N_A);
+			case NIType::Integer: return GetString(STR_JUST_INT, value);
+			case NIType::Cargo: return GetString(IsValidCargoType(static_cast<CargoType>(value)) ? CargoSpec::Get(value)->name : STR_QUANTITY_N_A);
 			default: NOT_REACHED();
 		}
 	}
@@ -478,7 +478,7 @@ struct NewGRFInspectWindow : Window {
 		auto psa = nih.GetPSA(index, this->caller_grfid);
 		if (!psa.empty()) {
 			if (nih.PSAWithParameter()) {
-				this->DrawString(r, i++, fmt::format("Persistent storage [{:08X}]:", std::byteswap(this->caller_grfid)));
+				this->DrawString(r, i++, fmt::format("Persistent storage [{}]:", FormatArrayAsHex(this->caller_grfid)));
 			} else {
 				this->DrawString(r, i++, "Persistent storage:");
 			}
@@ -681,7 +681,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_newgrf_inspect_widge
 /** Window definition for the NewGRF chain inspection window. */
 static WindowDesc _newgrf_inspect_chain_desc(
 	WindowPosition::Automatic, "newgrf_inspect_chain", 400, 300,
-	WC_NEWGRF_INSPECT, WC_NONE,
+	WindowClass::NewGRFInspect, WindowClass::None,
 	{},
 	_nested_newgrf_inspect_chain_widgets
 );
@@ -689,7 +689,7 @@ static WindowDesc _newgrf_inspect_chain_desc(
 /** Window definition for the NewGRF inspection window. */
 static WindowDesc _newgrf_inspect_desc(
 	WindowPosition::Automatic, "newgrf_inspect", 400, 300,
-	WC_NEWGRF_INSPECT, WC_NONE,
+	WindowClass::NewGRFInspect, WindowClass::None,
 	{},
 	_nested_newgrf_inspect_widgets
 );
@@ -703,7 +703,7 @@ static WindowDesc _newgrf_inspect_desc(
  * @param index   The index/identifier of the feature to inspect.
  * @param grfid   GRFID of the item opening this window, or 0 if not opened by other window.
  */
-void ShowNewGRFInspectWindow(GrfSpecFeature feature, uint index, const uint32_t grfid)
+void ShowNewGRFInspectWindow(GrfSpecFeature feature, uint index, const GrfID grfid)
 {
 	if (!IsNewGRFInspectable(feature, index)) return;
 
@@ -726,7 +726,7 @@ void InvalidateNewGRFInspectWindow(GrfSpecFeature feature, uint index)
 	if (feature == GrfSpecFeature::Invalid) return;
 
 	WindowNumber wno = GetInspectWindowNumber(feature, index);
-	InvalidateWindowData(WC_NEWGRF_INSPECT, wno);
+	InvalidateWindowData(WindowClass::NewGRFInspect, wno);
 }
 
 /**
@@ -742,12 +742,12 @@ void DeleteNewGRFInspectWindow(GrfSpecFeature feature, uint index)
 	if (feature == GrfSpecFeature::Invalid) return;
 
 	WindowNumber wno = GetInspectWindowNumber(feature, index);
-	CloseWindowById(WC_NEWGRF_INSPECT, wno);
+	CloseWindowById(WindowClass::NewGRFInspect, wno);
 
 	/* Reinitialise the land information window to remove the "debug" sprite if needed.
 	 * Note: Since we might be called from a command here, it is important to not execute
 	 * the invalidation immediately. The landinfo window tests commands itself. */
-	InvalidateWindowData(WC_LAND_INFO, 0, 1);
+	InvalidateWindowData(WindowClass::LandInfo, 0, 1);
 }
 
 /**
@@ -942,9 +942,9 @@ struct SpriteAlignerWindow : Window {
 				for (auto it = first; it != last; ++it) {
 					const SpriteFile *file = GetOriginFile(*it);
 					if (file == nullptr) {
-						DrawString(ir, GetString(STR_JUST_COMMA, *it), *it == this->current_sprite ? TC_WHITE : (TC_GREY | TC_NO_SHADE), SA_RIGHT | SA_FORCE);
+						DrawString(ir, GetString(STR_JUST_COMMA, *it), *it == this->current_sprite ? TextColour::White : ExtendedTextColour{TextColour::Grey, ExtendedTextColourFlag::NoShade}, AlignmentH::ForceRight);
 					} else {
-						DrawString(ir, GetString(STR_SPRITE_ALIGNER_SPRITE, file->GetSimplifiedFilename(), GetSpriteLocalID(*it)), *it == this->current_sprite ? TC_WHITE : TC_BLACK);
+						DrawString(ir, GetString(STR_SPRITE_ALIGNER_SPRITE, file->GetSimplifiedFilename(), GetSpriteLocalID(*it)), *it == this->current_sprite ? TextColour::White : TextColour::Black);
 					}
 					ir.top += step_size;
 				}
@@ -1087,7 +1087,7 @@ struct SpriteAlignerWindow : Window {
 		}
 
 		SpriteAlignerWindow::zoom = Clamp(SpriteAlignerWindow::zoom, _settings_client.gui.zoom_min, _settings_client.gui.zoom_max);
-		for (ZoomLevel z = ZoomLevel::Begin; z < ZoomLevel::End; z++) {
+		for (ZoomLevel z : EnumRange(ZoomLevel::End)) {
 			this->SetWidgetsDisabledState(z < _settings_client.gui.zoom_min || z > _settings_client.gui.zoom_max, WID_SA_ZOOM + to_underlying(z));
 			this->SetWidgetsLoweredState(SpriteAlignerWindow::zoom == z, WID_SA_ZOOM + to_underlying(z));
 		}
@@ -1188,7 +1188,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_sprite_aligner_widge
 /** Window definition for the sprite aligner window. */
 static WindowDesc _sprite_aligner_desc(
 	WindowPosition::Automatic, "sprite_aligner", 400, 300,
-	WC_SPRITE_ALIGNER, WC_NONE,
+	WindowClass::SpriteAligner, WindowClass::None,
 	{},
 	_nested_sprite_aligner_widgets
 );

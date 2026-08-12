@@ -115,9 +115,9 @@ private:
 			}
 
 			/* Green path signal opposing the path? Turn to red. */
-			if (HasPbsSignalOnTrackdir(tile, rev_td) && GetSignalStateByTrackdir(tile, rev_td) == SIGNAL_STATE_GREEN) {
+			if (HasPbsSignalOnTrackdir(tile, rev_td) && GetSignalStateByTrackdir(tile, rev_td) == SignalState::Green) {
 				this->signals_set_to_red.emplace_back(tile, rev_td);
-				SetSignalStateByTrackdir(tile, rev_td, SIGNAL_STATE_RED);
+				SetSignalStateByTrackdir(tile, rev_td, SignalState::Red);
 				MarkTileDirtyByTile(tile);
 			}
 
@@ -217,7 +217,7 @@ public:
 
 				/* Re-instate green path signals we turned to red. */
 				for (auto [sig_tile, td] : this->signals_set_to_red) {
-					SetSignalStateByTrackdir(sig_tile, td, SIGNAL_STATE_GREEN);
+					SetSignalStateByTrackdir(sig_tile, td, SignalState::Green);
 				}
 
 				return false;
@@ -227,7 +227,7 @@ public:
 		if (target != nullptr) target->okay = true;
 
 		if (Yapf().CanUseGlobalCache(*this->res_dest_node)) {
-			YapfNotifyTrackLayoutChange(INVALID_TILE, INVALID_TRACK);
+			YapfNotifyTrackLayoutChange(INVALID_TILE, Track::Invalid);
 		}
 
 		return true;
@@ -459,15 +459,15 @@ public:
 
 		/* set origin and destination nodes */
 		PBSTileInfo origin = FollowTrainReservation(v);
-		Yapf().SetOrigin(origin.tile, origin.trackdir, INVALID_TILE, INVALID_TRACKDIR, 1);
+		Yapf().SetOrigin(origin.tile, origin.trackdir, INVALID_TILE, Trackdir::Invalid, 1);
 		Yapf().SetTreatFirstRedTwoWaySignalAsEOL(true);
 		Yapf().SetDestination(v);
 
 		/* find the best path */
 		path_found = Yapf().FindPath(v);
 
-		/* if path not found - return INVALID_TRACKDIR */
-		Trackdir next_trackdir = INVALID_TRACKDIR;
+		/* if path not found - return Trackdir::Invalid */
+		Trackdir next_trackdir = Trackdir::Invalid;
 		Node *node = Yapf().GetBestNode();
 		if (node != nullptr) {
 			/* reserve till end of path */
@@ -485,7 +485,7 @@ public:
 
 			/* If the best PF node has no parent, then there is no (valid) best next trackdir to return.
 			 * This occurs when the PF is called while the train is already at its destination. */
-			if (prev == nullptr) return INVALID_TRACKDIR;
+			if (prev == nullptr) return Trackdir::Invalid;
 
 			/* return trackdir from the best origin node (one of start nodes) */
 			Node &best_next_node = *prev;
@@ -600,7 +600,7 @@ Track YapfTrainChooseTrack(const Train *v, TileIndex tile, DiagDirection enterdi
 		? CYapfRailNo90::stChooseRailTrack(v, tile, enterdir, tracks, path_found, reserve_track, target, dest)
 		: CYapfRail::stChooseRailTrack(v, tile, enterdir, tracks, path_found, reserve_track, target, dest);
 
-	return (td_ret != INVALID_TRACKDIR) ? TrackdirToTrack(td_ret) : FindFirstTrack(tracks);
+	return (td_ret != Trackdir::Invalid) ? TrackdirToTrack(td_ret) : FindFirstTrack(tracks);
 }
 
 bool YapfTrainCheckReverse(const Train *v)
@@ -628,7 +628,7 @@ bool YapfTrainCheckReverse(const Train *v)
 		}
 	}
 
-	if (moving_front->track == TRACK_BIT_WORMHOLE) {
+	if (moving_front->track == Track::Wormhole) {
 		/* front in tunnel / on bridge */
 		DiagDirection dir_into_wormhole = GetTunnelBridgeDirection(tile);
 
@@ -643,7 +643,7 @@ bool YapfTrainCheckReverse(const Train *v)
 		reverse_penalty -= DistanceManhattan(cur_tile, tile) * YAPF_TILE_LENGTH;
 	}
 
-	if (moving_back->track == TRACK_BIT_WORMHOLE) {
+	if (moving_back->track == Track::Wormhole) {
 		/* back in tunnel / on bridge */
 		DiagDirection dir_into_wormhole = GetTunnelBridgeDirection(tile_rev);
 

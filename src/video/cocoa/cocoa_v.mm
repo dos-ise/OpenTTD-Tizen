@@ -187,7 +187,7 @@ bool VideoDriver_Cocoa::ToggleFullscreen(bool full_screen)
 		[ NSMenu setMenuBarVisible:!full_screen ];
 
 		this->UpdateVideoModes();
-		InvalidateWindowClassesData(WC_GAME_OPTIONS, 3);
+		InvalidateWindowClassesData(WindowClass::GameOptions, 3);
 		return true;
 	}
 
@@ -746,7 +746,7 @@ void VideoDriver_CocoaQuartz::CheckPaletteAnim()
 /** Draw window */
 void VideoDriver_CocoaQuartz::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
 	/* Check if we need to do anything */
 	if (IsEmptyRect(this->dirty_rect) || [ this->window isMiniaturized ]) return;

@@ -11,6 +11,7 @@
 #define NEWGRF_H
 
 #include "cargotype.h"
+#include "livery.h"
 #include "rail_type.h"
 #include "road_type.h"
 #include "fileio_type.h"
@@ -19,29 +20,34 @@
 #include "newgrf_text_type.h"
 #include "vehicle_type.h"
 
-struct GRFConfig;
-
 /**
  * List of different canal 'features'.
  * Each feature gets an entry in the canal spritegroup table
  */
-enum CanalFeature : uint8_t {
-	CF_WATERSLOPE,
-	CF_LOCKS,
-	CF_DIKES,
-	CF_ICON,
-	CF_DOCKS,
-	CF_RIVER_SLOPE,
-	CF_RIVER_EDGE,
-	CF_RIVER_GUI,
-	CF_BUOY,
-	CF_END,
+enum class CanalFeature : uint8_t {
+	LockWaterSlope, ///< The sloped water tiles in locks.
+	Locks, ///< The sides of the lock.
+	Dikes, ///< The canal dikes/embankment.
+	Icon, ///< Unused: the TTDP UI icon for canals.
+	FlatDocks, ///< Unused: the graphics for TTDP flat docks.
+	RiverSlope, ///< The sloped water tiles for rivers.
+	RiverEdge, ///< The river banks.
+	RiverIcon, ///< Unused: the TTDP UI icons for rivers.
+	Buoy, ///< Buoy without underlying water.
+	End, ///< End marker.
 };
+
+/** Flags controlling the display of canals. */
+enum class CanalFeatureFlag : uint8_t {
+	HasFlatSprite = 0, ///< Additional flat ground sprite in the beginning.
+};
+/** CanalFeatureFlag bitmask. */
+using CanalFeatureFlags = EnumBitSet<CanalFeatureFlag, uint8_t>;
 
 /** Canal properties local to the NewGRF */
 struct CanalProperties {
-	CanalCallbackMasks callback_mask;  ///< Bitmask of canal callbacks that have to be called.
-	uint8_t flags;          ///< Flags controlling display.
+	CanalCallbackMasks callback_mask; ///< Bitmask of canal callbacks that have to be called.
+	CanalFeatureFlags flags; ///< Flags controlling display.
 };
 
 /** Stages of loading all NewGRFs. */
@@ -52,9 +58,8 @@ enum class GrfLoadingStage : uint8_t {
 	Init, ///< Second step of NewGRF loading; load all actions into memory.
 	Reserve, ///< Third step of NewGRF loading; reserve features and GRMs.
 	Activation, ///< Forth step of NewGRF loading; activate the features.
+	End, ///< End marker.
 };
-
-DECLARE_INCREMENT_DECREMENT_OPERATORS(GrfLoadingStage)
 
 /** Bits of NewGRF's GlobalVariable 1E/9E. */
 enum class GrfMiscBit : uint8_t {
@@ -67,6 +72,7 @@ enum class GrfMiscBit : uint8_t {
 	SecondRockyTileSet = 6, ///< Enable using the second rocky tile set.
 };
 
+/** Bitset of \c GrfMiscBit elements. */
 using GrfMiscBits = EnumBitSet<GrfMiscBit, uint8_t>;
 
 enum class GrfSpecFeature : uint8_t {
@@ -102,9 +108,9 @@ enum class GrfSpecFeature : uint8_t {
 
 	Invalid = 0xFF, ///< An invalid spec feature
 };
-using GrfSpecFeatures = EnumBitSet<GrfSpecFeature, uint32_t, GrfSpecFeature::End>;
 
-static const uint32_t INVALID_GRFID = 0xFFFFFFFF;
+/** Bitset of \c GrfSpecFeature elements. */
+using GrfSpecFeatures = EnumBitSet<GrfSpecFeature, uint32_t, GrfSpecFeature::End>;
 
 struct GRFLabel {
 	uint8_t label;
@@ -117,7 +123,7 @@ struct GRFLabel {
 /** Dynamic data of a loaded NewGRF */
 struct GRFFile {
 	std::string filename{};
-	uint32_t grfid = 0;
+	GrfID grfid{};
 	uint8_t grf_version = 0;
 
 	uint sound_offset = 0;
@@ -151,9 +157,9 @@ struct GRFFile {
 	std::vector<RoadTypeLabel> tramtype_list{}; ///< Roadtype translation table (tram)
 	std::array<RoadType, ROADTYPE_END> tramtype_map{};
 
-	std::array<CanalProperties, CF_END> canal_local_properties{}; ///< Canal properties as set by this NewGRF
+	EnumIndexArray<CanalProperties, CanalFeature, CanalFeature::End> canal_local_properties{}; ///< Canal properties as set by this NewGRF
 
-	std::unordered_map<uint8_t, LanguageMap> language_map{}; ///< Mappings related to the languages.
+	std::unordered_map<GRFLanguage, LanguageMap> language_map{}; ///< Mappings related to the languages.
 
 	int traininfo_vehicle_pitch = 0; ///< Vertical offset for drawing train images in depot GUI and vehicle details
 	uint traininfo_vehicle_width = 0; ///< Width (in pixels) of a 8/8 train vehicle in depot GUI and vehicle details
@@ -198,7 +204,7 @@ enum class TramDepotReplacement : uint8_t {
 /** State of features loaded by NewGRFs. */
 struct GRFLoadedFeatures {
 	bool has_2CC; ///< Set if any vehicle is loaded which uses 2cc (two company colours).
-	uint64_t used_liveries; ///< Bitmask of #LiveryScheme used by the defined engines.
+	LiverySchemes used_liveries; ///< Bitmask of #LiveryScheme used by the defined engines.
 	ShoreReplacement shore; ///< In which way shore sprites were replaced.
 	TramDepotReplacement tram; ///< In which way tram depots were replaced.
 };
@@ -238,10 +244,35 @@ void GrfMsgI(int severity, const std::string &msg);
 
 bool GetGlobalVariable(uint8_t param, uint32_t *value, const GRFFile *grffile);
 
-StringID MapGRFStringID(uint32_t grfid, GRFStringID str);
+StringID MapGRFStringID(GrfID grfid, GRFStringID str);
 void ShowNewGRFError();
 
 GrfSpecFeature GetGrfSpecFeature(VehicleType type);
 VehicleType GetVehicleType(GrfSpecFeature feature);
+
+/**
+ * Flatten a NewGRF related label to a 32 bits integer.
+ * @param label The label to flatten.
+ * @return The flattened label.
+ */
+template <typename T> requires std::is_base_of_v<BaseLabel, T>
+constexpr uint32_t FlattenNewGRFLabel(T label) { return label[0] | label[1] << 8 | label[2] << 16 | label[3] << 24; }
+
+/**
+ * Unflatten a NewGRF related label from a 32 bits integer.
+ * @param value The value to decode.
+ * @return The unflattened label.
+ */
+template <typename T> requires std::is_base_of_v<BaseLabel, T>
+constexpr T UnflattenNewGRFLabel(uint32_t value)
+{
+	uint8_t buf[]{
+		static_cast<uint8_t>(GB(value, 0, 8)),
+		static_cast<uint8_t>(GB(value, 8, 8)),
+		static_cast<uint8_t>(GB(value, 16, 8)),
+		static_cast<uint8_t>(GB(value, 24, 8))
+	};
+	return buf;
+}
 
 #endif /* NEWGRF_H */

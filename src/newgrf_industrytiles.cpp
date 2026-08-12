@@ -177,7 +177,7 @@ static void IndustryDrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan 
 		}
 	}
 
-	DrawNewGRFTileSeq(ti, &dts, TO_INDUSTRIES, stage, GetColourPalette(rnd_colour));
+	DrawNewGRFTileSeq(ti, &dts, TransparencyOption::Industries, stage, GetColourPalette(rnd_colour));
 }
 
 uint16_t GetIndustryTileCallback(CallbackID callback, uint32_t param1, uint32_t param2, IndustryGfx gfx_id, Industry *industry, TileIndex tile, std::span<int32_t> regs100)
@@ -199,7 +199,7 @@ bool DrawNewIndustryTile(TileInfo *ti, Industry *i, IndustryGfx gfx, const Indus
 			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(inds->grf_prop.grffile, CBID_INDTILE_DRAW_FOUNDATIONS, callback_res);
 		}
 
-		if (draw_old_one) DrawFoundation(ti, FOUNDATION_LEVELED);
+		if (draw_old_one) DrawFoundation(ti, Foundation::Leveled);
 	}
 
 	IndustryTileResolverObject object(gfx, ti->tile, i);
@@ -345,12 +345,12 @@ static void DoTriggerIndustryTileRandomisation(TileIndex tile, IndustryRandomTri
 	/* Rerandomise tile bits */
 	uint8_t new_random_bits = Random();
 	uint8_t random_bits = GetIndustryRandomBits(tile);
-	random_bits &= ~object.reseed[VSG_SCOPE_SELF];
-	random_bits |= new_random_bits & object.reseed[VSG_SCOPE_SELF];
+	random_bits &= ~object.reseed[VarSpriteGroupScope::Self];
+	random_bits |= new_random_bits & object.reseed[VarSpriteGroupScope::Self];
 	SetIndustryRandomBits(tile, random_bits);
 	MarkTileDirtyByTile(tile);
 
-	reseed_industry |= object.reseed[VSG_SCOPE_PARENT];
+	reseed_industry |= object.reseed[VarSpriteGroupScope::Parent];
 }
 
 /**

@@ -57,6 +57,8 @@ enum class DepotCommandFlag : uint8_t {
 	MassSend, ///< Tells that it's a mass send to depot command (type in VLW flag)
 	DontCancel, ///< Don't cancel current goto depot command if any
 };
+
+/** Bitset of \c DepotCommandFlag elements. */
 using DepotCommandFlags = EnumBitSet<DepotCommandFlag, uint8_t>;
 
 static const uint MAX_LENGTH_VEHICLE_NAME_CHARS = 32; ///< The maximum length of a vehicle name in characters including '\0'
@@ -65,19 +67,19 @@ static const uint MAX_LENGTH_VEHICLE_NAME_CHARS = 32; ///< The maximum length of
 static const uint VEHICLE_LENGTH = 8;
 
 /** Vehicle acceleration models. */
-enum AccelerationModel : uint8_t {
-	AM_ORIGINAL,
-	AM_REALISTIC,
+enum class AccelerationModel : uint8_t {
+	Original, ///< Original acceleration model.
+	Realistic, ///< "Realistic" acceleration model.
 };
 
 /** Visualisation contexts of vehicles and engines. */
-enum EngineImageType : uint8_t {
-	EIT_ON_MAP     = 0x00,  ///< Vehicle drawn in viewport.
-	EIT_IN_DEPOT   = 0x10,  ///< Vehicle drawn in depot.
-	EIT_IN_DETAILS = 0x11,  ///< Vehicle drawn in vehicle details, refit window, ...
-	EIT_IN_LIST    = 0x12,  ///< Vehicle drawn in vehicle list, group list, ...
-	EIT_PURCHASE   = 0x20,  ///< Vehicle drawn in purchase list, autoreplace gui, ...
-	EIT_PREVIEW    = 0x21,  ///< Vehicle drawn in preview window, news, ...
+enum class EngineImageType : uint8_t {
+	OnMap = 0x00, ///< Vehicle drawn in viewport.
+	InDepot = 0x10, ///< Vehicle drawn in depot.
+	InDetails = 0x11, ///< Vehicle drawn in vehicle details, refit window, ...
+	InList = 0x12, ///< Vehicle drawn in vehicle list, group list, ...
+	Purchase = 0x20, ///< Vehicle drawn in purchase list, autoreplace gui, ...
+	Preview = 0x21, ///< Vehicle drawn in preview window, news, ...
 };
 
 /** Randomisation triggers for vehicles */
@@ -88,6 +90,8 @@ enum class VehicleRandomTrigger : uint8_t {
 	AnyNewCargo, ///< All vehicles in consist: Any vehicle in the consist received new cargo.
 	Callback32, ///< All vehicles in consist: 32 day callback requested rerandomisation
 };
+
+/** Bitset of \c VehicleRandomTrigger elements. */
 using VehicleRandomTriggers = EnumBitSet<VehicleRandomTrigger, uint8_t>;
 
 /**
@@ -97,5 +101,15 @@ using VehicleRandomTriggers = EnumBitSet<VehicleRandomTrigger, uint8_t>;
  */
 template <typename T, VehicleType Tend = VehicleType::CompanyEnd>
 using VehicleTypeIndexArray = EnumIndexArray<T, VehicleType, Tend>;
+
+/** Ground vehicle flags. */
+enum class GroundVehicleFlag : uint8_t {
+	GoingUp = 0, ///< Vehicle is currently going uphill. (Cached track information for acceleration)
+	GoingDown = 1, ///< Vehicle is currently going downhill. (Cached track information for acceleration)
+	SuppressImplicitOrders = 2, ///< Disable insertion and removal of automatic orders until the vehicle completes the real order.
+};
+
+/** Bitset of \c GroundVehicleFlag elements. */
+using GroundVehicleFlags = EnumBitSet<GroundVehicleFlag, uint16_t>;
 
 #endif /* VEHICLE_TYPE_H */

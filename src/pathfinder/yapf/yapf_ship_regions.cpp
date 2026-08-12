@@ -62,14 +62,14 @@ struct WaterRegionNode : CYapfNodeT<WaterRegionPatchKey, WaterRegionNode> {
 
 	DiagDirection GetDiagDirFromParent() const
 	{
-		if (this->parent == nullptr) return INVALID_DIAGDIR;
+		if (this->parent == nullptr) return DiagDirection::Invalid;
 		const int dx = this->key.water_region_patch.x - this->parent->key.water_region_patch.x;
 		const int dy = this->key.water_region_patch.y - this->parent->key.water_region_patch.y;
-		if (dx > 0 && dy == 0) return DIAGDIR_SW;
-		if (dx < 0 && dy == 0) return DIAGDIR_NE;
-		if (dx == 0 && dy > 0) return DIAGDIR_SE;
-		if (dx == 0 && dy < 0) return DIAGDIR_NW;
-		return INVALID_DIAGDIR;
+		if (dx > 0 && dy == 0) return DiagDirection::SW;
+		if (dx < 0 && dy == 0) return DiagDirection::NE;
+		if (dx == 0 && dy > 0) return DiagDirection::SE;
+		if (dx == 0 && dy < 0) return DiagDirection::NW;
+		return DiagDirection::Invalid;
 	}
 };
 
@@ -157,7 +157,7 @@ public:
 		Node *grandparent = n.parent->parent;
 		if (grandparent != nullptr) {
 			const DiagDirDiff dir_diff = DiagDirDifference(n.parent->GetDiagDirFromParent(), n.GetDiagDirFromParent());
-			if (dir_diff != DIAGDIRDIFF_90LEFT && dir_diff != DIAGDIRDIFF_90RIGHT) n.cost += 1;
+			if (dir_diff != DiagDirDiff::Left90 && dir_diff != DiagDirDiff::Right90) n.cost += 1;
 		}
 
 		return true;

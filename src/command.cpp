@@ -151,7 +151,7 @@ bool IsCommandAllowedWhilePaused(Commands cmd)
 	static_assert(std::size(command_type_lookup) == to_underlying(CommandType::End));
 
 	assert(IsValidCommand(cmd));
-	return _game_mode == GM_EDITOR || command_type_lookup[to_underlying(_command_table[cmd].type)] <= _settings_game.construction.command_pause_level;
+	return _game_mode == GameMode::Editor || command_type_lookup[to_underlying(_command_table[cmd].type)] <= _settings_game.construction.command_pause_level;
 }
 
 /**
@@ -212,7 +212,7 @@ std::tuple<bool, bool, bool> CommandHelperBase::InternalPostBefore(Commands cmd,
 
 	if (_pause_mode.Any() && !IsCommandAllowedWhilePaused(cmd) && !estimate_only) {
 		ShowErrorMessage(GetEncodedString(err_message), GetEncodedString(STR_ERROR_NOT_ALLOWED_WHILE_PAUSED),
-			WL_INFO, TileX(tile) * TILE_SIZE, TileY(tile) * TILE_SIZE);
+			WarningLevel::Info, TileX(tile) * TILE_SIZE, TileY(tile) * TILE_SIZE);
 		return { true, estimate_only, only_sending };
 	} else {
 		return { false, estimate_only, only_sending };
@@ -240,7 +240,7 @@ void CommandHelperBase::InternalPostResult(CommandCost &res, TileIndex tile, boo
 		}
 	} else if (estimate_only) {
 		ShowEstimatedCostOrIncome(res.GetCost(), x, y);
-	} else if (!only_sending && tile != 0 && IsLocalCompany() && _game_mode != GM_EDITOR) {
+	} else if (!only_sending && tile != 0 && IsLocalCompany() && _game_mode != GameMode::Editor) {
 		/* Only show the cost animation when we did actually
 		 * execute the command, i.e. we're not sending it to
 		 * the server, when it has cost the local company
@@ -276,7 +276,7 @@ bool CommandHelperBase::InternalExecutePrepTest(CommandFlags cmd_flags, Backup<C
 	/* If the company isn't valid it may only do server command or start a new company!
 	 * The server will ditch any server commands a client sends to it, so effectively
 	 * this guards the server from executing functions for an invalid company. */
-	if (_game_mode == GM_NORMAL && !exec_as_spectator && !Company::IsValidID(_current_company) && !(_current_company == OWNER_DEITY && cmd_flags.Test(CommandFlag::Deity))) {
+	if (_game_mode == GameMode::Normal && !exec_as_spectator && !Company::IsValidID(_current_company) && !(_current_company == OWNER_DEITY && cmd_flags.Test(CommandFlag::Deity))) {
 		return false;
 	}
 

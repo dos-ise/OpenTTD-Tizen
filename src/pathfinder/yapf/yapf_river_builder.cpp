@@ -60,7 +60,7 @@ public:
 		this->end_tile = end_tile;
 
 		Node &node = Yapf().CreateNewNode();
-		node.Set(nullptr, start_tile, INVALID_TRACKDIR, false);
+		node.Set(nullptr, start_tile, Trackdir::Invalid, false);
 		Yapf().AddStartupNode(node);
 	}
 
@@ -88,11 +88,11 @@ public:
 	/** @copydoc CYapfBaseT::PfFollowNodeFunc */
 	inline void PfFollowNode(Node &old_node)
 	{
-		for (DiagDirection d = DIAGDIR_BEGIN; d < DIAGDIR_END; ++d) {
+		for (DiagDirection d : EnumRange(DiagDirection::End)) {
 			const TileIndex t = old_node.GetTile() + TileOffsByDiagDir(d);
 			if (IsValidTile(t) && RiverFlowsDown(old_node.GetTile(), t)) {
 				Node &node = Yapf().CreateNewNode();
-				node.Set(&old_node, t, INVALID_TRACKDIR, true);
+				node.Set(&old_node, t, Trackdir::Invalid, true);
 				Yapf().AddNewNode(node, RiverBuilderFollower{});
 			}
 		}

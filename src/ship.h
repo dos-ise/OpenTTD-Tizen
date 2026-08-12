@@ -18,7 +18,7 @@ WaterClass GetEffectiveWaterClass(TileIndex tile);
 
 /** Element of the ShipPathCache. */
 struct ShipPathElement {
-	Trackdir trackdir = INVALID_TRACKDIR; ///< Trackdir for this element.
+	Trackdir trackdir = Trackdir::Invalid; ///< Trackdir for this element.
 
 	constexpr ShipPathElement() {}
 	constexpr ShipPathElement(Trackdir trackdir) : trackdir(trackdir) {}
@@ -32,7 +32,7 @@ using ShipPathCache = std::vector<ShipPathElement>;
 struct Ship final : public SpecializedVehicle<Ship, VehicleType::Ship> {
 	ShipPathCache path{}; ///< Cached path.
 	TrackBits state{}; ///< The "track" the ship is following.
-	Direction rotation = INVALID_DIR; ///< Visible direction.
+	Direction rotation = Direction::Invalid; ///< Visible direction.
 	int16_t rotation_x_pos = 0; ///< NOSAVE: X Position before rotation.
 	int16_t rotation_y_pos = 0; ///< NOSAVE: Y Position before rotation.
 
@@ -50,7 +50,7 @@ struct Ship final : public SpecializedVehicle<Ship, VehicleType::Ship> {
 	int GetDisplayMaxSpeed() const override { return this->vcache.cached_max_speed / 2; }
 	int GetCurrentMaxSpeed() const override { return std::min<int>(this->vcache.cached_max_speed, this->current_order.GetMaxSpeed() * 2); }
 	Money GetRunningCost() const override;
-	bool IsInDepot() const override { return this->state == TRACK_BIT_DEPOT; }
+	bool IsInDepot() const override { return this->state == Track::Depot; }
 	bool Tick() override;
 	void OnNewCalendarDay() override;
 	void OnNewEconomyDay() override;

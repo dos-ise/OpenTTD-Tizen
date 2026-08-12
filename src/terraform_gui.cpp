@@ -62,7 +62,7 @@ void CcTerraform(Commands, const CommandCost &result, Money, TileIndex tile)
  */
 static void GenerateDesertArea(TileIndex end, TileIndex start)
 {
-	if (_game_mode != GM_EDITOR) return;
+	if (_game_mode != GameMode::Editor) return;
 
 	Backup<bool> old_generating_world(_generating_world, true);
 
@@ -73,17 +73,18 @@ static void GenerateDesertArea(TileIndex end, TileIndex start)
 		MarkTileDirtyByTile(tile);
 	}
 	old_generating_world.Restore();
-	InvalidateWindowClassesData(WC_TOWN_VIEW, 0);
+	InvalidateWindowClassesData(WindowClass::TownView, 0);
 }
 
 /**
  * Scenario editor command that generates rocky areas.
  * @param end The end tile of the map drag.
  * @param start The start tile of the map drag.
+ * @param remove If true, remove rocks instead of placing them.
  */
-static void GenerateRockyArea(TileIndex end, TileIndex start)
+static void PlaceRockyArea(TileIndex end, TileIndex start, bool remove)
 {
-	if (_game_mode != GM_EDITOR) return;
+	if (_game_mode != GameMode::Editor) return;
 
 	bool success = false;
 	TileArea ta(start, end);
@@ -92,10 +93,86 @@ static void GenerateRockyArea(TileIndex end, TileIndex start)
 		switch (GetTileType(tile)) {
 			case TileType::Trees:
 				if (GetTreeGround(tile) == TreeGround::Shore) continue;
-				[[fallthrough]];
+				if (!remove) {
+					MakeClear(tile, ClearGround::Rocks, 3);
+				}
+				break;
 
 			case TileType::Clear:
-				MakeClear(tile, ClearGround::Rocks, 3);
+				if (remove) {
+					if (GetClearGround(tile) == ClearGround::Rocks) {
+						MakeClear(tile, ClearGround::Grass, 3);
+					}
+				} else {
+					MakeClear(tile, ClearGround::Rocks, 3);
+				}
+				break;
+
+			default:
+				continue;
+		}
+		MarkTileDirtyByTile(tile);
+		success = true;
+	}
+
+	if (success && _settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, end);
+}
+
+/**
+ * Scenario editor command that generates rough land areas.
+ * @param end The end tile of the map drag.
+ * @param start The start tile of the map drag.
+ * @param remove If true, remove rough areas instead of placing them.
+ */
+static void PlaceRoughGround(TileIndex end, TileIndex start, bool remove)
+{
+	if (_game_mode != GameMode::Editor) return;
+
+	bool success = false;
+	TileArea ta(start, end);
+
+	for (TileIndex tile : ta) {
+		switch (GetTileType(tile)) {
+			case TileType::Trees: {
+				/* Preserve snowline density underneath trees, so the tile loop
+				 * doesn't have to come back and fix it later. */
+				uint density = GetTreeDensity(tile);
+				if (remove) {
+					switch (GetTreeGround(tile)) {
+						case TreeGround::Rough:
+							SetTreeGroundDensity(tile, TreeGround::Grass, density);
+							break;
+						case TreeGround::RoughSnow:
+							SetTreeGroundDensity(tile, TreeGround::SnowOrDesert, density);
+							break;
+						default:
+							continue;
+					}
+				} else {
+					switch (GetTreeGround(tile)) {
+						case TreeGround::Grass:
+							SetTreeGroundDensity(tile, TreeGround::Rough, density);
+							break;
+						case TreeGround::SnowOrDesert:
+							SetTreeGroundDensity(tile, TreeGround::RoughSnow, density);
+							break;
+						default:
+							continue;
+					}
+				}
+				break;
+			}
+
+			case TileType::Clear:
+				if (remove) {
+					if (GetClearGround(tile) == ClearGround::Rough) {
+						SetClearGroundDensity(tile, ClearGround::Grass, 3);
+					} else {
+						continue;
+					}
+				} else {
+					SetClearGroundDensity(tile, ClearGround::Rough, 3);
+				}
 				break;
 
 			default:
@@ -131,16 +208,19 @@ bool GUIPlaceProcDragXY(ViewportDragDropSelectionProcess proc, TileIndex start_t
 			Command<Commands::ClearArea>::Post(STR_ERROR_CAN_T_CLEAR_THIS_AREA, CcPlaySound_EXPLOSION, end_tile, start_tile, _ctrl_pressed);
 			break;
 		case DDSP_RAISE_AND_LEVEL_AREA:
-			Command<Commands::LevelLand>::Post(STR_ERROR_CAN_T_RAISE_LAND_HERE, CcTerraform, end_tile, start_tile, _ctrl_pressed, LM_RAISE);
+			Command<Commands::LevelLand>::Post(STR_ERROR_CAN_T_RAISE_LAND_HERE, CcTerraform, end_tile, start_tile, _ctrl_pressed, LevelMode::Raise);
 			break;
 		case DDSP_LOWER_AND_LEVEL_AREA:
-			Command<Commands::LevelLand>::Post(STR_ERROR_CAN_T_LOWER_LAND_HERE, CcTerraform, end_tile, start_tile, _ctrl_pressed, LM_LOWER);
+			Command<Commands::LevelLand>::Post(STR_ERROR_CAN_T_LOWER_LAND_HERE, CcTerraform, end_tile, start_tile, _ctrl_pressed, LevelMode::Lower);
 			break;
 		case DDSP_LEVEL_AREA:
-			Command<Commands::LevelLand>::Post(STR_ERROR_CAN_T_LEVEL_LAND_HERE, CcTerraform, end_tile, start_tile, _ctrl_pressed, LM_LEVEL);
+			Command<Commands::LevelLand>::Post(STR_ERROR_CAN_T_LEVEL_LAND_HERE, CcTerraform, end_tile, start_tile, _ctrl_pressed, LevelMode::Level);
 			break;
 		case DDSP_CREATE_ROCKS:
-			GenerateRockyArea(end_tile, start_tile);
+			PlaceRockyArea(end_tile, start_tile, _ctrl_pressed);
+			break;
+		case DDSP_CREATE_ROUGH:
+			PlaceRoughGround(end_tile, start_tile, _ctrl_pressed);
 			break;
 		case DDSP_CREATE_DESERT:
 			GenerateDesertArea(end_tile, start_tile);
@@ -265,7 +345,7 @@ struct TerraformToolbarWindow : Window {
 	Point OnInitialPosition([[maybe_unused]] int16_t sm_width, [[maybe_unused]] int16_t sm_height, [[maybe_unused]] int window_number) override
 	{
 		Point pt = GetToolbarAlignedWindowPosition(sm_width);
-		if (FindWindowByClass(WC_BUILD_TOOLBAR) != nullptr && !_settings_client.gui.link_terraform_toolbar) pt.y += sm_height;
+		if (FindWindowByClass(WindowClass::BuildToolbar) != nullptr && !_settings_client.gui.link_terraform_toolbar) pt.y += sm_height;
 
 		return pt;
 	}
@@ -303,13 +383,13 @@ struct TerraformToolbarWindow : Window {
 	/**
 	 * Handler for global hotkeys of the TerraformToolbarWindow.
 	 * @param hotkey Hotkey
-	 * @return ES_HANDLED if hotkey was accepted.
+	 * @return EventState::Handled if hotkey was accepted.
 	 */
 	static EventState TerraformToolbarGlobalHotkeys(int hotkey)
 	{
-		if (_game_mode != GM_NORMAL) return ES_NOT_HANDLED;
+		if (_game_mode != GameMode::Normal) return EventState::NotHandled;
 		Window *w = ShowTerraformToolbar(nullptr);
-		if (w == nullptr) return ES_NOT_HANDLED;
+		if (w == nullptr) return EventState::NotHandled;
 		return w->OnHotkey(hotkey);
 	}
 
@@ -359,7 +439,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_terraform_widgets = 
 /** Window definition for the landscaping toolbar. */
 static WindowDesc _terraform_desc(
 	WindowPosition::Manual, "toolbar_landscape", 0, 0,
-	WC_SCEN_LAND_GEN, WC_NONE,
+	WindowClass::ScenarioGenerateLandscape, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_terraform_widgets,
 	&TerraformToolbarWindow::hotkeys
@@ -375,7 +455,7 @@ Window *ShowTerraformToolbar(Window *link)
 	if (!Company::IsValidID(_local_company)) return nullptr;
 
 	/* Delete the terraform toolbar to place it again. */
-	CloseWindowById(WC_SCEN_LAND_GEN, 0, true);
+	CloseWindowById(WindowClass::ScenarioGenerateLandscape, 0, true);
 
 	if (link == nullptr) return AllocateWindowDescFront<TerraformToolbarWindow>(_terraform_desc, 0);
 
@@ -462,13 +542,15 @@ static constexpr std::initializer_list<NWidgetPart> _nested_scen_edit_land_gen_w
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_DEMOLISH), SetToolbarMinimalSize(1),
 										SetFill(0, 1), SetSpriteTip(SPR_IMG_DYNAMITE, STR_TOOLTIP_DEMOLISH_BUILDINGS_ETC),
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_LOWER_LAND), SetToolbarMinimalSize(1),
-										SetFill(0, 1), SetSpriteTip(SPR_IMG_TERRAFORM_DOWN, STR_LANDSCAPING_TOOLTIP_LOWER_A_CORNER_OF_LAND),
+										SetFill(0, 1), SetSpriteTip(SPR_IMG_TERRAFORM_DOWN, STR_TERRAFORM_TOOLTIP_LOWER_A_CORNER_OF_LAND),
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_RAISE_LAND), SetToolbarMinimalSize(1),
-										SetFill(0, 1), SetSpriteTip(SPR_IMG_TERRAFORM_UP, STR_LANDSCAPING_TOOLTIP_RAISE_A_CORNER_OF_LAND),
+										SetFill(0, 1), SetSpriteTip(SPR_IMG_TERRAFORM_UP, STR_TERRAFORM_TOOLTIP_RAISE_A_CORNER_OF_LAND),
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_LEVEL_LAND), SetToolbarMinimalSize(1),
 										SetFill(0, 1), SetSpriteTip(SPR_IMG_LEVEL_LAND, STR_LANDSCAPING_LEVEL_LAND_TOOLTIP),
 			NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_PLACE_ROCKS), SetToolbarMinimalSize(1),
 										SetFill(0, 1), SetSpriteTip(SPR_IMG_ROCKS, STR_TERRAFORM_TOOLTIP_PLACE_ROCKY_AREAS_ON_LANDSCAPE),
+			NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_PLACE_ROUGH), SetToolbarMinimalSize(1),
+										SetFill(0, 1), SetSpriteTip(SPR_IMG_SHOW_COUNTOURS, STR_TERRAFORM_TOOLTIP_PLACE_ROUGH_AREAS_ON_LANDSCAPE),
 			NWidget(NWID_SELECTION, Colours::Invalid, WID_ETT_SHOW_PLACE_DESERT),
 				NWidget(WWT_IMGBTN, Colours::Grey, WID_ETT_PLACE_DESERT), SetToolbarMinimalSize(1),
 											SetFill(0, 1), SetSpriteTip(SPR_IMG_DESERT, STR_TERRAFORM_TOOLTIP_DEFINE_DESERT_AREA),
@@ -588,12 +670,12 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 				break;
 
 			case WID_ETT_LOWER_LAND: // Lower land button
-				HandlePlacePushButton(this, WID_ETT_LOWER_LAND, ANIMCURSOR_LOWERLAND, HT_POINT);
+				HandlePlacePushButton(this, WID_ETT_LOWER_LAND, ANIMCURSOR_LOWERLAND, HT_POINT | HT_DIAGONAL);
 				this->last_user_action = widget;
 				break;
 
 			case WID_ETT_RAISE_LAND: // Raise land button
-				HandlePlacePushButton(this, WID_ETT_RAISE_LAND, ANIMCURSOR_RAISELAND, HT_POINT);
+				HandlePlacePushButton(this, WID_ETT_RAISE_LAND, ANIMCURSOR_RAISELAND, HT_POINT | HT_DIAGONAL);
 				this->last_user_action = widget;
 				break;
 
@@ -604,6 +686,11 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 
 			case WID_ETT_PLACE_ROCKS: // Place rocks button
 				HandlePlacePushButton(this, WID_ETT_PLACE_ROCKS, SPR_CURSOR_ROCKY_AREA, HT_RECT);
+				this->last_user_action = widget;
+				break;
+
+			case WID_ETT_PLACE_ROUGH: // Place rough land button
+				HandlePlacePushButton(this, WID_ETT_PLACE_ROUGH, SPR_CURSOR_ROCKY_AREA, HT_RECT);
 				this->last_user_action = widget;
 				break;
 
@@ -661,11 +748,19 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 				break;
 
 			case WID_ETT_LOWER_LAND: // Lower land button
-				CommonRaiseLowerBigLand(tile, false);
+				if (_terraform_size == 1) {
+					VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_LOWER_AND_LEVEL_AREA);
+				} else {
+					CommonRaiseLowerBigLand(tile, false);
+				}
 				break;
 
 			case WID_ETT_RAISE_LAND: // Raise land button
-				CommonRaiseLowerBigLand(tile, true);
+				if (_terraform_size == 1) {
+					VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_RAISE_AND_LEVEL_AREA);
+				} else {
+					CommonRaiseLowerBigLand(tile, true);
+				}
 				break;
 
 			case WID_ETT_LEVEL_LAND: // Level land button
@@ -674,6 +769,10 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 
 			case WID_ETT_PLACE_ROCKS: // Place rocks button
 				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CREATE_ROCKS);
+				break;
+
+			case WID_ETT_PLACE_ROUGH: // Place rough land button
+				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CREATE_ROUGH);
 				break;
 
 			case WID_ETT_PLACE_DESERT: // Place desert button (in tropical climate)
@@ -695,6 +794,7 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 			switch (select_proc) {
 				default: NOT_REACHED();
 				case DDSP_CREATE_ROCKS:
+				case DDSP_CREATE_ROUGH:
 				case DDSP_CREATE_DESERT:
 				case DDSP_RAISE_AND_LEVEL_AREA:
 				case DDSP_LOWER_AND_LEVEL_AREA:
@@ -706,6 +806,21 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		}
 	}
 
+	EventState OnCTRLStateChange() override
+	{
+		switch (this->last_user_action) {
+			case WID_ETT_PLACE_ROCKS:
+			case WID_ETT_PLACE_DESERT:
+			case WID_ETT_PLACE_ROUGH:
+				if (this->IsWidgetLowered(this->last_user_action)) {
+					SetSelectionRed(_ctrl_pressed);
+					return EventState::Handled;
+				}
+				break;
+		}
+		return EventState::NotHandled;
+	}
+
 	void OnPlaceObjectAbort() override
 	{
 		this->RaiseButtons();
@@ -715,13 +830,13 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 	/**
 	 * Handler for global hotkeys of the ScenarioEditorLandscapeGenerationWindow.
 	 * @param hotkey Hotkey
-	 * @return ES_HANDLED if hotkey was accepted.
+	 * @return EventState::Handled if hotkey was accepted.
 	 */
 	static EventState TerraformToolbarEditorGlobalHotkeys(int hotkey)
 	{
-		if (_game_mode != GM_EDITOR) return ES_NOT_HANDLED;
+		if (_game_mode != GameMode::Editor) return EventState::NotHandled;
 		Window *w = ShowEditorTerraformToolbar();
-		if (w == nullptr) return ES_NOT_HANDLED;
+		if (w == nullptr) return EventState::NotHandled;
 		return w->OnHotkey(hotkey);
 	}
 
@@ -739,7 +854,7 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 /** Window definition for the landscaping toolbar for he scenario editor. */
 static WindowDesc _scen_edit_land_gen_desc(
 	WindowPosition::Automatic, "toolbar_landscape_scen", 0, 0,
-	WC_SCEN_LAND_GEN, WC_NONE,
+	WindowClass::ScenarioGenerateLandscape, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_scen_edit_land_gen_widgets,
 	&ScenarioEditorLandscapeGenerationWindow::hotkeys

@@ -1110,9 +1110,9 @@ STR_RIVERS_MODERATE                                             :בינוני
 STR_RIVERS_LOT                                                  :הרבה
 
 ###length 3
-STR_DISASTER_NONE                                               :ללא
-STR_DISASTER_REDUCED                                            :מופחת
-STR_DISASTER_NORMAL                                             :רגיל
+STR_BREAKDOWNS_NONE                                             :ללא
+STR_BREAKDOWNS_REDUCED                                          :מופחת
+STR_BREAKDOWNS_NORMAL                                           :רגיל
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1.5
@@ -1419,6 +1419,8 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES_HELPTEXT               :כאשר מאו
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :חידוש עצמי של רכב כשהוא נהיה ישן: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :כאשר מאופשר, רכב המתקרב לסוף חייו מוחלף אוטומטית כאשר תנאי החידוש מתקיימים
 
@@ -1628,12 +1630,7 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :הצג זמני
 STR_CONFIG_SETTING_QUICKGOTO                                    :{STRING} :יצירה מהירה של מסלול הנסיעה
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :בחר מראש את סמן ה-"גש אל" בעת פתיחת חלון הפקודות
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :{STRING} :(ברירת מחדל לפסי רכבת (בתחילת משחק או לאחר טעינה
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :סוג מסילה לבחירה אחרי התחלה או טעינה של משחק. "הראשון הזמין" בוחר את סוג המסילה הישן ביותר, "האחרון הזמין" בוחר את סוג המסילה החדש ביותר, ו-"הנפוץ ביותר" בוחר את הסוג אשר נמצא בשימוש רחב ביותר כרגע
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :הראשון הזמין
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :האחרון הזמין
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :הנפוץ ביותר
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :הדגש מסלולים שבשימוש: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :תן צבע שונה למסילות שמורות כדי לסייע בבעיות עם רכבות המסרבות להיכנס לגושים מבוססי מסלול
@@ -3405,6 +3402,7 @@ STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}הקלק על מטרה כדי למרכז את התצוגה הראשית על תעשיה/עיירה/משבצת. קליק תוך כדי לחיצה על מקש Ctrl פותח חלון תצוגה חדש במיקום התעשיה/העיירה/המשבצת
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :שאלה
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :מידע
 STR_GOAL_QUESTION_CAPTION_WARNING                               :אזהרה

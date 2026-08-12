@@ -109,8 +109,8 @@ struct BuildDocksToolbarWindow : Window {
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		if (_game_mode == GM_NORMAL && this->IsWidgetLowered(WID_DT_STATION)) SetViewportCatchmentStation(nullptr, true);
-		if (_settings_client.gui.link_terraform_toolbar) CloseWindowById(WC_SCEN_LAND_GEN, 0, false);
+		if (_game_mode == GameMode::Normal && this->IsWidgetLowered(WID_DT_STATION)) SetViewportCatchmentStation(nullptr, true);
+		if (_settings_client.gui.link_terraform_toolbar) CloseWindowById(WindowClass::ScenarioGenerateLandscape, 0, false);
 		this->Window::Close();
 	}
 
@@ -129,11 +129,11 @@ struct BuildDocksToolbarWindow : Window {
 			WID_DT_STATION,
 			WID_DT_BUOY);
 		if (!can_build) {
-			CloseWindowById(WC_BUILD_STATION, TRANSPORT_WATER);
-			CloseWindowById(WC_BUILD_DEPOT, TRANSPORT_WATER);
+			CloseWindowById(WindowClass::BuildStation, TransportType::Water);
+			CloseWindowById(WindowClass::BuildDepot, TransportType::Water);
 		}
 
-		if (_game_mode != GM_EDITOR) {
+		if (_game_mode != GameMode::Editor) {
 			if (!can_build) {
 				/* Show in the tooltip why this button is disabled. */
 				this->GetWidget<NWidgetCore>(WID_DT_DEPOT)->SetToolTip(STR_TOOLBAR_DISABLED_NO_VEHICLE_AVAILABLE);
@@ -151,7 +151,7 @@ struct BuildDocksToolbarWindow : Window {
 	{
 		switch (widget) {
 			case WID_DT_CANAL: // Build canal button
-				if (_game_mode == GM_EDITOR) {
+				if (_game_mode == GameMode::Editor) {
 					HandlePlacePushButton(this, WID_DT_CANAL, SPR_CURSOR_CANAL, HT_RECT);
 				} else {
 					HandlePlacePushButton(this, WID_DT_CANAL, SPR_CURSOR_CANAL, HT_RECT | HT_DIAGONAL);
@@ -179,7 +179,7 @@ struct BuildDocksToolbarWindow : Window {
 				break;
 
 			case WID_DT_RIVER: // Build river button (in scenario editor)
-				if (_game_mode != GM_EDITOR) return;
+				if (_game_mode != GameMode::Editor) return;
 				HandlePlacePushButton(this, WID_DT_RIVER, SPR_CURSOR_RIVER, HT_RECT | HT_DIAGONAL);
 				break;
 
@@ -214,7 +214,7 @@ struct BuildDocksToolbarWindow : Window {
 			case WID_DT_STATION: { // Build station button
 				/* Determine the watery part of the dock. */
 				DiagDirection dir = GetInclinedSlopeDirection(GetTileSlope(tile));
-				TileIndex tile_to = (dir != INVALID_DIAGDIR ? TileAddByDiagDir(tile, ReverseDiagDir(dir)) : tile);
+				TileIndex tile_to = (dir != DiagDirection::Invalid ? TileAddByDiagDir(tile, ReverseDiagDir(dir)) : tile);
 
 				bool adjacent = _ctrl_pressed;
 				auto proc = [=](bool test, StationID to_join) -> bool {
@@ -238,7 +238,7 @@ struct BuildDocksToolbarWindow : Window {
 				break;
 
 			case WID_DT_BUILD_AQUEDUCT: // Build aqueduct button
-				Command<Commands::BuildBridge>::Post(STR_ERROR_CAN_T_BUILD_AQUEDUCT_HERE, CcBuildBridge, tile, GetOtherAqueductEnd(tile), TRANSPORT_WATER, 0, INVALID_RAILTYPE, INVALID_ROADTYPE);
+				Command<Commands::BuildBridge>::Post(STR_ERROR_CAN_T_BUILD_AQUEDUCT_HERE, CcBuildBridge, tile, GetOtherAqueductEnd(tile), TransportType::Water, 0, INVALID_RAILTYPE, INVALID_ROADTYPE);
 				break;
 
 			default: NOT_REACHED();
@@ -263,7 +263,7 @@ struct BuildDocksToolbarWindow : Window {
 					GUIPlaceProcDragXY(select_proc, start_tile, end_tile);
 					break;
 				case DDSP_CREATE_WATER:
-					if (_game_mode == GM_EDITOR) {
+					if (_game_mode == GameMode::Editor) {
 						Command<Commands::BuildCanal>::Post(STR_ERROR_CAN_T_BUILD_CANALS, CcPlaySound_CONSTRUCTION_WATER, end_tile, start_tile, _ctrl_pressed ? WaterClass::Sea : WaterClass::Canal, false);
 					} else {
 						Command<Commands::BuildCanal>::Post(STR_ERROR_CAN_T_BUILD_CANALS, CcPlaySound_CONSTRUCTION_WATER, end_tile, start_tile, WaterClass::Canal, _ctrl_pressed);
@@ -280,14 +280,14 @@ struct BuildDocksToolbarWindow : Window {
 
 	void OnPlaceObjectAbort() override
 	{
-		if (_game_mode != GM_EDITOR && this->IsWidgetLowered(WID_DT_STATION)) SetViewportCatchmentStation(nullptr, true);
+		if (_game_mode != GameMode::Editor && this->IsWidgetLowered(WID_DT_STATION)) SetViewportCatchmentStation(nullptr, true);
 
 		this->RaiseButtons();
 
-		CloseWindowById(WC_BUILD_STATION, TRANSPORT_WATER);
-		CloseWindowById(WC_BUILD_DEPOT, TRANSPORT_WATER);
-		CloseWindowById(WC_SELECT_STATION, 0);
-		CloseWindowByClass(WC_BUILD_BRIDGE);
+		CloseWindowById(WindowClass::BuildStation, TransportType::Water);
+		CloseWindowById(WindowClass::BuildDepot, TransportType::Water);
+		CloseWindowById(WindowClass::JoinStation, 0);
+		CloseWindowByClass(WindowClass::BuildBridge);
 	}
 
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile_from) override
@@ -312,13 +312,13 @@ struct BuildDocksToolbarWindow : Window {
 	/**
 	 * Handler for global hotkeys of the BuildDocksToolbarWindow.
 	 * @param hotkey Hotkey
-	 * @return ES_HANDLED if hotkey was accepted.
+	 * @return EventState::Handled if hotkey was accepted.
 	 */
 	static EventState DockToolbarGlobalHotkeys(int hotkey)
 	{
-		if (_game_mode != GM_NORMAL) return ES_NOT_HANDLED;
+		if (_game_mode != GameMode::Normal) return EventState::NotHandled;
 		Window *w = ShowBuildDocksToolbar();
-		if (w == nullptr) return ES_NOT_HANDLED;
+		if (w == nullptr) return EventState::NotHandled;
 		return w->OnHotkey(hotkey);
 	}
 
@@ -359,7 +359,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_docks_toolbar_
 /** Window definition for the water/docks toolbar. */
 static WindowDesc _build_docks_toolbar_desc(
 	WindowPosition::Manual, "toolbar_water", 0, 0,
-	WC_BUILD_TOOLBAR, WC_NONE,
+	WindowClass::BuildToolbar, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_build_docks_toolbar_widgets,
 	&BuildDocksToolbarWindow::hotkeys
@@ -376,8 +376,8 @@ Window *ShowBuildDocksToolbar()
 {
 	if (!Company::IsValidID(_local_company)) return nullptr;
 
-	CloseWindowByClass(WC_BUILD_TOOLBAR);
-	return AllocateWindowDescFront<BuildDocksToolbarWindow>(_build_docks_toolbar_desc, TRANSPORT_WATER);
+	CloseWindowByClass(WindowClass::BuildToolbar);
+	return AllocateWindowDescFront<BuildDocksToolbarWindow>(_build_docks_toolbar_desc, TransportType::Water);
 }
 
 /**
@@ -403,7 +403,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_docks_scen_too
 /** Window definition for the build docks in scenario editor window. */
 static WindowDesc _build_docks_scen_toolbar_desc(
 	WindowPosition::Automatic, "toolbar_water_scen", 0, 0,
-	WC_SCEN_BUILD_TOOLBAR, WC_NONE,
+	WindowClass::ScenarioBuildToolbar, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_build_docks_scen_toolbar_widgets
 );
@@ -415,20 +415,20 @@ static WindowDesc _build_docks_scen_toolbar_desc(
  */
 Window *ShowBuildDocksScenToolbar()
 {
-	return AllocateWindowDescFront<BuildDocksToolbarWindow>(_build_docks_scen_toolbar_desc, TRANSPORT_WATER);
+	return AllocateWindowDescFront<BuildDocksToolbarWindow>(_build_docks_scen_toolbar_desc, TransportType::Water);
 }
 
 struct BuildDocksStationWindow : public PickerWindowBase {
 public:
 	BuildDocksStationWindow(WindowDesc &desc, Window *parent) : PickerWindowBase(desc, parent)
 	{
-		this->InitNested(TRANSPORT_WATER);
+		this->InitNested(TransportType::Water);
 		this->LowerWidget(_settings_client.gui.station_show_coverage + WID_BDSW_LT_OFF);
 	}
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		CloseWindowById(WC_SELECT_STATION, 0);
+		CloseWindowById(WindowClass::JoinStation, 0);
 		this->PickerWindowBase::Close();
 	}
 
@@ -506,7 +506,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_dock_station_w
 /** Window definition for the dock building window. */
 static WindowDesc _build_dock_station_desc(
 	WindowPosition::Automatic, {}, 0, 0,
-	WC_BUILD_STATION, WC_BUILD_TOOLBAR,
+	WindowClass::BuildStation, WindowClass::BuildToolbar,
 	WindowDefaultFlag::Construction,
 	_nested_build_dock_station_widgets
 );
@@ -520,7 +520,7 @@ struct BuildDocksDepotWindow : public PickerWindowBase {
 private:
 	static void UpdateDocksDirection()
 	{
-		if (_ship_depot_direction != AXIS_X) {
+		if (_ship_depot_direction != Axis::X) {
 			SetTileSelectSize(1, 2);
 		} else {
 			SetTileSelectSize(2, 1);
@@ -530,7 +530,7 @@ private:
 public:
 	BuildDocksDepotWindow(WindowDesc &desc, Window *parent) : PickerWindowBase(desc, parent)
 	{
-		this->InitNested(TRANSPORT_WATER);
+		this->InitNested(TransportType::Water);
 		this->LowerWidget(WID_BDD_X + _ship_depot_direction);
 		UpdateDocksDirection();
 	}
@@ -553,7 +553,7 @@ public:
 		switch (widget) {
 			case WID_BDD_X:
 			case WID_BDD_Y: {
-				Axis axis = widget == WID_BDD_X ? AXIS_X : AXIS_Y;
+				Axis axis = widget == WID_BDD_X ? Axis::X : Axis::Y;
 
 				Rect ir = r.Shrink(WidgetDimensions::scaled.bevel);
 				if (FillDrawPixelInfo(&tmp_dpi, ir)) {
@@ -562,8 +562,8 @@ public:
 					int y = (ir.Height() - ScaleSpriteTrad(64)) / 2;
 					int x1 = ScaleSpriteTrad(63);
 					int x2 = ScaleSpriteTrad(31);
-					DrawShipDepotSprite(x + (axis == AXIS_X ? x1 : x2), y + ScaleSpriteTrad(17), axis, DepotPart::North);
-					DrawShipDepotSprite(x + (axis == AXIS_X ? x2 : x1), y + ScaleSpriteTrad(33), axis, DepotPart::South);
+					DrawShipDepotSprite(x + (axis == Axis::X ? x1 : x2), y + ScaleSpriteTrad(17), axis, DepotPart::North);
+					DrawShipDepotSprite(x + (axis == Axis::X ? x2 : x1), y + ScaleSpriteTrad(33), axis, DepotPart::South);
 				}
 				break;
 			}
@@ -576,7 +576,7 @@ public:
 			case WID_BDD_X:
 			case WID_BDD_Y:
 				this->RaiseWidget(WID_BDD_X + _ship_depot_direction);
-				_ship_depot_direction = (widget == WID_BDD_X ? AXIS_X : AXIS_Y);
+				_ship_depot_direction = (widget == WID_BDD_X ? Axis::X : Axis::Y);
 				this->LowerWidget(WID_BDD_X + _ship_depot_direction);
 				SndClickBeep();
 				UpdateDocksDirection();
@@ -602,7 +602,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_docks_depot_wi
 /** Window definition for the ship depot window. */
 static WindowDesc _build_docks_depot_desc(
 	WindowPosition::Automatic, {}, 0, 0,
-	WC_BUILD_DEPOT, WC_BUILD_TOOLBAR,
+	WindowClass::BuildDepot, WindowClass::BuildToolbar,
 	WindowDefaultFlag::Construction,
 	_nested_build_docks_depot_widgets
 );
@@ -616,5 +616,5 @@ static void ShowBuildDocksDepotPicker(Window *parent)
 
 void InitializeDockGui()
 {
-	_ship_depot_direction = AXIS_X;
+	_ship_depot_direction = Axis::X;
 }

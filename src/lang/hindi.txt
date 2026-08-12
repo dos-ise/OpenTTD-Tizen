@@ -389,7 +389,7 @@ STR_AI_SPEED_FAST                                               :तेज़
 ###length 4
 
 ###length 3
-STR_DISASTER_NORMAL                                             :सामान्य
+STR_BREAKDOWNS_NORMAL                                           :सामान्य
 
 ###length 4
 
@@ -513,6 +513,8 @@ STR_CONFIG_SETTING_ORDER_REVIEW_OFF                             :नहीं
 
 ###setting-zero-is-special
 
+
+###setting-zero-is-special
 
 
 ###length 2
@@ -1106,6 +1108,7 @@ STR_GOALS_PROGRESS                                              :{ORANGE}{STRING
 STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 
 # Goal question window
+###length 4
 
 # Goal Question button list
 ###length 18

@@ -16,6 +16,7 @@
 #include "../rail.h"
 #include "../road.h"
 #include "../settings_type.h"
+#include "../string_func.h"
 #include "newgrf_bytereader.h"
 #include "newgrf_internal.h"
 
@@ -23,6 +24,21 @@
 
 /** 32 * 8 = 256 flags. Apparently TTDPatch uses this many.. */
 static std::array<uint32_t, 8> _ttdpatch_flags;
+
+/**
+ * Checks whether the train signals are on the same side as the road vehicles are driving.
+ * This is a flag that can be checked by NewGRFs (TTDPatchFlags bit 0x3B).
+ * @return \c true iff the road vehicles drive on the same side as signals are drawn.
+ */
+static bool IsSignalSideOnTrafficSide()
+{
+	switch (_settings_game.construction.train_signal_side) {
+		case TrainSignalSide::RoadVehicleDrivingSide: return true;
+		case TrainSignalSide::Left: return _settings_game.vehicle.road_side == RoadVehicleDrivingSide::Left;
+		case TrainSignalSide::Right: return _settings_game.vehicle.road_side == RoadVehicleDrivingSide::Right;
+		default: NOT_REACHED();
+	}
+}
 
 /** Initialize the TTDPatch flags */
 void InitializePatchFlags()
@@ -52,7 +68,7 @@ void InitializePatchFlags()
 	                   |                                                       (1U << 0x18)  // newrvs
 	                   |                                                       (1U << 0x19)  // newships
 	                   |                                                       (1U << 0x1A)  // newplanes
-	                   | ((_settings_game.construction.train_signal_side == 1 ? 1U : 0U) << 0x1B)  // signalsontrafficside
+	                   |                  ((IsSignalSideOnTrafficSide() ? 1U : 0U) << 0x1B)  // signalsontrafficside
 	                   |       ((_settings_game.vehicle.disable_elrails ? 0U : 1U) << 0x1C); // electrifiedrailway
 
 	_ttdpatch_flags[2] =                                                       (1U << 0x01)  // loadallgraphics - obsolete
@@ -202,31 +218,31 @@ static void SkipIf(ByteReader &buf)
 	if (condtype >= 0x0B) {
 		/* Tests that ignore 'param' */
 		switch (condtype) {
-			case 0x0B: result = !IsValidCargoType(GetCargoTypeByLabel(CargoLabel(std::byteswap(cond_val))));
+			case 0x0B: result = !IsValidCargoType(GetCargoTypeByLabel(UnflattenNewGRFLabel<CargoLabel>(cond_val)));
 				break;
-			case 0x0C: result = IsValidCargoType(GetCargoTypeByLabel(CargoLabel(std::byteswap(cond_val))));
+			case 0x0C: result = IsValidCargoType(GetCargoTypeByLabel(UnflattenNewGRFLabel<CargoLabel>(cond_val)));
 				break;
-			case 0x0D: result = GetRailTypeByLabel(std::byteswap(cond_val)) == INVALID_RAILTYPE;
+			case 0x0D: result = GetRailTypeByLabel(UnflattenNewGRFLabel<RailTypeLabel>(cond_val)) == INVALID_RAILTYPE;
 				break;
-			case 0x0E: result = GetRailTypeByLabel(std::byteswap(cond_val)) != INVALID_RAILTYPE;
+			case 0x0E: result = GetRailTypeByLabel(UnflattenNewGRFLabel<RailTypeLabel>(cond_val)) != INVALID_RAILTYPE;
 				break;
 			case 0x0F: {
-				RoadType rt = GetRoadTypeByLabel(std::byteswap(cond_val));
+				RoadType rt = GetRoadTypeByLabel(UnflattenNewGRFLabel<RoadTypeLabel>(cond_val));
 				result = rt == INVALID_ROADTYPE || !RoadTypeIsRoad(rt);
 				break;
 			}
 			case 0x10: {
-				RoadType rt = GetRoadTypeByLabel(std::byteswap(cond_val));
+				RoadType rt = GetRoadTypeByLabel(UnflattenNewGRFLabel<RoadTypeLabel>(cond_val));
 				result = rt != INVALID_ROADTYPE && RoadTypeIsRoad(rt);
 				break;
 			}
 			case 0x11: {
-				RoadType rt = GetRoadTypeByLabel(std::byteswap(cond_val));
+				RoadType rt = GetRoadTypeByLabel(UnflattenNewGRFLabel<RoadTypeLabel>(cond_val));
 				result = rt == INVALID_ROADTYPE || !RoadTypeIsTram(rt);
 				break;
 			}
 			case 0x12: {
-				RoadType rt = GetRoadTypeByLabel(std::byteswap(cond_val));
+				RoadType rt = GetRoadTypeByLabel(UnflattenNewGRFLabel<RoadTypeLabel>(cond_val));
 				result = rt != INVALID_ROADTYPE && RoadTypeIsTram(rt);
 				break;
 			}
@@ -235,7 +251,8 @@ static void SkipIf(ByteReader &buf)
 	} else if (param == 0x88) {
 		/* GRF ID checks */
 
-		GRFConfig *c = GetGRFConfig(cond_val, mask);
+		GrfID grfid = UnflattenNewGRFLabel<GrfID>(cond_val);
+		GRFConfig *c = GetGRFConfig(grfid, std::byteswap(mask));
 
 		if (c != nullptr && c->flags.Test(GRFConfigFlag::Static) && !_cur_gps.grfconfig->flags.Test(GRFConfigFlag::Static) && _networking) {
 			DisableStaticNewGRFInfluencingNonStaticNewGRFs(*c);
@@ -243,7 +260,7 @@ static void SkipIf(ByteReader &buf)
 		}
 
 		if (condtype != 10 && c == nullptr) {
-			GrfMsg(7, "SkipIf: GRFID 0x{:08X} unknown, skipping test", std::byteswap(cond_val));
+			GrfMsg(7, "SkipIf: GRFID {} unknown, skipping test", FormatArrayAsHex(grfid));
 			return;
 		}
 

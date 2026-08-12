@@ -219,10 +219,10 @@
 	if (!::IsValidTile(tile)) return false;
 
 	if (transport_type == TRANSPORT_ROAD) {
-		return ::TrackStatusToTrackdirBits(::GetTileTrackStatus(tile, (::TransportType)transport_type, ::RoadTramType::Road)) != TRACKDIR_BIT_NONE ||
-				::TrackStatusToTrackdirBits(::GetTileTrackStatus(tile, (::TransportType)transport_type, ::RoadTramType::Tram)) != TRACKDIR_BIT_NONE;
+		return ::GetTileTrackStatus(tile, (::TransportType)transport_type, ::RoadTramType::Road).trackdirs.Any() ||
+				::GetTileTrackStatus(tile, (::TransportType)transport_type, ::RoadTramType::Tram).trackdirs.Any();
 	} else {
-		return ::TrackStatusToTrackdirBits(::GetTileTrackStatus(tile, (::TransportType)transport_type, ::RoadTramType::Invalid)) != TRACKDIR_BIT_NONE;
+		return ::GetTileTrackStatus(tile, (::TransportType)transport_type, ::RoadTramType::Invalid).trackdirs.Any();
 	}
 }
 
@@ -274,7 +274,7 @@
 	EnforcePrecondition(false, start_tile < ScriptMap::GetMapSize());
 	EnforcePrecondition(false, end_tile < ScriptMap::GetMapSize());
 
-	return ScriptObject::Command<Commands::LevelLand>::Do(end_tile, start_tile, false, LM_LEVEL);
+	return ScriptObject::Command<Commands::LevelLand>::Do(end_tile, start_tile, false, LevelMode::Level);
 }
 
 /* static */ bool ScriptTile::DemolishTile(TileIndex tile)

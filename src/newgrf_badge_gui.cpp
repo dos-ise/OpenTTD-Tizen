@@ -153,7 +153,7 @@ int DrawBadgeNameList(Rect r, std::span<const BadgeID> badges, GrfSpecFeature)
 
 		if (s.empty()) continue;
 
-		r.top = DrawStringMultiLine(r, GetString(STR_BADGE_NAME_LIST, class_badge->name, std::move(s)), TC_BLACK);
+		r.top = DrawStringMultiLine(r, GetString(STR_BADGE_NAME_LIST, class_badge->name, std::move(s)), TextColour::Black);
 	}
 
 	return r.top;
@@ -184,7 +184,7 @@ void DrawBadgeColumn(Rect r, int column_group, const GUIBadgeClasses &gui_classe
 			PalSpriteID ps = GetBadgeSprite(badge, feature, introduction_date, remap);
 			if (ps.sprite == 0) continue;
 
-			DrawSpriteIgnorePadding(ps.sprite, ps.pal, r.WithWidth(width, rtl), SA_CENTER);
+			DrawSpriteIgnorePadding(ps.sprite, ps.pal, r.WithWidth(width, rtl), {AlignmentH::Centre, AlignmentV::Middle});
 			break;
 		}
 

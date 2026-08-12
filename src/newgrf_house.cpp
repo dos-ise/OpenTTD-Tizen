@@ -136,7 +136,13 @@ void ResetHouseClassIDs()
 	_class_mapping.emplace_back();
 }
 
-HouseClassID AllocateHouseClassID(uint8_t grf_class_id, uint32_t grfid)
+/**
+ * Allocate a house class for the given NewGRF and ID.
+ * @param grf_class_id The class id within the NewGRF.
+ * @param grfid The GRF this class belongs to.
+ * @return The existing allocation, or a new one when it did not exist yet.
+ */
+HouseClassID AllocateHouseClassID(uint8_t grf_class_id, GrfID grfid)
 {
 	/* Start from 1 because 0 means that no class has been assigned. */
 	auto it = std::find_if(std::next(std::begin(_class_mapping)), std::end(_class_mapping), [grf_class_id, grfid](const HouseClassMapping &map) { return map.class_id == grf_class_id && map.grfid == grfid; });
@@ -439,7 +445,7 @@ static uint32_t GetDistanceFromNearbyHouse(uint8_t parameter, TileIndex start_ti
 			if (house_id < NEW_HOUSE_OFFSET) return 0;
 			/* Checking the grffile information via HouseSpec doesn't work
 			 * in case the newgrf was removed. */
-			return _house_mngr.GetGRFID(house_id);
+			return FlattenNewGRFLabel(_house_mngr.GetGRFID(house_id));
 		}
 
 		case 0x7A: return GetBadgeVariableResult(*this->ro.grffile, HouseSpec::Get(this->house_id)->badges, parameter);
@@ -496,7 +502,7 @@ static void DrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan &dts, ui
 		DrawGroundSprite(image, GroundSpritePaletteTransform(image, pal, palette));
 	}
 
-	DrawNewGRFTileSeq(ti, &dts, TO_HOUSES, stage, palette);
+	DrawNewGRFTileSeq(ti, &dts, TransparencyOption::Houses, stage, palette);
 }
 
 void DrawNewHouseTile(TileInfo *ti, HouseID house_id)
@@ -511,7 +517,7 @@ void DrawNewHouseTile(TileInfo *ti, HouseID house_id)
 			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_DRAW_FOUNDATIONS, callback_res);
 		}
 
-		if (draw_old_one) DrawFoundation(ti, FOUNDATION_LEVELED);
+		if (draw_old_one) DrawFoundation(ti, Foundation::Leveled);
 	}
 
 	HouseResolverObject object(house_id, ti->tile, Town::GetByTile(ti->tile));
@@ -604,15 +610,19 @@ bool CanDeleteHouse(TileIndex tile)
 
 	/* Humans are always allowed to remove buildings, as is water and disasters and
 	 * anyone using the scenario editor. */
-	if (Company::IsValidHumanID(_current_company) || _current_company == OWNER_WATER || _current_company == OWNER_NONE || _game_mode == GM_EDITOR || _generating_world) {
+	if (Company::IsValidHumanID(_current_company) || _current_company == OWNER_WATER || _current_company == OWNER_NONE || _game_mode == GameMode::Editor || _generating_world) {
 		return true;
 	}
 
+	/* The house might be placed by a player. */
+	if (IsHousePlayerProtected(tile)) return false;
+
+	/* Houses can be protected by a NewGRF property or a callback. The callback overrides the property. */
 	if (hs->callback_mask.Test(HouseCallbackMask::DenyDestruction)) {
 		uint16_t callback_res = GetHouseCallback(CBID_HOUSE_DENY_DESTRUCTION, 0, 0, GetHouseType(tile), Town::GetByTile(tile), tile);
 		return (callback_res == CALLBACK_FAILED || !ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_DENY_DESTRUCTION, callback_res));
 	} else {
-		return !IsHouseProtected(tile);
+		return !hs->extra_flags.Test(HouseExtraFlag::BuildingIsProtected);
 	}
 }
 

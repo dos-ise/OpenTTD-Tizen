@@ -575,6 +575,8 @@ STR_CONFIG_SETTING_WARN_LOST_VEHICLE                            :Avza jekk jinti
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 
 ###length 2
 
@@ -1064,6 +1066,7 @@ STR_LOCAL_AUTHORITY_COMPANY_RATING                              :{YELLOW}{COMPAN
 STR_GOALS_TEXT                                                  :{ORANGE}{STRING}
 
 # Goal question window
+###length 4
 
 # Goal Question button list
 ###length 18

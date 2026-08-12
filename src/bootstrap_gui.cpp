@@ -43,7 +43,7 @@ static constexpr std::initializer_list<NWidgetPart> _background_widgets = {
  */
 static WindowDesc _background_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_BOOTSTRAP, WC_NONE,
+	WindowClass::Bootstrap, WindowClass::None,
 	WindowDefaultFlag::NoClose,
 	_background_widgets
 );
@@ -79,7 +79,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_bootstrap_errmsg_wid
 /** Window description for the error window. */
 static WindowDesc _bootstrap_errmsg_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_BOOTSTRAP, WC_NONE,
+	WindowClass::Bootstrap, WindowClass::None,
 	{WindowDefaultFlag::Modal, WindowDefaultFlag::NoClose},
 	_nested_bootstrap_errmsg_widgets
 );
@@ -110,7 +110,7 @@ public:
 	void DrawWidget(const Rect &r, WidgetID widget) const override
 	{
 		if (widget == WID_BEM_MESSAGE) {
-			DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.frametext), STR_MISSING_GRAPHICS_ERROR, TC_FROMSTRING, SA_CENTER);
+			DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.frametext), STR_MISSING_GRAPHICS_ERROR, TextColour::FromString, {AlignmentH::Centre, AlignmentV::Middle});
 		}
 	}
 
@@ -136,7 +136,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_bootstrap_download_s
 /** Window description for the download window */
 static WindowDesc _bootstrap_download_status_window_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_NETWORK_STATUS_WINDOW, WC_NONE,
+	WindowClass::NetworkStatus, WindowClass::None,
 	{WindowDefaultFlag::Modal, WindowDefaultFlag::NoClose},
 	_nested_bootstrap_download_status_window_widgets
 );
@@ -165,7 +165,7 @@ public:
 		BaseGraphics::FindSets();
 
 		/* And continue going into the menu. */
-		_game_mode = GM_MENU;
+		_game_mode = GameMode::Menu;
 
 		/* _exit_game is used to break out of the outer video driver's MainLoop. */
 		_exit_game = true;
@@ -188,7 +188,7 @@ static constexpr std::initializer_list<NWidgetPart> _bootstrap_query_widgets = {
 /** The window description for the query. */
 static WindowDesc _bootstrap_query_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_CONFIRM_POPUP_QUERY, WC_NONE,
+	WindowClass::ConfirmPopupQuery, WindowClass::None,
 	WindowDefaultFlag::NoClose,
 	_bootstrap_query_widgets
 );
@@ -201,7 +201,7 @@ public:
 	/** Start listening to the content client events. */
 	BootstrapAskForDownloadWindow() : Window(_bootstrap_query_desc)
 	{
-		this->InitNested(WN_CONFIRM_POPUP_QUERY_BOOTSTRAP);
+		this->InitNested(ConfirmPopupQueryWindowNumber::Bootstrap);
 		_network_content_client.AddCallback(this);
 	}
 
@@ -239,7 +239,7 @@ public:
 	{
 		if (widget != WID_BAFD_QUESTION) return;
 
-		DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.frametext), STR_MISSING_GRAPHICS_SET_MESSAGE, TC_FROMSTRING, SA_CENTER);
+		DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.frametext), STR_MISSING_GRAPHICS_SET_MESSAGE, TextColour::FromString, {AlignmentH::Centre, AlignmentV::Middle});
 	}
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
@@ -373,7 +373,7 @@ bool HandleBootstrap()
 	if (!_network_available) goto failure;
 
 	/* First tell the game we're bootstrapping. */
-	_game_mode = GM_BOOTSTRAP;
+	_game_mode = GameMode::Bootstrap;
 
 #if defined(__EMSCRIPTEN__)
 	new BootstrapEmscripten();
@@ -387,8 +387,8 @@ bool HandleBootstrap()
 	 * This way the mauve and gray colours work and we can show the user interface. */
 	GfxInitPalettes();
 	static const EnumIndexArray<uint8_t, Colours, Colours::End> offsets = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80, 0, 0, 0, 0x04, 0x08 };
-	for (Colours i = Colours::Begin; i != Colours::End; i++) {
-		for (Shade j = Shade::Begin; j < Shade::End; j++) {
+	for (Colours i : EnumRange(Colours::End)) {
+		for (Shade j : EnumRange(Shade::End)) {
 			SetColourGradient(i, j, PixelColour(offsets[i] + to_underlying(j)));
 		}
 	}
@@ -402,16 +402,16 @@ bool HandleBootstrap()
 	VideoDriver::GetInstance()->MainLoop();
 
 	/* _exit_game is used to get out of the video driver's main loop.
-	 * In case GM_BOOTSTRAP is still set we did not exit it via the
+	 * In case GameMode::Bootstrap is still set we did not exit it via the
 	 * "download complete" event, so it was a manual exit. Obey it. */
-	_exit_game = _game_mode == GM_BOOTSTRAP;
+	_exit_game = _game_mode == GameMode::Bootstrap;
 	if (_exit_game) return false;
 
 	/* Try to probe the graphics. Should work this time. */
 	if (!BaseGraphics::SetSet(nullptr)) goto failure;
 
 	/* Finally we can continue heading for the menu. */
-	_game_mode = GM_MENU;
+	_game_mode = GameMode::Menu;
 	return true;
 #endif
 

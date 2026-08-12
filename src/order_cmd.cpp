@@ -26,6 +26,7 @@
 #include "cheat_type.h"
 #include "order_cmd.h"
 #include "train_cmd.h"
+#include "train.h"
 
 #include "table/strings.h"
 
@@ -212,17 +213,17 @@ uint16_t Order::MapOldOrder() const
  */
 void InvalidateVehicleOrder(const Vehicle *v, int data)
 {
-	InvalidateWindowData(WC_VEHICLE_VIEW, v->index);
+	InvalidateWindowData(WindowClass::VehicleView, v->index);
 
 	if (data != 0) {
 		/* Calls SetDirty() too */
-		InvalidateWindowData(WC_VEHICLE_ORDERS,    v->index, data);
-		InvalidateWindowData(WC_VEHICLE_TIMETABLE, v->index, data);
+		InvalidateWindowData(WindowClass::VehicleOrders, v->index, data);
+		InvalidateWindowData(WindowClass::VehicleTimetable, v->index, data);
 		return;
 	}
 
-	SetWindowDirty(WC_VEHICLE_ORDERS,    v->index);
-	SetWindowDirty(WC_VEHICLE_TIMETABLE, v->index);
+	SetWindowDirty(WindowClass::VehicleOrders, v->index);
+	SetWindowDirty(WindowClass::VehicleTimetable, v->index);
 }
 
 /**
@@ -297,7 +298,7 @@ void OrderList::FreeChain(bool keep_orderlist)
 		if (order.IsType(OT_GOTO_STATION) || order.IsType(OT_GOTO_WAYPOINT)) {
 			BaseStation *bs = BaseStation::GetIfValid(order.GetDestination().ToStationID());
 			if (bs != nullptr && bs->owner == OWNER_NONE) {
-				InvalidateWindowClassesData(WC_STATION_LIST, 0);
+				InvalidateWindowClassesData(WindowClass::StationList, 0);
 				break;
 			}
 		}
@@ -426,7 +427,7 @@ void OrderList::InsertOrderAt(Order &&order, VehicleOrderID index)
 	 * the list of stations. So, we need to invalidate that window if needed. */
 	if (new_order->IsType(OT_GOTO_STATION) || new_order->IsType(OT_GOTO_WAYPOINT)) {
 		BaseStation *bs = BaseStation::Get(new_order->GetDestination().ToStationID());
-		if (bs->owner == OWNER_NONE) InvalidateWindowClassesData(WC_STATION_LIST, 0);
+		if (bs->owner == OWNER_NONE) InvalidateWindowClassesData(WindowClass::StationList, 0);
 	}
 }
 
@@ -877,8 +878,7 @@ void InsertOrder(Vehicle *v, Order &&new_o, VehicleOrderID sel_ord)
 			/* We are inserting an order just before the current implicit order.
 			 * We do not know whether we will reach current implicit or the newly inserted order first.
 			 * So, disable creation of implicit orders until we are on track again. */
-			uint16_t &gv_flags = u->GetGroundVehicleFlags();
-			SetBit(gv_flags, GVF_SUPPRESS_IMPLICIT_ORDERS);
+			u->GetGroundVehicleFlags().Set(GroundVehicleFlag::SuppressImplicitOrders);
 		}
 		if (sel_ord <= u->cur_implicit_order_index) {
 			uint cur = u->cur_implicit_order_index + 1;
@@ -1059,8 +1059,8 @@ CommandCost CmdSkipToOrder(DoCommandFlags flags, VehicleID veh_id, VehicleOrderI
 		InvalidateVehicleOrder(v, VIWD_MODIFY_ORDERS);
 
 		/* We have an aircraft/ship, they have a mini-schedule, so update them all */
-		if (v->type == VehicleType::Aircraft) SetWindowClassesDirty(WC_AIRCRAFT_LIST);
-		if (v->type == VehicleType::Ship) SetWindowClassesDirty(WC_SHIPS_LIST);
+		if (v->type == VehicleType::Aircraft) SetWindowClassesDirty(WindowClass::AircraftList);
+		if (v->type == VehicleType::Ship) SetWindowClassesDirty(WindowClass::ShipList);
 	}
 
 	return CommandCost();
@@ -1652,6 +1652,8 @@ CommandCost CmdOrderRefit(DoCommandFlags flags, VehicleID veh, VehicleOrderID or
 	Order *order = v->GetOrder(order_number);
 	if (order == nullptr) return CMD_ERROR;
 
+	if (!order->IsType(OT_GOTO_DEPOT) && !order->IsType(OT_GOTO_STATION)) return CMD_ERROR;
+
 	/* Automatic refit cargo is only supported for goto station orders. */
 	if (cargo == CARGO_AUTO_REFIT && !order->IsType(OT_GOTO_STATION)) return CMD_ERROR;
 
@@ -1670,8 +1672,8 @@ CommandCost CmdOrderRefit(DoCommandFlags flags, VehicleID veh, VehicleOrderID or
 			/* Update any possible open window of the vehicle */
 			InvalidateVehicleOrder(u, VIWD_MODIFY_ORDERS);
 
-			/* If the vehicle already got the current depot set as current order, then update current order as well */
-			if (u->cur_real_order_index == order_number && u->current_order.GetDepotOrderType().Test(OrderDepotTypeFlag::PartOfOrders)) {
+			/* If the vehicle has already got the order to modify as the current order, then update the current order as well */
+			if (u->cur_real_order_index == order_number && (!order->IsType(OT_GOTO_DEPOT) || u->current_order.GetDepotOrderType().Test(OrderDepotTypeFlag::PartOfOrders))) {
 				u->current_order.SetRefit(cargo);
 			}
 		}
@@ -1687,16 +1689,16 @@ CommandCost CmdOrderRefit(DoCommandFlags flags, VehicleID veh, VehicleOrderID or
  */
 void CheckOrders(const Vehicle *v)
 {
-	/* Does the user wants us to check things? */
-	if (_settings_client.gui.order_review_system == 0) return;
+	/* Does the user want us to check things? */
+	if (_settings_client.gui.order_review_system == OrderReviewSystem::Off) return;
 
-	/* Do nothing for crashed vehicles */
+	/* Ignore crashed vehicles. */
 	if (v->vehstatus.Test(VehState::Crashed)) return;
 
-	/* Do nothing for stopped vehicles if setting is '1' */
-	if (_settings_client.gui.order_review_system == 1 && v->vehstatus.Test(VehState::Stopped)) return;
+	/* Maybe ignore stopped vehicles. */
+	if (_settings_client.gui.order_review_system == OrderReviewSystem::ExcludeStopped && v->vehstatus.Test(VehState::Stopped)) return;
 
-	/* do nothing we we're not the first vehicle in a share-chain */
+	/* Do nothing if we're not the first vehicle in a share-chain. */
 	if (v->FirstShared() != v) return;
 
 	/* Only check every 20 days, so that we don't flood the message log */
@@ -1771,7 +1773,7 @@ void RemoveOrderFromAllVehicles(OrderType type, DestinationID destination, bool 
 		if ((v->type == VehicleType::Aircraft && v->current_order.IsType(OT_GOTO_DEPOT) && !hangar ? OT_GOTO_STATION : v->current_order.GetType()) == type &&
 				(!hangar || v->type == VehicleType::Aircraft) && v->current_order.GetDestination() == destination) {
 			v->current_order.MakeDummy();
-			InvalidateWindowData(WC_VEHICLE_VIEW, v->index);
+			InvalidateWindowData(WindowClass::VehicleView, v->index);
 		}
 
 		if (v->orders == nullptr) continue;
@@ -1875,7 +1877,7 @@ uint16_t GetServiceIntervalClamped(int interval, bool ispercent)
 	if (ispercent) return Clamp(interval, MIN_SERVINT_PERCENT, MAX_SERVINT_PERCENT);
 
 	/* Service intervals are in minutes. */
-	if (TimerGameEconomy::UsingWallclockUnits(_game_mode == GM_MENU)) return Clamp(interval, MIN_SERVINT_MINUTES, MAX_SERVINT_MINUTES);
+	if (TimerGameEconomy::UsingWallclockUnits(_game_mode == GameMode::Menu)) return Clamp(interval, MIN_SERVINT_MINUTES, MAX_SERVINT_MINUTES);
 
 	/* Service intervals are in days. */
 	return Clamp(interval, MIN_SERVINT_DAYS, MAX_SERVINT_DAYS);
@@ -1947,7 +1949,7 @@ VehicleOrderID ProcessConditionalOrder(const Order *order, const Vehicle *v)
 		case OrderConditionVariable::RequiresService: skip_order = OrderConditionCompare(occ, v->NeedsServicing(), value); break;
 		case OrderConditionVariable::Unconditionally: skip_order = true; break;
 		case OrderConditionVariable::RemainingLifetime: skip_order = OrderConditionCompare(occ, std::max(TimerGameCalendar::DateToYear(v->max_age - v->age + CalendarTime::DAYS_IN_LEAP_YEAR - 1), TimerGameCalendar::Year(0)), value); break;
-		case OrderConditionVariable::DrivingBackwards: skip_order = OrderConditionCompare(occ, v->IsDrivingBackwards(), value); break;
+		case OrderConditionVariable::DrivingBackwards: skip_order = OrderConditionCompare(occ, v->IsDrivingBackwards() && !Train::From(v)->GetMovingFront()->CanLeadTrain(), value); break;
 		default: NOT_REACHED();
 	}
 
@@ -2049,8 +2051,7 @@ bool UpdateOrderDest(Vehicle *v, const Order *order, int conditional_depth, bool
 				/* Disable creation of implicit orders.
 				 * When inserting them we do not know that we would have to make the conditional orders point to them. */
 				if (v->IsGroundVehicle()) {
-					uint16_t &gv_flags = v->GetGroundVehicleFlags();
-					SetBit(gv_flags, GVF_SUPPRESS_IMPLICIT_ORDERS);
+					v->GetGroundVehicleFlags().Set(GroundVehicleFlag::SuppressImplicitOrders);
 				}
 			} else {
 				UpdateVehicleTimetable(v, true);

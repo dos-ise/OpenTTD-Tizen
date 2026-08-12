@@ -16,21 +16,21 @@
 #include "../safeguards.h"
 
 /** Callback function for 'INFO'->'NAME' to add a translation to the newgrf name. @copydoc TextHandler */
-static bool ChangeGRFName(uint8_t langid, std::string_view str)
+static bool ChangeGRFName(GRFLanguage langid, std::string_view str)
 {
 	AddGRFTextToList(_cur_gps.grfconfig->name, langid, _cur_gps.grfconfig->ident.grfid, false, str);
 	return true;
 }
 
 /** Callback function for 'INFO'->'DESC' to add a translation to the newgrf description. @copydoc TextHandler */
-static bool ChangeGRFDescription(uint8_t langid, std::string_view str)
+static bool ChangeGRFDescription(GRFLanguage langid, std::string_view str)
 {
 	AddGRFTextToList(_cur_gps.grfconfig->info, langid, _cur_gps.grfconfig->ident.grfid, true, str);
 	return true;
 }
 
 /** Callback function for 'INFO'->'URL_' to set the newgrf url. @copydoc TextHandler */
-static bool ChangeGRFURL(uint8_t langid, std::string_view str)
+static bool ChangeGRFURL(GRFLanguage langid, std::string_view str)
 {
 	AddGRFTextToList(_cur_gps.grfconfig->url, langid, _cur_gps.grfconfig->ident.grfid, false, str);
 	return true;
@@ -132,14 +132,14 @@ static bool ChangeGRFMinVersion(size_t len, ByteReader &buf)
 static GRFParameterInfo *_cur_parameter; ///< The parameter which info is currently changed by the newgrf.
 
 /** Callback function for 'INFO'->'PARAM'->param_num->'NAME' to set the name of a parameter. @copydoc TextHandler */
-static bool ChangeGRFParamName(uint8_t langid, std::string_view str)
+static bool ChangeGRFParamName(GRFLanguage langid, std::string_view str)
 {
 	AddGRFTextToList(_cur_parameter->name, langid, _cur_gps.grfconfig->ident.grfid, false, str);
 	return true;
 }
 
 /** Callback function for 'INFO'->'PARAM'->param_num->'DESC' to set the description of a parameter. @copydoc TextHandler */
-static bool ChangeGRFParamDescription(uint8_t langid, std::string_view str)
+static bool ChangeGRFParamDescription(GRFLanguage langid, std::string_view str)
 {
 	AddGRFTextToList(_cur_parameter->desc, langid, _cur_gps.grfconfig->ident.grfid, true, str);
 	return true;
@@ -237,7 +237,7 @@ using DataHandler = bool(*)(size_t len, ByteReader &buf);
  * @param str The actual text.
  * @return \c true iff the data could be processed.
  */
-using TextHandler = bool(*)(uint8_t langid, std::string_view str);
+using TextHandler = bool(*)(GRFLanguage langid, std::string_view str);
 
 /**
  * Callback for parsing branch nodes.
@@ -245,6 +245,8 @@ using TextHandler = bool(*)(uint8_t langid, std::string_view str);
  * @return \c true iff the data could be processed.
  */
 using BranchHandler = bool(*)(ByteReader &buf);
+
+using NodeID = Label<struct NodeIDTag>; ///< Label type of the nodes in the \c AllowedSubtags.
 
 /**
  * Data structure to store the allowed id/type combinations for action 14. The
@@ -257,7 +259,7 @@ struct AllowedSubtags {
 	/** Custom 'span' of subtags. Required because std::span with an incomplete type is UB. */
 	using Span = std::pair<const AllowedSubtags *, const AllowedSubtags *>;
 
-	uint32_t id; ///< The identifier for this node.
+	NodeID id; ///< The identifier for this node.
 	std::variant<DataHandler, TextHandler, BranchHandler, Span> handler; ///< The handler for this node.
 };
 
@@ -283,7 +285,7 @@ static bool ChangeGRFParamValueNames(ByteReader &buf)
 			continue;
 		}
 
-		uint8_t langid = buf.ReadByte();
+		GRFLanguage langid = static_cast<GRFLanguage>(buf.ReadByte());
 		std::string_view name_string = buf.ReadString();
 
 		auto it = std::ranges::lower_bound(_cur_parameter->value_names, id, std::less{}, &GRFParameterInfo::ValueName::first);
@@ -299,13 +301,13 @@ static bool ChangeGRFParamValueNames(ByteReader &buf)
 
 /** Action14 parameter tags */
 static constexpr AllowedSubtags _tags_parameters[] = {
-	AllowedSubtags{'NAME', ChangeGRFParamName},
-	AllowedSubtags{'DESC', ChangeGRFParamDescription},
-	AllowedSubtags{'TYPE', ChangeGRFParamType},
-	AllowedSubtags{'LIMI', ChangeGRFParamLimits},
-	AllowedSubtags{'MASK', ChangeGRFParamMask},
-	AllowedSubtags{'VALU', ChangeGRFParamValueNames},
-	AllowedSubtags{'DFLT', ChangeGRFParamDefault},
+	AllowedSubtags{"NAME", ChangeGRFParamName},
+	AllowedSubtags{"DESC", ChangeGRFParamDescription},
+	AllowedSubtags{"TYPE", ChangeGRFParamType},
+	AllowedSubtags{"LIMI", ChangeGRFParamLimits},
+	AllowedSubtags{"MASK", ChangeGRFParamMask},
+	AllowedSubtags{"VALU", ChangeGRFParamValueNames},
+	AllowedSubtags{"DFLT", ChangeGRFParamDefault},
 };
 
 /**
@@ -343,20 +345,20 @@ static bool HandleParameterInfo(ByteReader &buf)
 
 /** Action14 tags for the INFO node */
 static constexpr AllowedSubtags _tags_info[] = {
-	AllowedSubtags{'NAME', ChangeGRFName},
-	AllowedSubtags{'DESC', ChangeGRFDescription},
-	AllowedSubtags{'URL_', ChangeGRFURL},
-	AllowedSubtags{'NPAR', ChangeGRFNumUsedParams},
-	AllowedSubtags{'PALS', ChangeGRFPalette},
-	AllowedSubtags{'BLTR', ChangeGRFBlitter},
-	AllowedSubtags{'VRSN', ChangeGRFVersion},
-	AllowedSubtags{'MINV', ChangeGRFMinVersion},
-	AllowedSubtags{'PARA', HandleParameterInfo},
+	AllowedSubtags{"NAME", ChangeGRFName},
+	AllowedSubtags{"DESC", ChangeGRFDescription},
+	AllowedSubtags{"URL_", ChangeGRFURL},
+	AllowedSubtags{"NPAR", ChangeGRFNumUsedParams},
+	AllowedSubtags{"PALS", ChangeGRFPalette},
+	AllowedSubtags{"BLTR", ChangeGRFBlitter},
+	AllowedSubtags{"VRSN", ChangeGRFVersion},
+	AllowedSubtags{"MINV", ChangeGRFMinVersion},
+	AllowedSubtags{"PARA", HandleParameterInfo},
 };
 
 /** Action14 root tags */
 static constexpr AllowedSubtags _tags_root[] = {
-	AllowedSubtags{'INFO', std::make_pair(std::begin(_tags_info), std::end(_tags_info))},
+	AllowedSubtags{"INFO", std::make_pair(std::begin(_tags_info), std::end(_tags_info))},
 };
 
 
@@ -406,7 +408,7 @@ static bool SkipUnknownInfo(ByteReader &buf, uint8_t type)
  * @param subtags Allowed subtags.
  * @return Whether all tags could be handled.
  */
-static bool HandleNode(uint8_t type, uint32_t id, ByteReader &buf, std::span<const AllowedSubtags> subtags)
+static bool HandleNode(uint8_t type, NodeID id, ByteReader &buf, std::span<const AllowedSubtags> subtags)
 {
 	/* Visitor to get a subtag handler's type. */
 	struct type_visitor {
@@ -429,7 +431,7 @@ static bool HandleNode(uint8_t type, uint32_t id, ByteReader &buf, std::span<con
 
 		bool operator()(const TextHandler &handler)
 		{
-			uint8_t langid = buf.ReadByte();
+			GRFLanguage langid = static_cast<GRFLanguage>(buf.ReadByte());
 			return handler(langid, buf.ReadString());
 		}
 
@@ -445,11 +447,11 @@ static bool HandleNode(uint8_t type, uint32_t id, ByteReader &buf, std::span<con
 	};
 
 	for (const auto &tag : subtags) {
-		if (tag.id != std::byteswap(id) || std::visit(type_visitor{}, tag.handler) != type) continue;
+		if (tag.id != id || std::visit(type_visitor{}, tag.handler) != type) continue;
 		return std::visit(evaluate_visitor{buf}, tag.handler);
 	}
 
-	GrfMsg(2, "StaticGRFInfo: unknown type/id combination found, type={:c}, id={:x}", type, id);
+	GrfMsg(2, "StaticGRFInfo: unknown type/id combination found, type={:c}, id={}", type, id.AsString());
 	return SkipUnknownInfo(buf, type);
 }
 
@@ -463,7 +465,7 @@ static bool HandleNodes(ByteReader &buf, std::span<const AllowedSubtags> subtags
 {
 	uint8_t type = buf.ReadByte();
 	while (type != 0) {
-		uint32_t id = buf.ReadDWord();
+		NodeID id = buf.ReadLabel<NodeID>();
 		if (!HandleNode(type, id, buf, subtags)) return false;
 		type = buf.ReadByte();
 	}

@@ -14,6 +14,7 @@
 #include "../window_func.h"
 #include "../error.h"
 #include "../fileio_func.h"
+#include "../newgrf.h"
 #include "../base_media_base.h"
 #include "../base_media_graphics.h"
 #include "../base_media_music.h"
@@ -49,7 +50,7 @@ ClientNetworkContentSocketHandler _network_content_client;
 /** Check whether NewGRF content exists. @copydoc HasContentProc */
 static bool HasGRFConfig(const ContentInfo &ci, bool md5sum)
 {
-	return FindGRFConfig(std::byteswap(ci.unique_id), md5sum ? FindGRFConfigMode::Exact : FindGRFConfigMode::Any, md5sum ? &ci.md5sum : nullptr) != nullptr;
+	return FindGRFConfig(UnflattenNewGRFLabel<GrfID>(std::byteswap(ci.unique_id)), md5sum ? FindGRFConfigMode::Exact : FindGRFConfigMode::Any, md5sum ? &ci.md5sum : nullptr) != nullptr;
 }
 
 /**
@@ -467,11 +468,11 @@ bool ClientNetworkContentSocketHandler::ReceiveServerContent(Packet &p)
 			return fwrite(buffer.data(), 1, buffer.size(), *this->cur_file);
 		};
 		if (to_read != 0 && p.TransferOut(write_to_disk) != to_read) {
-			CloseWindowById(WC_NETWORK_STATUS_WINDOW, WN_NETWORK_STATUS_WINDOW_CONTENT_DOWNLOAD);
+			CloseWindowById(WindowClass::NetworkStatus, NetworkStatusWindowNumber::ContentDownload);
 			ShowErrorMessage(
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD),
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD_FILE_NOT_WRITABLE),
-				WL_ERROR);
+				WarningLevel::Error);
 			this->CloseConnection();
 			this->cur_file.reset();
 
@@ -502,11 +503,11 @@ bool ClientNetworkContentSocketHandler::BeforeDownload()
 		std::string filename = GetFullFilename(*this->cur_info, true);
 		if (filename.empty() || !(this->cur_file = FileHandle::Open(filename, "wb")).has_value()) {
 			/* Unless that fails of course... */
-			CloseWindowById(WC_NETWORK_STATUS_WINDOW, WN_NETWORK_STATUS_WINDOW_CONTENT_DOWNLOAD);
+			CloseWindowById(WindowClass::NetworkStatus, NetworkStatusWindowNumber::ContentDownload);
 			ShowErrorMessage(
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD),
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD_FILE_NOT_WRITABLE),
-				WL_ERROR);
+				WarningLevel::Error);
 			return false;
 		}
 	}
@@ -545,7 +546,7 @@ void ClientNetworkContentSocketHandler::AfterDownload()
 
 		this->OnDownloadComplete(this->cur_info->id);
 	} else {
-		ShowErrorMessage(GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_EXTRACT), {}, WL_ERROR);
+		ShowErrorMessage(GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_EXTRACT), {}, WarningLevel::Error);
 	}
 }
 
@@ -734,12 +735,12 @@ NetworkRecvStatus ClientNetworkContentSocketHandler::CloseConnection([[maybe_unu
 {
 	NetworkContentSocketHandler::CloseConnection();
 
-	if (this->sock == INVALID_SOCKET) return NETWORK_RECV_STATUS_OKAY;
+	if (this->sock == INVALID_SOCKET) return NetworkRecvStatus::Okay;
 
 	this->CloseSocket();
 	this->OnDisconnect();
 
-	return NETWORK_RECV_STATUS_OKAY;
+	return NetworkRecvStatus::Okay;
 }
 
 /**

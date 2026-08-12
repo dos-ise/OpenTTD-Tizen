@@ -208,15 +208,12 @@ public:
 		DrawString(r, STR_LOCAL_AUTHORITY_ACTIONS_TITLE);
 		r.top += GetCharacterHeight(FontSize::Normal);
 
-		/* Draw list of actions */
-		for (TownAction i = {}; i != TownAction::End; ++i) {
-			/* Don't show actions if disabled in settings. */
-			if (!this->enabled_actions.Test(i)) continue;
-
+		/* Draw list of enabled actions */
+		for (TownAction i : this->enabled_actions) {
 			/* Set colour of action based on ability to execute and if selected. */
-			TextColour action_colour = TC_GREY | TC_NO_SHADE;
-			if (this->available_actions.Test(i)) action_colour = TC_ORANGE;
-			if (this->sel_action == i) action_colour = TC_WHITE;
+			ExtendedTextColour action_colour{TextColour::Grey, ExtendedTextColourFlag::NoShade};
+			if (this->available_actions.Test(i)) action_colour = TextColour::Orange;
+			if (this->sel_action == i) action_colour = TextColour::White;
 
 			DrawString(r, STR_LOCAL_AUTHORITY_ACTION_SMALL_ADVERTISING_CAMPAIGN + to_underlying(i), action_colour);
 			r.top += GetCharacterHeight(FontSize::Normal);
@@ -240,7 +237,7 @@ public:
 
 					DrawStringMultiLine(r.Shrink(WidgetDimensions::scaled.framerect),
 						GetString(this->action_tooltips[to_underlying(this->sel_action)], action_cost),
-						affordable ? TC_YELLOW : TC_RED);
+						affordable ? TextColour::Yellow : TextColour::Red);
 				}
 				break;
 		}
@@ -252,7 +249,7 @@ public:
 			case WID_TA_ACTION_INFO: {
 				assert(size.width > padding.width && size.height > padding.height);
 				Dimension d = {0, 0};
-				for (TownAction i = {}; i != TownAction::End; ++i) {
+				for (TownAction i : EnumRange(TownAction::End)) {
 					Money price = _price[Price::TownAction] * GetTownActionCost(i) >> 8;
 					d = maxdim(d, GetStringMultiLineBoundingBox(GetString(this->action_tooltips[to_underlying(i)], price), size));
 				}
@@ -265,7 +262,7 @@ public:
 			case WID_TA_COMMAND_LIST:
 				size.height = (to_underlying(TownAction::End) + 1) * GetCharacterHeight(FontSize::Normal) + padding.height;
 				size.width = GetStringBoundingBox(STR_LOCAL_AUTHORITY_ACTIONS_TITLE).width;
-				for (TownAction i = {}; i != TownAction::End; ++i) {
+				for (TownAction i : EnumRange(TownAction::End)) {
 					size.width = std::max(size.width, GetStringBoundingBox(STR_LOCAL_AUTHORITY_ACTION_SMALL_ADVERTISING_CAMPAIGN + to_underlying(i)).width + padding.width);
 				}
 				size.width += padding.width;
@@ -333,7 +330,7 @@ public:
 /** Window definition for the town authority window. */
 static WindowDesc _town_authority_desc(
 	WindowPosition::Automatic, "view_town_authority", 317, 222,
-	WC_TOWN_AUTHORITY, WC_NONE,
+	WindowClass::TownAuthority, WindowClass::None,
 	{},
 	_nested_town_authority_widgets
 );
@@ -414,7 +411,7 @@ public:
 		}
 
 		bool first = true;
-		for (TownAcceptanceEffect i = TownAcceptanceEffect::Begin; i < TownAcceptanceEffect::End; i++) {
+		for (TownAcceptanceEffect i : EnumRange(TownAcceptanceEffect::End)) {
 			if (this->town->goal[i] == 0) continue;
 			if (this->town->goal[i] == TOWN_GROWTH_WINTER && (TileHeight(this->town->xy) < LowestSnowLine() || this->town->cache.population <= 90)) continue;
 			if (this->town->goal[i] == TOWN_GROWTH_DESERT && (GetTropicZone(this->town->xy) != TropicZone::Desert || this->town->cache.population <= 60)) continue;
@@ -469,7 +466,7 @@ public:
 		}
 
 		if (!this->town->text.empty()) {
-			tr.top = DrawStringMultiLine(tr, this->town->text.GetDecodedString(), TC_BLACK);
+			tr.top = DrawStringMultiLine(tr, this->town->text.GetDecodedString(), TextColour::Black);
 		}
 	}
 
@@ -538,7 +535,7 @@ public:
 		uint aimed_height = static_cast<uint>(1 + CargoSpec::town_production_cargoes[TownProductionEffect::Passengers].size() + CargoSpec::town_production_cargoes[TownProductionEffect::Mail].size()) * GetCharacterHeight(FontSize::Normal);
 
 		bool first = true;
-		for (TownAcceptanceEffect i = TownAcceptanceEffect::Begin; i < TownAcceptanceEffect::End; i++) {
+		for (TownAcceptanceEffect i : EnumRange(TownAcceptanceEffect::End)) {
 			if (this->town->goal[i] == 0) continue;
 			if (this->town->goal[i] == TOWN_GROWTH_WINTER && (TileHeight(this->town->xy) < LowestSnowLine() || this->town->cache.population <= 90)) continue;
 			if (this->town->goal[i] == TOWN_GROWTH_DESERT && (GetTropicZone(this->town->xy) != TropicZone::Desert || this->town->cache.population <= 60)) continue;
@@ -640,7 +637,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_town_game_view_widge
 /** Window definition for the town view window. */
 static WindowDesc _town_game_view_desc(
 	WindowPosition::Automatic, "view_town", 260, TownViewWindow::WID_TV_HEIGHT_NORMAL,
-	WC_TOWN_VIEW, WC_NONE,
+	WindowClass::TownView, WindowClass::None,
 	{},
 	_nested_town_game_view_widgets
 );
@@ -676,14 +673,14 @@ static constexpr std::initializer_list<NWidgetPart> _nested_town_editor_view_wid
 /** Window definition for the town view window of the scenario edtior. */
 static WindowDesc _town_editor_view_desc(
 	WindowPosition::Automatic, "view_town_scen", 260, TownViewWindow::WID_TV_HEIGHT_NORMAL,
-	WC_TOWN_VIEW, WC_NONE,
+	WindowClass::TownView, WindowClass::None,
 	{},
 	_nested_town_editor_view_widgets
 );
 
 void ShowTownViewWindow(TownID town)
 {
-	if (_game_mode == GM_EDITOR) {
+	if (_game_mode == GameMode::Editor) {
 		AllocateWindowDescFront<TownViewWindow>(_town_editor_view_desc, town);
 	} else {
 		AllocateWindowDescFront<TownViewWindow>(_town_game_view_desc, town);
@@ -850,7 +847,7 @@ public:
 	{
 		switch (widget) {
 			case WID_TD_SORT_ORDER:
-				this->DrawSortButtonState(widget, this->towns.IsDescSortOrder() ? SBS_DOWN : SBS_UP);
+				this->DrawSortButton(widget, this->towns.IsDescSortOrder());
 				break;
 
 			case WID_TD_LIST: {
@@ -872,7 +869,7 @@ public:
 					assert(t->xy != INVALID_TILE);
 
 					/* Draw rating icon. */
-					if (_game_mode == GM_EDITOR || !t->have_ratings.Test(_local_company)) {
+					if (_game_mode == GameMode::Editor || !t->have_ratings.Test(_local_company)) {
 						DrawSprite(SPR_TOWN_RATING_NA, PAL_NONE, icon_x, tr.top + (this->resize.step_height - icon_size.height) / 2);
 					} else {
 						SpriteID icon = SPR_TOWN_RATING_APPALLING;
@@ -1049,7 +1046,7 @@ const std::initializer_list<GUITownList::SortFunction * const> TownDirectoryWind
 /** Window definition for the town directory window. */
 static WindowDesc _town_directory_desc(
 	WindowPosition::Automatic, "list_towns", 208, 202,
-	WC_TOWN_DIRECTORY, WC_NONE,
+	WindowClass::TownDirectory, WindowClass::None,
 	{},
 	_nested_town_directory_widgets,
 	&TownDirectoryWindow::hotkeys
@@ -1057,7 +1054,7 @@ static WindowDesc _town_directory_desc(
 
 void ShowTownDirectory()
 {
-	if (BringWindowToFrontById(WC_TOWN_DIRECTORY, 0)) return;
+	if (BringWindowToFrontById(WindowClass::TownDirectory, 0)) return;
 	new TownDirectoryWindow(_town_directory_desc);
 }
 
@@ -1150,7 +1147,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_found_town_widgets =
 /** Found a town window class. */
 struct FoundTownWindow : Window {
 private:
-	TownSize town_size = TSZ_MEDIUM; ///< Selected town size
+	TownSize town_size = TownSize::Medium; ///< Selected town size
 	TownLayout town_layout{}; ///< Selected town layout
 	bool city = false; ///< Are we building a city?
 	QueryString townname_editbox; ///< Townname editbox
@@ -1174,12 +1171,12 @@ public:
 
 	void OnInit() override
 	{
-		if (_game_mode == GM_EDITOR) return;
+		if (_game_mode == GameMode::Editor) return;
 
 		this->GetWidget<NWidgetStacked>(WID_TF_TOWN_ACTION_SEL)->SetDisplayedPlane(SZSP_HORIZONTAL);
 		this->GetWidget<NWidgetStacked>(WID_TF_TOWN_EXPAND_SEL)->SetDisplayedPlane(SZSP_HORIZONTAL);
 		this->GetWidget<NWidgetStacked>(WID_TF_SIZE_SEL)->SetDisplayedPlane(SZSP_VERTICAL);
-		if (_settings_game.economy.found_town != TF_CUSTOM_LAYOUT) {
+		if (_settings_game.economy.found_town != TownFounding::CustomLayout) {
 			this->GetWidget<NWidgetStacked>(WID_TF_ROAD_LAYOUT_SEL)->SetDisplayedPlane(SZSP_HORIZONTAL);
 		} else {
 			this->GetWidget<NWidgetStacked>(WID_TF_ROAD_LAYOUT_SEL)->SetDisplayedPlane(0);
@@ -1202,19 +1199,19 @@ public:
 
 	void UpdateButtons(bool check_availability)
 	{
-		if (check_availability && _game_mode != GM_EDITOR) {
-			if (_settings_game.economy.found_town != TF_CUSTOM_LAYOUT) this->town_layout = _settings_game.economy.town_layout;
+		if (check_availability && _game_mode != GameMode::Editor) {
+			if (_settings_game.economy.found_town != TownFounding::CustomLayout) this->town_layout = _settings_game.economy.town_layout;
 			this->ReInit();
 		}
 
 		for (WidgetID i = WID_TF_SIZE_SMALL; i <= WID_TF_SIZE_RANDOM; i++) {
-			this->SetWidgetLoweredState(i, i == WID_TF_SIZE_SMALL + this->town_size);
+			this->SetWidgetLoweredState(i, i == WID_TF_SIZE_SMALL + to_underlying(this->town_size));
 		}
 
 		this->SetWidgetLoweredState(WID_TF_CITY, this->city);
 
 		for (WidgetID i = WID_TF_LAYOUT_ORIGINAL; i <= WID_TF_LAYOUT_RANDOM; i++) {
-			this->SetWidgetLoweredState(i, i == WID_TF_LAYOUT_ORIGINAL + this->town_layout);
+			this->SetWidgetLoweredState(i, i == WID_TF_LAYOUT_ORIGINAL + to_underlying(this->town_layout));
 		}
 
 		this->SetWidgetLoweredState(WID_TF_EXPAND_BUILDINGS, FoundTownWindow::expand_modes.Test(TownExpandMode::Buildings));
@@ -1275,7 +1272,7 @@ public:
 				break;
 
 			case WID_TF_SIZE_SMALL: case WID_TF_SIZE_MEDIUM: case WID_TF_SIZE_LARGE: case WID_TF_SIZE_RANDOM:
-				this->town_size = (TownSize)(widget - WID_TF_SIZE_SMALL);
+				this->town_size = static_cast<TownSize>(widget - WID_TF_SIZE_SMALL);
 				this->UpdateButtons(false);
 				break;
 
@@ -1297,11 +1294,11 @@ public:
 
 			case WID_TF_LAYOUT_ORIGINAL: case WID_TF_LAYOUT_BETTER: case WID_TF_LAYOUT_GRID2:
 			case WID_TF_LAYOUT_GRID3: case WID_TF_LAYOUT_RANDOM:
-				this->town_layout = (TownLayout)(widget - WID_TF_LAYOUT_ORIGINAL);
+				this->town_layout = static_cast<TownLayout>(widget - WID_TF_LAYOUT_ORIGINAL);
 
 				/* If we are in the editor, sync the settings of the current game to the chosen layout,
 				 * so that importing towns from file uses the selected layout. */
-				if (_game_mode == GM_EDITOR) _settings_game.economy.town_layout = this->town_layout;
+				if (_game_mode == GameMode::Editor) _settings_game.economy.town_layout = this->town_layout;
 
 				this->UpdateButtons(false);
 				break;
@@ -1319,7 +1316,7 @@ public:
 		AutoRestoreBackup old_generating_world(_generating_world, true);
 		UpdateNearestTownForRoadTiles(true);
 		if (!GenerateTowns(this->town_layout, value)) {
-			ShowErrorMessage(GetEncodedString(STR_ERROR_CAN_T_GENERATE_TOWN), GetEncodedString(STR_ERROR_NO_SPACE_FOR_TOWN), WL_INFO);
+			ShowErrorMessage(GetEncodedString(STR_ERROR_CAN_T_GENERATE_TOWN), GetEncodedString(STR_ERROR_NO_SPACE_FOR_TOWN), WarningLevel::Info);
 		}
 		UpdateNearestTownForRoadTiles(false);
 	}
@@ -1350,14 +1347,14 @@ public:
 /** Window definition for the town funding window. */
 static WindowDesc _found_town_desc(
 	WindowPosition::Automatic, "build_town", 160, 162,
-	WC_FOUND_TOWN, WC_NONE,
+	WindowClass::FoundTown, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_found_town_widgets
 );
 
 void ShowFoundTownWindow()
 {
-	if (_game_mode != GM_EDITOR && !Company::IsValidID(_local_company)) return;
+	if (_game_mode != GameMode::Editor && !Company::IsValidID(_local_company)) return;
 	AllocateWindowDescFront<FoundTownWindow>(_found_town_desc, 0);
 }
 
@@ -1523,7 +1520,7 @@ public:
 	PickerItem GetPickerItem(int cls_id, int id) const override
 	{
 		const auto *spec = HouseSpec::Get(id);
-		if (!spec->grf_prop.HasGrfFile()) return {0, spec->Index(), cls_id, id};
+		if (!spec->grf_prop.HasGrfFile()) return {GrfID{}, spec->Index(), cls_id, id};
 		return {spec->grf_prop.grfid, spec->grf_prop.local_id, cls_id, id};
 	}
 
@@ -1582,7 +1579,7 @@ public:
 			HouseID house = static_cast<HouseID>(std::distance(id_count.begin(), it));
 			const HouseSpec *hs = HouseSpec::Get(house);
 			int class_index = GetClassIdFromHouseZone(hs->building_availability);
-			items.insert({0, house, class_index, house});
+			items.insert({GrfID{}, house, class_index, house});
 		}
 	}
 
@@ -1599,7 +1596,7 @@ public:
 			}
 
 			for (const auto &item : group_it->second) {
-				if (item.grfid == 0) {
+				if (item.grfid.Empty()) {
 					const HouseSpec *hs = HouseSpec::Get(item.local_id);
 					if (hs == nullptr) continue;
 					int class_index = GetClassIdFromHouseZone(hs->building_availability);
@@ -1798,14 +1795,12 @@ struct BuildHouseWindow : public PickerWindow {
 			this->house_info = spec->enabled ? GetHouseInformation(spec) : "";
 		}
 
-		/* If house spec already has the protected flag, handle it automatically and disable the buttons. */
-		bool hasflag = spec->extra_flags.Test(HouseExtraFlag::BuildingIsProtected);
-		if (hasflag) BuildHouseWindow::house_protected = true;
-
+		/* The protection button only shows the player's choice.
+		 * Houses also have a property and a callback for protection, but these are not shown
+		 * since we cannot know the possible results of the callback in runtime. */
 		this->SetWidgetLoweredState(WID_BH_PROTECT_TOGGLE, BuildHouseWindow::house_protected);
-		this->SetWidgetLoweredState(WID_BH_REPLACE_TOGGLE, BuildHouseWindow::replace);
 
-		this->SetWidgetDisabledState(WID_BH_PROTECT_TOGGLE, hasflag);
+		this->SetWidgetLoweredState(WID_BH_REPLACE_TOGGLE, BuildHouseWindow::replace);
 	}
 
 	void OnPlaceObject([[maybe_unused]] Point pt, TileIndex tile) override
@@ -1874,7 +1869,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_house_widgets 
 /** Window definition for the house building window. */
 static WindowDesc _build_house_desc(
 	WindowPosition::Automatic, "build_house", 0, 0,
-	WC_BUILD_HOUSE, WC_BUILD_TOOLBAR,
+	WindowClass::BuildHouse, WindowClass::BuildToolbar,
 	WindowDefaultFlag::Construction,
 	_nested_build_house_widgets,
 	&BuildHouseWindow::hotkeys
@@ -1882,6 +1877,6 @@ static WindowDesc _build_house_desc(
 
 void ShowBuildHousePicker(Window *parent)
 {
-	if (BringWindowToFrontById(WC_BUILD_HOUSE, 0)) return;
+	if (BringWindowToFrontById(WindowClass::BuildHouse, 0)) return;
 	new BuildHouseWindow(_build_house_desc, parent);
 }

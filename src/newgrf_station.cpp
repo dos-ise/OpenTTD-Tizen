@@ -115,40 +115,34 @@ TileArea GetRailTileArea(const BaseStation *st, TileIndex tile, TriggerArea ta)
  * - P = Position along platform from start, p = from end
  * .
  * if centered, C/P start from the centre and c/p are not available.
- * @param axis The axis of the platform.
- * @param tile The tile layout number.
+ * @param gfx The tile layout number.
  * @param platforms Number of platforms.
  * @param length Length of platforms.
- * @param x The platform number.
- * @param y Position along the platform.
+ * @param platform The platform number.
+ * @param position Position along the platform.
  * @param centred Whether to 'center' the platform location, or use the absolute location.
  * @return Platform information in bit-stuffed format.
  */
-uint32_t GetPlatformInfo(Axis axis, uint8_t tile, int platforms, int length, int x, int y, bool centred)
+uint32_t GetPlatformInfo(StationGfx gfx, int platforms, int length, int platform, int position, bool centred)
 {
 	uint32_t retval = 0;
 
-	if (axis == AXIS_X) {
-		std::swap(platforms, length);
-		std::swap(x, y);
-	}
-
 	if (centred) {
-		x -= platforms / 2;
-		y -= length / 2;
-		x = Clamp(x, -8, 7);
-		y = Clamp(y, -8, 7);
-		SB(retval,  0, 4, y & 0xF);
-		SB(retval,  4, 4, x & 0xF);
+		platform -= platforms / 2;
+		position -= length / 2;
+		platform = Clamp(platform, -8, 7);
+		position = Clamp(position, -8, 7);
+		SB(retval, 0, 4, position & 0xF);
+		SB(retval, 4, 4, platform & 0xF);
 	} else {
-		SB(retval,  0, 4, std::min(15, y));
-		SB(retval,  4, 4, std::min(15, length - y - 1));
-		SB(retval,  8, 4, std::min(15, x));
-		SB(retval, 12, 4, std::min(15, platforms - x - 1));
+		SB(retval, 0, 4, std::min(15, position));
+		SB(retval, 4, 4, std::min(15, length - position - 1));
+		SB(retval, 8, 4, std::min(15, platform));
+		SB(retval, 12, 4, std::min(15, platforms - platform - 1));
 	}
 	SB(retval, 16, 4, std::min(15, length));
 	SB(retval, 20, 4, std::min(15, platforms));
-	SB(retval, 24, 8, tile);
+	SB(retval, 24, 8, gfx);
 
 	return retval;
 }
@@ -165,7 +159,7 @@ uint32_t GetPlatformInfo(Axis axis, uint8_t tile, int platforms, int length, int
 static TileIndex FindRailStationEnd(TileIndex tile, TileIndexDiff delta, bool check_type, bool check_axis)
 {
 	uint8_t orig_type = 0;
-	Axis orig_axis = AXIS_X;
+	Axis orig_axis = Axis::X;
 	StationID sid = GetStationIndex(tile);
 
 	if (check_type) orig_type = GetCustomStationSpecIndex(tile);
@@ -197,33 +191,38 @@ static uint32_t GetPlatformInfoHelper(TileIndex tile, bool check_type, bool chec
 	tx -= sx; ex -= sx;
 	ty -= sy; ey -= sy;
 
-	return GetPlatformInfo(GetRailStationAxis(tile), GetStationGfx(tile), ex, ey, tx, ty, centred);
+	if (GetRailStationAxis(tile) == Axis::X) {
+		std::swap(ex, ey);
+		std::swap(tx, ty);
+	}
+
+	return GetPlatformInfo(GetStationGfx(tile), ex, ey, tx, ty, centred);
 }
 
 
 static uint32_t GetRailContinuationInfo(TileIndex tile)
 {
 	/* Tile offsets and exit dirs for X axis */
-	static const Direction x_dir[8] = { DIR_SW, DIR_NE, DIR_SE, DIR_NW, DIR_S, DIR_E, DIR_W, DIR_N };
-	static const DiagDirection x_exits[8] = { DIAGDIR_SW, DIAGDIR_NE, DIAGDIR_SE, DIAGDIR_NW, DIAGDIR_SW, DIAGDIR_NE, DIAGDIR_SW, DIAGDIR_NE };
+	static const Direction x_dir[8] = { Direction::SW, Direction::NE, Direction::SE, Direction::NW, Direction::S, Direction::E, Direction::W, Direction::N };
+	static const DiagDirection x_exits[8] = { DiagDirection::SW, DiagDirection::NE, DiagDirection::SE, DiagDirection::NW, DiagDirection::SW, DiagDirection::NE, DiagDirection::SW, DiagDirection::NE };
 
 	/* Tile offsets and exit dirs for Y axis */
-	static const Direction y_dir[8] = { DIR_SE, DIR_NW, DIR_SW, DIR_NE, DIR_S, DIR_W, DIR_E, DIR_N };
-	static const DiagDirection y_exits[8] = { DIAGDIR_SE, DIAGDIR_NW, DIAGDIR_SW, DIAGDIR_NE, DIAGDIR_SE, DIAGDIR_NW, DIAGDIR_SE, DIAGDIR_NW };
+	static const Direction y_dir[8] = { Direction::SE, Direction::NW, Direction::SW, Direction::NE, Direction::S, Direction::W, Direction::E, Direction::N };
+	static const DiagDirection y_exits[8] = { DiagDirection::SE, DiagDirection::NW, DiagDirection::SW, DiagDirection::NE, DiagDirection::SE, DiagDirection::NW, DiagDirection::SE, DiagDirection::NW };
 
 	Axis axis = GetRailStationAxis(tile);
 
 	/* Choose appropriate lookup table to use */
-	const Direction *dir = axis == AXIS_X ? x_dir : y_dir;
-	const DiagDirection *diagdir = axis == AXIS_X ? x_exits : y_exits;
+	const Direction *dir = axis == Axis::X ? x_dir : y_dir;
+	const DiagDirection *diagdir = axis == Axis::X ? x_exits : y_exits;
 
 	uint32_t res = 0;
 	uint i;
 
 	for (i = 0; i < lengthof(x_dir); i++, dir++, diagdir++) {
 		TileIndex neighbour_tile = tile + TileOffsByDir(*dir);
-		TrackBits trackbits = TrackStatusToTrackBits(GetTileTrackStatus(neighbour_tile, TRANSPORT_RAIL, RoadTramType::Invalid));
-		if (trackbits != TRACK_BIT_NONE) {
+		TrackBits trackbits = TrackdirBitsToTrackBits(GetTileTrackStatus(neighbour_tile, TransportType::Rail, RoadTramType::Invalid).trackdirs);
+		if (trackbits.Any()) {
 			/* If there is any track on the tile, set the bit in the second byte */
 			SetBit(res, i + 8);
 
@@ -234,7 +233,7 @@ static uint32_t GetRailContinuationInfo(TileIndex tile)
 			}
 
 			/* If any track reaches our exit direction, set the bit in the lower byte */
-			if (trackbits & DiagdirReachesTracks(*diagdir)) SetBit(res, i);
+			if (trackbits.Any(DiagdirReachesTracks(*diagdir))) SetBit(res, i);
 		}
 	}
 
@@ -296,12 +295,12 @@ TownScopeResolver *StationResolverObject::GetTown()
 			case 0x43: return GetCompanyInfo(_current_company); // Station owner
 			case 0x44: return 2;                // PBS status
 			case 0x67: // Land info of nearby tile
-				if (this->axis != INVALID_AXIS && this->tile != INVALID_TILE) {
+				if (this->axis != Axis::Invalid && this->tile != INVALID_TILE) {
 					TileIndex tile = this->tile;
 					if (parameter != 0) tile = GetNearbyTile(parameter, tile, true, this->axis); // only perform if it is required
 
 					Slope tileh = GetTileSlope(tile);
-					bool swap = (this->axis == AXIS_Y && HasBit(tileh, CORNER_W) != HasBit(tileh, CORNER_E));
+					bool swap = (this->axis == Axis::Y && HasBit(tileh, to_underlying(Corner::W)) != HasBit(tileh, to_underlying(Corner::E)));
 
 					return GetNearbyTileInformation(tile, this->ro.grffile->grf_version >= 8) ^ (swap ? SLOPE_EW : 0);
 				}
@@ -362,7 +361,7 @@ TownScopeResolver *StationResolverObject::GetTown()
 			if (parameter != 0) tile = GetNearbyTile(parameter, tile); // only perform if it is required
 
 			Slope tileh = GetTileSlope(tile);
-			bool swap = (axis == AXIS_Y && HasBit(tileh, CORNER_W) != HasBit(tileh, CORNER_E));
+			bool swap = (axis == Axis::Y && HasBit(tileh, to_underlying(Corner::W)) != HasBit(tileh, to_underlying(Corner::E)));
 
 			return GetNearbyTileInformation(tile, this->ro.grffile->grf_version >= 8) ^ (swap ? SLOPE_EW : 0);
 		}
@@ -372,7 +371,7 @@ TownScopeResolver *StationResolverObject::GetTown()
 
 			if (!HasStationTileRail(nearby_tile)) return 0xFFFFFFFF;
 
-			uint32_t grfid = this->st->speclist[GetCustomStationSpecIndex(this->tile)].grfid;
+			GrfID grfid = this->st->speclist[GetCustomStationSpecIndex(this->tile)].grfid;
 			bool perpendicular = GetRailStationAxis(this->tile) != GetRailStationAxis(nearby_tile);
 			bool same_station = this->st->TileBelongsToRailStation(nearby_tile);
 			uint32_t res = GB(GetStationGfx(nearby_tile), 1, 2) << 12 | !!perpendicular << 11 | !!same_station << 10;
@@ -391,7 +390,7 @@ TownScopeResolver *StationResolverObject::GetTown()
 			if (!IsCustomStationSpecIndex(nearby_tile)) return 0;
 
 			const auto &sm = BaseStation::GetByTile(nearby_tile)->speclist[GetCustomStationSpecIndex(nearby_tile)];
-			return sm.grfid;
+			return FlattenNewGRFLabel(sm.grfid);
 		}
 
 		case 0x6B: { // 16 bit Station ID of nearby tiles
@@ -400,7 +399,7 @@ TownScopeResolver *StationResolverObject::GetTown()
 			if (!HasStationTileRail(nearby_tile)) return 0xFFFFFFFF;
 			if (!IsCustomStationSpecIndex(nearby_tile)) return 0xFFFE;
 
-			uint32_t grfid = this->st->speclist[GetCustomStationSpecIndex(this->tile)].grfid;
+			GrfID grfid = this->st->speclist[GetCustomStationSpecIndex(this->tile)].grfid;
 
 			const auto &sm = BaseStation::GetByTile(nearby_tile)->speclist[GetCustomStationSpecIndex(nearby_tile)];
 			if (sm.grfid == grfid) {
@@ -414,7 +413,7 @@ TownScopeResolver *StationResolverObject::GetTown()
 
 		/* General station variables */
 		case 0x82: return 50;
-		case 0x84: return this->st->string_id;
+		case 0x84: return this->st->string_id.base();
 		case 0x86: return 0;
 		case 0xF0: return this->st->facilities.base();
 		case 0xFA: return ClampTo<uint16_t>(this->st->build_date - CalendarTime::DAYS_TILL_ORIGINAL_BASE_YEAR);
@@ -431,7 +430,7 @@ uint32_t Station::GetNewGRFVariable(const ResolverObject &object, uint8_t variab
 			return value;
 		}
 
-		case 0x8A: return this->had_vehicle_of_type;
+		case 0x8A: return this->had_vehicle_of_type.base();
 		case 0xF1: return (this->airport.tile != INVALID_TILE) ? this->airport.GetSpec()->ttd_airport_type : ATP_TTDP_LARGE;
 		case 0xF2: return (this->truck_stops != nullptr) ? this->truck_stops->status.base() : 0;
 		case 0xF3: return (this->bus_stops != nullptr)   ? this->bus_stops->status.base()   : 0;
@@ -488,7 +487,7 @@ uint32_t Waypoint::GetNewGRFVariable(const ResolverObject &, uint8_t variable, [
 {
 	switch (variable) {
 		case 0x48: return 0; // Accepted cargo types
-		case 0x8A: return HVOT_WAYPOINT;
+		case 0x8A: return StationVehicleTypes{StationVehicleType::Waypoint}.base();
 		case 0xF1: return 0; // airport type
 		case 0xF2: return 0; // truck stop status
 		case 0xF3: return 0; // bus stop status
@@ -701,8 +700,8 @@ CommandCost PerformStationTileSlopeCheck(TileIndex north_tile, TileIndex cur_til
 	Slope slope = GetTileSlope(cur_tile);
 
 	StationResolverObject object(statspec, nullptr, cur_tile, CBID_STATION_LAND_SLOPE_CHECK,
-			(slope << 4) | (slope ^ (axis == AXIS_Y && HasBit(slope, CORNER_W) != HasBit(slope, CORNER_E) ? SLOPE_EW : 0)),
-			(numtracks << 24) | (plat_len << 16) | (axis == AXIS_Y ? TileX(diff) << 8 | TileY(diff) : TileY(diff) << 8 | TileX(diff)));
+			(slope << 4) | (slope ^ (axis == Axis::Y && HasBit(slope, to_underlying(Corner::W)) != HasBit(slope, to_underlying(Corner::E)) ? SLOPE_EW : 0)),
+			(numtracks << 24) | (plat_len << 16) | (axis == Axis::Y ? TileX(diff) << 8 | TileY(diff) : TileY(diff) << 8 | TileX(diff)));
 	object.station_scope.axis = axis;
 
 	std::array<int32_t, 16> regs100;
@@ -733,7 +732,7 @@ std::optional<uint8_t> AllocateSpecToStation(const StationSpec *spec, BaseStatio
 	if (st == nullptr) return 1;
 
 	for (i = 1; i < st->speclist.size() && i < NUM_STATIONSSPECS_PER_STATION; i++) {
-		if (st->speclist[i].spec == nullptr && st->speclist[i].grfid == 0) break;
+		if (st->speclist[i].spec == nullptr && st->speclist[i].grfid.Empty()) break;
 	}
 
 	if (i == NUM_STATIONSSPECS_PER_STATION) {
@@ -789,14 +788,14 @@ void DeallocateSpecFromStation(BaseStation *st, uint8_t specindex)
 
 	/* This specindex is no longer in use, so deallocate it */
 	st->speclist[specindex].spec     = nullptr;
-	st->speclist[specindex].grfid    = 0;
+	st->speclist[specindex].grfid = {};
 	st->speclist[specindex].localidx = 0;
 
 	/* If this was the highest spec index, reallocate */
 	if (specindex == st->speclist.size() - 1) {
 		size_t num_specs;
 		for (num_specs = st->speclist.size() - 1; num_specs > 0; num_specs--) {
-			if (st->speclist[num_specs].grfid != 0) break;
+			if (!st->speclist[num_specs].grfid.Empty()) break;
 		}
 
 		if (num_specs > 0) {
@@ -845,9 +844,9 @@ bool DrawStationTile(int x, int y, RailType railtype, Axis axis, StationClassID 
 	DrawTileSpriteSpan tmp_rail_layout;
 
 	if (statspec->renderdata.empty()) {
-		sprites = GetStationTileLayout(StationType::Rail, tile + axis);
+		sprites = GetStationTileLayout(StationType::Rail, tile + to_underlying(axis));
 	} else {
-		layout = &statspec->renderdata[(tile < statspec->renderdata.size()) ? tile + axis : (uint)axis];
+		layout = &statspec->renderdata[(tile < statspec->renderdata.size()) ? tile + to_underlying(axis) : to_underlying(axis)];
 		if (!layout->NeedsPreprocessing()) {
 			sprites = layout;
 			layout = nullptr;

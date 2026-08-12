@@ -23,7 +23,7 @@
  */
 inline uint8_t SignalAlongTrackdir(Trackdir trackdir)
 {
-	extern const uint8_t _signal_along_trackdir[TRACKDIR_END];
+	extern const TrackdirIndexArray<uint8_t> _signal_along_trackdir;
 	return _signal_along_trackdir[trackdir];
 }
 
@@ -35,7 +35,7 @@ inline uint8_t SignalAlongTrackdir(Trackdir trackdir)
  */
 inline uint8_t SignalAgainstTrackdir(Trackdir trackdir)
 {
-	extern const uint8_t _signal_against_trackdir[TRACKDIR_END];
+	extern const TrackdirIndexArray<uint8_t> _signal_against_trackdir;
 	return _signal_against_trackdir[trackdir];
 }
 
@@ -47,15 +47,15 @@ inline uint8_t SignalAgainstTrackdir(Trackdir trackdir)
  */
 inline uint8_t SignalOnTrack(Track track)
 {
-	extern const uint8_t _signal_on_track[TRACK_END];
+	extern const TrackIndexArray<uint8_t> _signal_on_track;
 	return _signal_on_track[track];
 }
 
 /** State of the signal segment */
-enum SigSegState : uint8_t {
-	SIGSEG_FREE,    ///< Free and has no pre-signal exits or at least one green exit
-	SIGSEG_FULL,    ///< Occupied by a train
-	SIGSEG_PBS,     ///< Segment is a PBS segment
+enum class SigSegState : uint8_t {
+	Free, ///< Free and has no pre-signal exits or at least one green exit
+	Full, ///< Occupied by a train
+	Path, ///< Segment is a path segment
 };
 
 SigSegState UpdateSignalsOnSegment(TileIndex tile, DiagDirection side, Owner owner);

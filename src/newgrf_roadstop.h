@@ -25,9 +25,6 @@ struct TileInfo;
 /** The maximum amount of roadstops a single GRF is allowed to add */
 static const int NUM_ROADSTOPS_PER_GRF = UINT16_MAX - 1;
 
-static const uint32_t ROADSTOP_CLASS_LABEL_DEFAULT = 'DFLT';
-static const uint32_t ROADSTOP_CLASS_LABEL_WAYPOINT = 'WAYP';
-
 /** Class IDs for stations. */
 using RoadStopClassID = PoolID<uint16_t, struct RoadStopClassIDTag, UINT16_MAX, UINT16_MAX>;
 
@@ -55,6 +52,8 @@ enum class RoadStopDrawMode : uint8_t {
 	Overlay = 1, ///< Drive-through stops: Draw the road overlay, e.g. pavement
 	WaypGround = 2, ///< Waypoints: Draw the sprite layout ground tile (on top of the road)
 };
+
+/** Bitset of \c RoadStopDrawMode elements. */
 using RoadStopDrawModes = EnumBitSet<RoadStopDrawMode, uint8_t>;
 
 enum class RoadStopSpecFlag : uint8_t {
@@ -66,6 +65,8 @@ enum class RoadStopSpecFlag : uint8_t {
 	TramOnly = 6, ///< Only show in the tram build menu (not road).
 	DrawModeRegister = 8, ///< Read draw mode from register 0x100.
 };
+
+/** Bitset of \c RoadStopSpecFlag elements. */
 using RoadStopSpecFlags = EnumBitSet<RoadStopSpecFlag, uint8_t>;
 
 enum RoadStopView : uint8_t {
@@ -105,11 +106,11 @@ struct RoadStopResolverObject : public SpecializedResolverObject<StationRandomTr
 
 	RoadStopResolverObject(const RoadStopSpec *roadstopspec, BaseStation *st, TileIndex tile, RoadType roadtype, StationType type, uint8_t view, CallbackID callback = CBID_NO_CALLBACK, uint32_t param1 = 0, uint32_t param2 = 0);
 
-	ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, uint8_t relative = 0) override
+	ScopeResolver *GetScope(VarSpriteGroupScope scope = VarSpriteGroupScope::Self, uint8_t relative = 0) override
 	{
 		switch (scope) {
-			case VSG_SCOPE_SELF: return &this->roadstop_scope;
-			case VSG_SCOPE_PARENT: {
+			case VarSpriteGroupScope::Self: return &this->roadstop_scope;
+			case VarSpriteGroupScope::Parent: {
 				TownScopeResolver *tsr = this->GetTown();
 				if (tsr != nullptr) return tsr;
 				[[fallthrough]];
@@ -160,6 +161,9 @@ struct RoadStopSpec : NewGRFSpecBase<RoadStopClassID> {
 
 using RoadStopClass = NewGRFClass<RoadStopSpec, RoadStopClassID>;
 
+static const RoadStopClass::GlobalID ROADSTOP_CLASS_LABEL_DEFAULT{"DFLT"}; ///< Class label for default road stops.
+static const RoadStopClass::GlobalID ROADSTOP_CLASS_LABEL_WAYPOINT{"WAYP"}; ///< Class label for default road waypoints.
+
 std::optional<SpriteLayoutProcessor> GetRoadStopLayout(TileInfo *ti, const RoadStopSpec *spec, BaseStation *st, StationType type, int view, std::span<int32_t> regs100 = {});
 void DrawRoadStopTile(int x, int y, RoadType roadtype, const RoadStopSpec *spec, StationType type, int view);
 
@@ -187,7 +191,7 @@ void RoadStopUpdateCachedTriggers(BaseStation *st);
  */
 inline bool IsWaypointClass(const RoadStopClass &cls)
 {
-	return cls.global_id == ROADSTOP_CLASS_LABEL_WAYPOINT || GB(cls.global_id, 24, 8) == UINT8_MAX;
+	return cls.global_id == ROADSTOP_CLASS_LABEL_WAYPOINT || cls.global_id[0] == UINT8_MAX;
 }
 
 #endif /* NEWGRF_ROADSTATION_H */

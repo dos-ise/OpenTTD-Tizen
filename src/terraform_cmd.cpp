@@ -135,7 +135,7 @@ static std::tuple<CommandCost, TileIndex> TerraformTileHeight(TerraformerState *
 	total_cost.AddCost(_price[Price::Terraform]);
 
 	/* Recurse to neighboured corners if height difference is larger than 1 */
-	for (DiagDirection dir = DIAGDIR_BEGIN; dir < DIAGDIR_END; dir++) {
+	for (DiagDirection dir : EnumRange(DiagDirection::End)) {
 		TileIndex neighbour_tile = AddTileIndexDiffCWrap(tile, TileIndexDiffCByDiagDir(dir));
 
 		/* Not using IsValidTile as we want to also change TileType::Void tiles, which IsValidTile excludes. */
@@ -255,7 +255,7 @@ std::tuple<CommandCost, Money, TileIndex> CmdTerraformLand(DoCommandFlags flags,
 
 			/* Check tiletype-specific things, and add extra-cost */
 			Backup<bool> old_generating_world(_generating_world);
-			if (_game_mode == GM_EDITOR) old_generating_world.Change(true); // used to create green terraformed land
+			if (_game_mode == GameMode::Editor) old_generating_world.Change(true); // used to create green terraformed land
 			DoCommandFlags tile_flags = flags | DoCommandFlag::Auto | DoCommandFlag::ForceClearTile;
 			if (pass == 0) {
 				tile_flags.Reset(DoCommandFlag::Execute);
@@ -322,9 +322,9 @@ std::tuple<CommandCost, Money, TileIndex> CmdLevelLand(DoCommandFlags flags, Til
 	/* compute new height */
 	uint h = oldh;
 	switch (lm) {
-		case LM_LEVEL: break;
-		case LM_RAISE: h++; break;
-		case LM_LOWER: h--; break;
+		case LevelMode::Level: break;
+		case LevelMode::Raise: h++; break;
+		case LevelMode::Lower: h--; break;
 		default: return { CMD_ERROR, 0, INVALID_TILE };
 	}
 
@@ -333,7 +333,7 @@ std::tuple<CommandCost, Money, TileIndex> CmdLevelLand(DoCommandFlags flags, Til
 
 	Money money = GetAvailableMoneyForCommand();
 	CommandCost cost(ExpensesType::Construction);
-	CommandCost last_error(lm == LM_LEVEL ? STR_ERROR_ALREADY_LEVELLED : INVALID_STRING_ID);
+	CommandCost last_error(lm == LevelMode::Level ? STR_ERROR_ALREADY_LEVELLED : INVALID_STRING_ID);
 	bool had_success = false;
 
 	const Company *c = Company::GetIfValid(_current_company);

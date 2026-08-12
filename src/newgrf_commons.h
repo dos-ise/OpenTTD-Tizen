@@ -10,6 +10,7 @@
 #ifndef NEWGRF_COMMONS_H
 #define NEWGRF_COMMONS_H
 
+#include "newgrf_type.h"
 #include "sprite.h"
 #include "command_type.h"
 #include "direction_type.h"
@@ -18,10 +19,10 @@
 #include "core/bitmath_func.hpp"
 
 /** Context for tile accesses */
-enum TileContext : uint8_t {
-	TCX_NORMAL,         ///< Nothing special.
-	TCX_UPPER_HALFTILE, ///< Querying information about the upper part of a tile with halftile foundation.
-	TCX_ON_BRIDGE,      ///< Querying information about stuff on the bridge (via some bridgehead).
+enum class TileContext : uint8_t {
+	Normal, ///< Nothing special.
+	UpperHalftile, ///< Querying information about the upper part of a tile with halftile foundation.
+	OnBridge, ///< Querying information about stuff on the bridge (via some bridgehead).
 };
 
 /**
@@ -191,7 +192,7 @@ public:
  * if the GRF containing the new entity is not available.
  */
 struct EntityIDMapping {
-	uint32_t grfid;          ///< The GRF ID of the file the entity belongs to
+	GrfID grfid; ///< The GRF ID of the file the entity belongs to
 	uint16_t entity_id; ///< The entity ID within the GRF file
 	uint16_t substitute_id; ///< The (original) entity ID to use if this GRF is not available
 };
@@ -199,12 +200,12 @@ struct EntityIDMapping {
 class OverrideManagerBase {
 protected:
 	std::vector<uint16_t> entity_overrides;
-	std::vector<uint32_t> grfid_overrides;
+	std::vector<GrfID> grfid_overrides;
 
-	uint16_t max_offset;   ///< what is the length of the original entity's array of specs
-	uint16_t max_entities; ///< what is the amount of entities, old and new summed
+	const uint16_t max_offset; ///< what is the length of the original entity's array of specs
+	const uint16_t max_entities; ///< what is the amount of entities, old and new summed
+	const uint16_t invalid_id; ///< ID used to detected invalid entities
 
-	uint16_t invalid_id;   ///< ID used to detected invalid entities
 	/**
 	 * Checks whether the given ID is valid in the context of this override manager.
 	 * @param testid The ID to test.
@@ -222,12 +223,12 @@ public:
 	void ResetOverride();
 	void ResetMapping();
 
-	void Add(uint16_t local_id, uint32_t grfid, uint entity_type);
-	virtual uint16_t AddEntityID(uint16_t grf_local_id, uint32_t grfid, uint16_t substitute_id);
+	void Add(uint16_t local_id, GrfID grfid, uint entity_type);
+	virtual uint16_t AddEntityID(uint16_t grf_local_id, GrfID grfid, uint16_t substitute_id);
 
-	uint32_t GetGRFID(uint16_t entity_id) const;
+	GrfID GetGRFID(uint16_t entity_id) const;
 	uint16_t GetSubstituteID(uint16_t entity_id) const;
-	virtual uint16_t GetID(uint16_t grf_local_id, uint32_t grfid) const;
+	virtual uint16_t GetID(uint16_t grf_local_id, GrfID grfid) const;
 
 	inline uint16_t GetMaxMapping() const { return this->max_entities; }
 	inline uint16_t GetMaxOffset() const { return this->max_offset; }
@@ -250,8 +251,8 @@ public:
 	IndustryOverrideManager(uint16_t offset, uint16_t maximum, uint16_t invalid) :
 			OverrideManagerBase(offset, maximum, invalid) {}
 
-	uint16_t AddEntityID(uint16_t grf_local_id, uint32_t grfid, uint16_t substitute_id) override;
-	uint16_t GetID(uint16_t grf_local_id, uint32_t grfid) const override;
+	uint16_t AddEntityID(uint16_t grf_local_id, GrfID grfid, uint16_t substitute_id) override;
+	uint16_t GetID(uint16_t grf_local_id, GrfID grfid) const override;
 
 	void SetEntitySpec(IndustrySpec &&inds);
 };
@@ -306,13 +307,13 @@ extern AirportOverrideManager _airport_mngr;
 extern AirportTileOverrideManager _airporttile_mngr;
 extern ObjectOverrideManager _object_mngr;
 
-uint32_t GetTerrainType(TileIndex tile, TileContext context = TCX_NORMAL);
-TileIndex GetNearbyTile(uint8_t parameter, TileIndex tile, bool signed_offsets = true, Axis axis = INVALID_AXIS);
+uint32_t GetTerrainType(TileIndex tile, TileContext context = TileContext::Normal);
+TileIndex GetNearbyTile(uint8_t parameter, TileIndex tile, bool signed_offsets = true, Axis axis = Axis::Invalid);
 uint32_t GetNearbyTileInformation(TileIndex tile, bool grf_version8);
 uint32_t GetCompanyInfo(CompanyID owner, const struct Livery *l = nullptr);
 CommandCost GetErrorMessageFromLocationCallbackResult(uint16_t cb_res, std::span<const int32_t> textstack, const GRFFile *grffile, StringID default_error);
 
-void ErrorUnknownCallbackResult(uint32_t grfid, uint16_t cbid, uint16_t cb_res);
+void ErrorUnknownCallbackResult(GrfID grfid, uint16_t cbid, uint16_t cb_res);
 bool ConvertBooleanCallback(const struct GRFFile *grffile, uint16_t cbid, uint16_t cb_res);
 bool Convert8bitBooleanCallback(const struct GRFFile *grffile, uint16_t cbid, uint16_t cb_res);
 
@@ -321,7 +322,7 @@ bool Convert8bitBooleanCallback(const struct GRFFile *grffile, uint16_t cbid, ui
  */
 struct GRFFilePropsBase {
 	uint16_t local_id = 0; ///< id defined by the grf file for this entity
-	uint32_t grfid = 0; ///< grfid that introduced this entity.
+	GrfID grfid{}; ///< grfid that introduced this entity.
 	const struct GRFFile *grffile = nullptr; ///< grf file that introduced this entity
 
 	void SetGRFFile(const struct GRFFile *grffile);

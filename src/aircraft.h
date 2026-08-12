@@ -44,6 +44,8 @@ enum class VehicleAirFlag : uint8_t {
 
 	HelicopterDirectDescent = 3, ///< The helicopter is descending directly at its destination (helipad or in front of hangar)
 };
+
+/** Bitset of \c VehicleAirFlag elements. */
 using VehicleAirFlags = EnumBitSet<VehicleAirFlag, uint8_t>;
 
 static const int ROTOR_Z_OFFSET         = 5;    ///< Z Offset between helicopter- and rotorsprite.
@@ -76,7 +78,7 @@ struct Aircraft final : public SpecializedVehicle<Aircraft, VehicleType::Aircraf
 	uint8_t previous_pos = 0; ///< Previous desired position of the aircraft.
 	StationID targetairport = StationID::Invalid(); ///< Airport to go to next.
 	uint8_t state = 0; ///< State of the airport. @see AirportMovementStates
-	Direction last_direction = INVALID_DIR;
+	Direction last_direction = Direction::Invalid;
 	uint8_t number_consecutive_turns = 0; ///< Protection to prevent the aircraft of making a lot of turns in order to reach a specific point.
 	uint8_t turn_counter = 0; ///< Ticks between each turn to prevent > 45 degree turns.
 	VehicleAirFlags flags{}; ///< Aircraft flags. @see VehicleAirFlags

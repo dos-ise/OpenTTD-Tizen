@@ -27,6 +27,8 @@
 #include "../script/script_gui.h"
 #include "../script_config.hpp"
 
+#include "../widgets/game_widget.h"
+
 #include "table/strings.h"
 
 #include "../safeguards.h"
@@ -59,11 +61,11 @@ static constexpr std::initializer_list<NWidgetPart> _nested_gs_config_widgets = 
 				NWidget(NWID_VERTICAL, NWidContainerFlag::EqualSize),
 					NWidget(NWID_HORIZONTAL, NWidContainerFlag::EqualSize),
 						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_OPEN_URL), SetResize(1, 0), SetFill(1, 0), SetStringTip(STR_CONTENT_OPEN_URL, STR_CONTENT_OPEN_URL_TOOLTIP),
-						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_TEXTFILE + TFT_README), SetFill(1, 1), SetResize(1, 0), SetMinimalSize(93, 0), SetStringTip(STR_TEXTFILE_VIEW_README, STR_TEXTFILE_VIEW_README_TOOLTIP),
+						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_TEXTFILE + TextfileType::Readme), SetFill(1, 1), SetResize(1, 0), SetMinimalSize(93, 0), SetStringTip(STR_TEXTFILE_VIEW_README, STR_TEXTFILE_VIEW_README_TOOLTIP),
 					EndContainer(),
 					NWidget(NWID_HORIZONTAL, NWidContainerFlag::EqualSize),
-						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_TEXTFILE + TFT_CHANGELOG), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_CHANGELOG, STR_TEXTFILE_VIEW_CHANGELOG_TOOLTIP),
-						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_TEXTFILE + TFT_LICENSE), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_LICENCE, STR_TEXTFILE_VIEW_LICENCE_TOOLTIP),
+						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_TEXTFILE + TextfileType::Changelog), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_CHANGELOG, STR_TEXTFILE_VIEW_CHANGELOG_TOOLTIP),
+						NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_TEXTFILE + TextfileType::License), SetFill(1, 1), SetResize(1, 0), SetStringTip(STR_TEXTFILE_VIEW_LICENCE, STR_TEXTFILE_VIEW_LICENCE_TOOLTIP),
 					EndContainer(),
 				EndContainer(),
 			EndContainer(),
@@ -78,7 +80,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_gs_config_widgets = 
 /** Window definition for the configure GS window. */
 static WindowDesc _gs_config_desc(
 	WindowPosition::Center, "settings_gs_config", 500, 350,
-	WC_GAME_OPTIONS, WC_NONE,
+	WindowClass::GameOptions, WindowClass::None,
 	{},
 	_nested_gs_config_widgets
 );
@@ -104,7 +106,7 @@ struct GSConfigWindow : public Window {
 
 		this->CreateNestedTree(); // Initializes 'this->line_height' as a side effect.
 		this->vscroll = this->GetScrollbar(WID_GSC_SCROLLBAR);
-		this->FinishInitNested(WN_GAME_OPTIONS_GS);
+		this->FinishInitNested(GameOptionsWindowNumber::GS);
 		this->OnInvalidateData(0);
 
 		this->RebuildVisibleSettings();
@@ -112,7 +114,7 @@ struct GSConfigWindow : public Window {
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		CloseWindowByClass(WC_SCRIPT_LIST);
+		CloseWindowByClass(WindowClass::ScriptList);
 		this->Window::Close();
 	}
 
@@ -158,7 +160,7 @@ struct GSConfigWindow : public Window {
 	 */
 	static bool IsEditable()
 	{
-		return _game_mode != GM_NORMAL || Game::GetInstance() != nullptr;
+		return _game_mode != GameMode::Normal || Game::GetInstance() != nullptr;
 	}
 
 	/**
@@ -176,7 +178,7 @@ struct GSConfigWindow : public Window {
 		switch (widget) {
 			case WID_GSC_GSLIST: {
 				/* There is only one slot, unlike with the GS GUI, so it should never be white */
-				DrawString(r.Shrink(WidgetDimensions::scaled.matrix), this->GetText(), (IsEditable() ? TC_ORANGE : TC_SILVER));
+				DrawString(r.Shrink(WidgetDimensions::scaled.matrix), this->GetText(), (IsEditable() ? TextColour::Orange : TextColour::Silver));
 				break;
 			}
 			case WID_GSC_SETTINGS: {
@@ -225,7 +227,7 @@ struct GSConfigWindow : public Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (widget >= WID_GSC_TEXTFILE && widget < WID_GSC_TEXTFILE + TFT_CONTENT_END) {
+		if (widget >= WID_GSC_TEXTFILE && widget < WID_GSC_TEXTFILE + TextfileType::ContentEnd) {
 			if (GameConfig::GetConfig() == nullptr) return;
 
 			ShowScriptTextfileWindow(this, static_cast<TextfileType>(widget - WID_GSC_TEXTFILE), OWNER_DEITY);
@@ -235,7 +237,7 @@ struct GSConfigWindow : public Window {
 		switch (widget) {
 			case WID_GSC_GSLIST: {
 				this->InvalidateData();
-				if (click_count > 1 && _game_mode != GM_NORMAL) ShowScriptListWindow(OWNER_DEITY, _ctrl_pressed);
+				if (click_count > 1 && _game_mode != GameMode::Normal) ShowScriptListWindow(OWNER_DEITY, _ctrl_pressed);
 				break;
 			}
 
@@ -245,7 +247,7 @@ struct GSConfigWindow : public Window {
 
 			case WID_GSC_CONTENT_DOWNLOAD:
 				if (!_network_available) {
-					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WL_ERROR);
+					ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_NOTAVAILABLE), {}, WarningLevel::Error);
 				} else {
 					ShowNetworkContentListWindow(nullptr, ContentType::Gs);
 				}
@@ -260,8 +262,8 @@ struct GSConfigWindow : public Window {
 
 				int num = it - this->visible_settings.begin();
 				if (this->clicked_row != num) {
-					this->CloseChildWindows(WC_QUERY_STRING);
-					this->CloseChildWindows(WC_DROPDOWN_MENU);
+					this->CloseChildWindows(WindowClass::QueryString);
+					this->CloseChildWindows(WindowClass::DropdownMenu);
 					this->clicked_row = num;
 					this->clicked_dropdown = false;
 				}
@@ -277,7 +279,7 @@ struct GSConfigWindow : public Window {
 				if (!bool_item && IsInsideMM(x, 0, SETTING_BUTTON_WIDTH) && config_item.complete_labels) {
 					if (this->clicked_dropdown) {
 						/* unclick the dropdown */
-						this->CloseChildWindows(WC_DROPDOWN_MENU);
+						this->CloseChildWindows(WindowClass::DropdownMenu);
 						this->clicked_dropdown = false;
 						this->closing_dropdown = false;
 					} else {
@@ -339,7 +341,7 @@ struct GSConfigWindow : public Window {
 			}
 
 			case WID_GSC_RESET:
-				this->gs_config->ResetEditableSettings(_game_mode == GM_MENU);
+				this->gs_config->ResetEditableSettings(_game_mode == GameMode::Menu);
 				this->SetDirty();
 				break;
 		}
@@ -392,22 +394,22 @@ struct GSConfigWindow : public Window {
 	{
 		if (!gui_scope) return;
 
-		this->SetWidgetDisabledState(WID_GSC_CHANGE, (_game_mode == GM_NORMAL) || !IsEditable());
+		this->SetWidgetDisabledState(WID_GSC_CHANGE, (_game_mode == GameMode::Normal) || !IsEditable());
 
 		const GameConfig *config = GameConfig::GetConfig();
 		this->SetWidgetDisabledState(WID_GSC_OPEN_URL, config->GetInfo() == nullptr || config->GetInfo()->GetURL().empty());
-		for (TextfileType tft = TFT_CONTENT_BEGIN; tft < TFT_CONTENT_END; tft++) {
+		for (TextfileType tft : EnumRange(TextfileType::ContentBegin, TextfileType::ContentEnd)) {
 			this->SetWidgetDisabledState(WID_GSC_TEXTFILE + tft, !config->GetTextfile(tft, OWNER_DEITY).has_value());
 		}
 		this->RebuildVisibleSettings();
-		this->CloseChildWindows(WC_DROPDOWN_MENU);
-		this->CloseChildWindows(WC_QUERY_STRING);
+		this->CloseChildWindows(WindowClass::DropdownMenu);
+		this->CloseChildWindows(WindowClass::QueryString);
 	}
 private:
 	bool IsEditableItem(const ScriptConfigItem &config_item) const
 	{
-		return _game_mode == GM_MENU
-			|| _game_mode == GM_EDITOR
+		return _game_mode == GameMode::Menu
+			|| _game_mode == GameMode::Editor
 			|| config_item.flags.Test(ScriptConfigFlag::InGame)
 			|| _settings_client.gui.ai_developer_tools;
 	}
@@ -415,7 +417,7 @@ private:
 	void SetValue(int value)
 	{
 		const ScriptConfigItem &config_item = *this->visible_settings[this->clicked_row];
-		if (_game_mode == GM_NORMAL && !config_item.flags.Test(ScriptConfigFlag::InGame)) return;
+		if (_game_mode == GameMode::Normal && !config_item.flags.Test(ScriptConfigFlag::InGame)) return;
 		this->gs_config->SetSetting(config_item.name, value);
 		this->SetDirty();
 	}
@@ -424,6 +426,6 @@ private:
 /** Open the GS config window. */
 void ShowGSConfigWindow()
 {
-	CloseWindowByClass(WC_GAME_OPTIONS);
+	CloseWindowByClass(WindowClass::GameOptions);
 	new GSConfigWindow();
 }

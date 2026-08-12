@@ -26,7 +26,7 @@
 #include "water.h"
 #include "video/video_driver.hpp"
 #include "tilehighlight_func.h"
-#include "saveload/saveload.h"
+#include "saveload/saveload_func.h"
 #include "void_map.h"
 #include "town.h"
 #include "newgrf.h"
@@ -87,7 +87,7 @@ static void CleanupGeneration()
 	GenWorldInfo::proc     = nullptr;
 	GenWorldInfo::abortp   = nullptr;
 
-	CloseWindowByClass(WC_MODAL_PROGRESS);
+	CloseWindowByClass(WindowClass::ModalProgress);
 	ShowFirstError();
 	MarkWholeScreenDirty();
 }
@@ -105,13 +105,13 @@ static void _GenerateWorld()
 		if (_network_dedicated) Debug(net, 3, "Generating map, please wait...");
 		/* Set the Random() seed to generation_seed so we produce the same map with the same seed */
 		_random.SetSeed(_settings_game.game_creation.generation_seed);
-		SetGeneratingWorldProgress(GWP_MAP_INIT, 2);
-		SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WC_MAIN_WINDOW, 0);
+		SetGeneratingWorldProgress(GenWorldProgress::Init, 2);
+		SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WindowClass::MainWindow, 0);
 		ScriptObject::InitializeRandomizers();
 
 		BasePersistentStorageArray::SwitchMode(PSM_ENTER_GAMELOOP);
 
-		IncreaseGeneratingWorldProgress(GWP_MAP_INIT);
+		IncreaseGeneratingWorldProgress(GenWorldProgress::Init);
 		/* Must start economy early because of the costs. */
 		StartupEconomy();
 		if (!CheckTownRoadTypes()) {
@@ -127,7 +127,7 @@ static void _GenerateWorld()
 		}
 
 		if (!landscape_generated) {
-			SetGeneratingWorldProgress(GWP_OBJECT, 1);
+			SetGeneratingWorldProgress(GenWorldProgress::Objects, 1);
 
 			/* Make sure the tiles at the north border are void tiles if needed. */
 			if (_settings_game.construction.freeform_edges) {
@@ -136,11 +136,11 @@ static void _GenerateWorld()
 			}
 
 			/* Make the map the height of the setting */
-			if (_game_mode != GM_MENU) FlatEmptyWorld(_settings_game.game_creation.se_flat_world_height);
+			if (_game_mode != GameMode::Menu) FlatEmptyWorld(_settings_game.game_creation.se_flat_world_height);
 
 			ConvertGroundTilesIntoWaterTiles();
 			Map::CountLandTiles();
-			IncreaseGeneratingWorldProgress(GWP_OBJECT);
+			IncreaseGeneratingWorldProgress(GenWorldProgress::Objects);
 
 			_settings_game.game_creation.snow_line_height = DEF_SNOWLINE_HEIGHT;
 		} else {
@@ -148,7 +148,7 @@ static void _GenerateWorld()
 			Map::CountLandTiles();
 
 			/* Only generate towns, tree and industries in newgame mode. */
-			if (_game_mode != GM_EDITOR) {
+			if (_game_mode != GameMode::Editor) {
 				if (!GenerateTowns(_settings_game.economy.town_layout)) {
 					HandleGeneratingWorldAbortion();
 					return;
@@ -160,11 +160,11 @@ static void _GenerateWorld()
 		}
 
 		/* These are probably pointless when inside the scenario editor. */
-		SetGeneratingWorldProgress(GWP_GAME_INIT, 3);
+		SetGeneratingWorldProgress(GenWorldProgress::GameInit, 3);
 		StartupCompanies();
-		IncreaseGeneratingWorldProgress(GWP_GAME_INIT);
+		IncreaseGeneratingWorldProgress(GenWorldProgress::GameInit);
 		StartupEngines();
-		IncreaseGeneratingWorldProgress(GWP_GAME_INIT);
+		IncreaseGeneratingWorldProgress(GenWorldProgress::GameInit);
 		StartupDisasters();
 		_generating_world = false;
 
@@ -174,20 +174,20 @@ static void _GenerateWorld()
 		if (GenWorldInfo::mode != GWM_EMPTY) {
 			uint i;
 
-			SetGeneratingWorldProgress(GWP_RUNTILELOOP, 0x500);
+			SetGeneratingWorldProgress(GenWorldProgress::RunTileLoop, 0x500);
 			for (i = 0; i < 0x500; i++) {
 				RunTileLoop();
 				TimerGameTick::counter++;
-				IncreaseGeneratingWorldProgress(GWP_RUNTILELOOP);
+				IncreaseGeneratingWorldProgress(GenWorldProgress::RunTileLoop);
 			}
 
-			if (_game_mode != GM_EDITOR) {
+			if (_game_mode != GameMode::Editor) {
 				if (Game::GetInstance() != nullptr) {
-					SetGeneratingWorldProgress(GWP_RUNSCRIPT, 2500);
+					SetGeneratingWorldProgress(GenWorldProgress::GameScript, 2500);
 					_generating_world = true;
 					for (i = 0; i < 2500; i++) {
 						Game::GameLoop();
-						IncreaseGeneratingWorldProgress(GWP_RUNSCRIPT);
+						IncreaseGeneratingWorldProgress(GenWorldProgress::GameScript);
 						if (Game::GetInstance()->IsSleeping()) break;
 					}
 					_generating_world = false;
@@ -201,12 +201,12 @@ static void _GenerateWorld()
 		cur_company.Trash();
 		_current_company = _local_company = GenWorldInfo::lc;
 		/* Show all vital windows again, because we have hidden them. */
-		if (_game_mode != GM_MENU) ShowVitalWindows();
+		if (_game_mode != GameMode::Menu) ShowVitalWindows();
 
-		SetGeneratingWorldProgress(GWP_GAME_START, 1);
+		SetGeneratingWorldProgress(GenWorldProgress::GameStart, 1);
 		/* Call any callback */
 		if (GenWorldInfo::proc != nullptr) GenWorldInfo::proc();
-		IncreaseGeneratingWorldProgress(GWP_GAME_START);
+		IncreaseGeneratingWorldProgress(GenWorldProgress::GameStart);
 
 		CleanupGeneration();
 
@@ -278,7 +278,7 @@ bool IsGeneratingWorldAborted()
 void HandleGeneratingWorldAbortion()
 {
 	/* Clean up - in SE create an empty map, otherwise, go to intro menu */
-	_switch_mode = (_game_mode == GM_EDITOR) ? SM_EDITOR : SM_MENU;
+	_switch_mode = (_game_mode == GameMode::Editor) ? SwitchMode::Editor : SwitchMode::Menu;
 
 	if (GenWorldInfo::abortp != nullptr) GenWorldInfo::abortp();
 
@@ -312,7 +312,7 @@ void GenerateWorld(GenWorldMode mode, uint size_x, uint size_y, bool reset_setti
 	if (_settings_game.construction.map_height_limit == 0) {
 		uint estimated_height = 0;
 
-		if (GenWorldInfo::mode == GWM_EMPTY && _game_mode != GM_MENU) {
+		if (GenWorldInfo::mode == GWM_EMPTY && _game_mode != GameMode::Menu) {
 			estimated_height = _settings_game.game_creation.se_flat_world_height;
 		} else if (GenWorldInfo::mode == GWM_HEIGHTMAP) {
 			estimated_height = _settings_game.game_creation.heightmap_height;
@@ -322,7 +322,7 @@ void GenerateWorld(GenWorldMode mode, uint size_x, uint size_y, bool reset_setti
 			estimated_height = 0;
 		}
 
-		_settings_game.construction.map_height_limit = std::max(MAP_HEIGHT_LIMIT_AUTO_MINIMUM, std::min(MAX_MAP_HEIGHT_LIMIT, estimated_height + MAP_HEIGHT_LIMIT_AUTO_CEILING_ROOM));
+		_settings_game.construction.map_height_limit = std::max<uint8_t>(MAP_HEIGHT_LIMIT_AUTO_MINIMUM, std::min<uint8_t>(MAX_MAP_HEIGHT_LIMIT, estimated_height + MAP_HEIGHT_LIMIT_AUTO_CEILING_ROOM));
 	}
 
 	if (_settings_game.game_creation.generation_seed == GENERATE_NEW_SEED) _settings_game.game_creation.generation_seed = InteractiveRandom();
@@ -339,7 +339,7 @@ void GenerateWorld(GenWorldMode mode, uint size_x, uint size_y, bool reset_setti
 
 	/* Create toolbars */
 	SetupColoursAndInitialWindow();
-	SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WC_MAIN_WINDOW, 0);
+	SetObjectToPlace(SPR_CURSOR_ZZZ, PAL_NONE, HT_NONE, WindowClass::MainWindow, 0);
 
 	UnshowCriticalError();
 	CloseAllNonVitalWindows();
@@ -364,7 +364,7 @@ void LoadTownData()
 
 	if (!f.has_value()) {
 		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED),
-			GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WL_ERROR);
+			GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WarningLevel::Error);
 		return;
 	}
 
@@ -373,7 +373,7 @@ void LoadTownData()
 	f.reset();
 	if (len != 1) {
 		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED),
-			GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WL_ERROR);
+			GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WarningLevel::Error);
 		return;
 	}
 
@@ -382,13 +382,13 @@ void LoadTownData()
 	try {
 		town_data = nlohmann::json::parse(text);
 	} catch (nlohmann::json::exception &) {
-		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WL_ERROR);
+		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WarningLevel::Error);
 		return;
 	}
 
 	/* Check for JSON formatting errors with the array of towns. */
 	if (!town_data.is_array()) {
-		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WL_ERROR);
+		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WarningLevel::Error);
 		return;
 	}
 
@@ -405,14 +405,14 @@ void LoadTownData()
 
 		/* Ensure JSON is formatted properly. */
 		if (!feature.is_object()) {
-			ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WL_ERROR);
+			ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WarningLevel::Error);
 			return;
 		}
 
 		/* Check to ensure all fields exist and are of the correct type.
 		 * If the town name is formatted wrong, all we can do is give a general warning. */
 		if (!feature.contains("name") || !feature.at("name").is_string()) {
-			ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WL_ERROR);
+			ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED), GetEncodedString(STR_TOWN_DATA_ERROR_JSON_FORMATTED_INCORRECTLY), WarningLevel::Error);
 			return;
 		}
 
@@ -423,7 +423,7 @@ void LoadTownData()
 				!feature.contains("y") || !feature.at("y").is_number()) {
 			feature.at("name").get_to(name);
 			ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED),
-				GetEncodedString(STR_TOWN_DATA_ERROR_TOWN_FORMATTED_INCORRECTLY, name), WL_ERROR);
+				GetEncodedString(STR_TOWN_DATA_ERROR_TOWN_FORMATTED_INCORRECTLY, name), WarningLevel::Error);
 			return;
 		}
 
@@ -439,7 +439,7 @@ void LoadTownData()
 		/* Check for improper coordinates and warn the player. */
 		if (x_proportion <= 0.0f || y_proportion <= 0.0f || x_proportion >= 1.0f || y_proportion >= 1.0f) {
 			ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_LOAD_FAILED),
-				GetEncodedString(STR_TOWN_DATA_ERROR_BAD_COORDINATE, name), WL_ERROR);
+				GetEncodedString(STR_TOWN_DATA_ERROR_BAD_COORDINATE, name), WarningLevel::Error);
 			return;
 		}
 
@@ -461,7 +461,7 @@ void LoadTownData()
 		/* Try founding on the target tile, and if that doesn't work, find the nearest suitable tile up to 16 tiles away.
 		 * The target might be on water, blocked somehow, or on a steep slope that can't be terraformed by the founding command. */
 		for (auto tile : SpiralTileSequence(target_tile, 16, 0, 0)) {
-			std::tuple<CommandCost, Money, TownID> result = Command<Commands::FoundTown>::Do(DoCommandFlag::Execute, tile, TSZ_SMALL, is_city, _settings_game.economy.town_layout, false, 0, name);
+			std::tuple<CommandCost, Money, TownID> result = Command<Commands::FoundTown>::Do(DoCommandFlag::Execute, tile, TownSize::Small, is_city, _settings_game.economy.town_layout, false, 0, name);
 
 			town_id = std::get<TownID>(result);
 
@@ -482,7 +482,7 @@ void LoadTownData()
 
 	/* If we couldn't found a town (or multiple), display a message to the player with the number of failed towns. */
 	if (failed_towns > 0) {
-		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_FAILED_TO_FOUND_TOWN, failed_towns), {}, WL_WARNING);
+		ShowErrorMessage(GetEncodedString(STR_TOWN_DATA_ERROR_FAILED_TO_FOUND_TOWN, failed_towns), {}, WarningLevel::Warning);
 	}
 
 	/* Now that we've created the towns, let's grow them to their target populations. */

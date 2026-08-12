@@ -32,6 +32,8 @@ enum class RailTypeFlag : uint8_t {
 	Allow90Deg      = 4, ///< Bit number for always allowed 90 degree turns, regardless of setting.
 	Disallow90Deg   = 5, ///< Bit number for never allowed 90 degree turns, regardless of setting.
 };
+
+/** Bitset of \c RailTypeFlag elements. */
 using RailTypeFlags = EnumBitSet<RailTypeFlag, uint8_t>;
 
 struct SpriteGroup;
@@ -147,7 +149,7 @@ public:
 		SpriteID build_depot;        ///< button for building depots
 		SpriteID build_tunnel;       ///< button for building a tunnel
 		SpriteID convert_rail;       ///< button for converting rail
-		SpriteID signals[SIGTYPE_END][2][2]; ///< signal GUI sprites (type, variant, state)
+		EnumIndexArray<EnumIndexArray<EnumIndexArray<SpriteID, SignalState, SignalState::End>, SignalVariant, SignalVariant::End>, SignalType, SignalType::End> signals; ///< signal GUI sprites (type, variant, state)
 	} gui_sprites;
 
 	struct {
@@ -452,7 +454,7 @@ inline Money RailClearCost(RailType railtype)
  * Calculates the cost of rail conversion
  * @param from The railtype we are converting from
  * @param to   The railtype we are converting to
- * @return Cost per TrackBit
+ * @return Cost per Track
  */
 inline Money RailConvertCost(RailType from, RailType to)
 {
@@ -497,7 +499,7 @@ inline Money SignalMaintenanceCost(uint32_t num)
 	return (_price[Price::InfrastructureRail] * 15 * num * (1 + IntSqrt(num))) >> 8; // 1 bit fraction for the multiplier and 7 bits scaling.
 }
 
-void DrawTrainDepotSprite(int x, int y, int image, RailType railtype);
+void DrawTrainDepotSprite(int x, int y, DiagDirection dir, RailType railtype);
 int TicksToLeaveDepot(const Train *v);
 
 Foundation GetRailFoundation(Slope tileh, TrackBits bits);

@@ -78,7 +78,7 @@ size_t ObjectSpec::Count()
 bool ObjectSpec::IsEverAvailable() const
 {
 	return this->IsEnabled() && this->climate.Test(_settings_game.game_creation.landscape) &&
-			!this->flags.Test((_game_mode != GM_EDITOR && !_generating_world) ? ObjectFlag::OnlyInScenedit : ObjectFlag::OnlyInGame);
+			!this->flags.Test((_game_mode != GameMode::Editor && !_generating_world) ? ObjectFlag::OnlyInScenedit : ObjectFlag::OnlyInGame);
 }
 
 /**
@@ -136,8 +136,8 @@ void ResetObjects()
 	}
 
 	/* Set class for originals. */
-	_object_specs[OBJECT_LIGHTHOUSE].class_index = ObjectClass::Allocate('LTHS');
-	_object_specs[OBJECT_TRANSMITTER].class_index = ObjectClass::Allocate('TRNS');
+	_object_specs[OBJECT_LIGHTHOUSE].class_index = ObjectClass::Allocate("LTHS");
+	_object_specs[OBJECT_TRANSMITTER].class_index = ObjectClass::Allocate("TRNS");
 
 	/* Reset any overrides that have been set. */
 	_object_mngr.ResetOverride();
@@ -146,8 +146,8 @@ void ResetObjects()
 template <>
 /* static */ void ObjectClass::InsertDefaults()
 {
-	ObjectClass::Get(ObjectClass::Allocate('LTHS'))->name = STR_OBJECT_CLASS_LTHS;
-	ObjectClass::Get(ObjectClass::Allocate('TRNS'))->name = STR_OBJECT_CLASS_TRNS;
+	ObjectClass::Get(ObjectClass::Allocate("LTHS"))->name = STR_OBJECT_CLASS_LTHS;
+	ObjectClass::Get(ObjectClass::Allocate("TRNS"))->name = STR_OBJECT_CLASS_TRNS;
 }
 
 template <>
@@ -170,7 +170,7 @@ template class NewGRFClass<ObjectSpec, ObjectClassID>;
  * @param cur_grfid GRFID of the current callback chain
  * @return value encoded as per NFO specs
  */
-static uint32_t GetObjectIDAtOffset(TileIndex tile, uint32_t cur_grfid)
+static uint32_t GetObjectIDAtOffset(TileIndex tile, GrfID cur_grfid)
 {
 	if (!IsTileType(tile, TileType::Object)) {
 		return 0xFFFF;
@@ -235,7 +235,7 @@ static uint32_t GetClosestObject(TileIndex tile, ObjectType type, const Object *
  * @param current  Object for which the inquiry is made
  * @return The formatted answer to the callback : rr(reserved) cc(count) dddd(manhattan distance of closest sister)
  */
-static uint32_t GetCountAndDistanceOfClosestInstance(const ResolverObject &object, uint8_t local_id, uint32_t grfid, TileIndex tile, const Object *current)
+static uint32_t GetCountAndDistanceOfClosestInstance(const ResolverObject &object, uint8_t local_id, GrfID grfid, TileIndex tile, const Object *current)
 {
 	uint32_t grf_id = static_cast<uint32_t>(object.GetRegister(0x100)); // Get the GRFID of the definition to look for in register 100h
 	uint32_t idx;
@@ -247,11 +247,11 @@ static uint32_t GetCountAndDistanceOfClosestInstance(const ResolverObject &objec
 			break;
 
 		case 0xFFFFFFFF: // current grf
-			grf_id = grfid;
+			grf_id = FlattenNewGRFLabel(grfid);
 			[[fallthrough]];
 
 		default: // use the grfid specified in register 100h
-			idx = _object_mngr.GetID(local_id, grf_id);
+			idx = _object_mngr.GetID(local_id, UnflattenNewGRFLabel<GrfID>(grf_id));
 			break;
 	}
 
@@ -464,7 +464,7 @@ static void DrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan &dts, co
 		}
 	}
 
-	DrawNewGRFTileSeq(ti, &dts, TO_STRUCTURES, 0, palette);
+	DrawNewGRFTileSeq(ti, &dts, TransparencyOption::Structures, 0, palette);
 }
 
 /**
@@ -505,7 +505,7 @@ void DrawNewObjectTileInGUI(int x, int y, const ObjectSpec *spec, uint8_t view)
 	if (Company::IsValidID(_local_company)) {
 		/* Get the colours of our company! */
 		if (spec->flags.Test(ObjectFlag::Uses2CC)) {
-			const Livery &l = Company::Get(_local_company)->livery[0];
+			const Livery &l = Company::Get(_local_company)->livery[LiveryScheme::Default];
 			palette = SPR_2CCMAP_BASE + l.GetRecolourOffset();
 		} else {
 			palette = GetCompanyPalette(_local_company);

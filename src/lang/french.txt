@@ -526,6 +526,7 @@ STR_AIRCRAFT_MENU_AIRPORT_CONSTRUCTION                          :Construction d'
 STR_LANDSCAPING_MENU_LANDSCAPING                                :Modification du paysage
 STR_LANDSCAPING_MENU_PLANT_TREES                                :Planter des arbres
 STR_LANDSCAPING_MENU_PLACE_SIGN                                 :Placer un panneau
+STR_LANDSCAPING_MENU_PLACE_OBJECT                               :Placer un objet
 
 # Music menu
 STR_TOOLBAR_SOUND_MUSIC                                         :Son/Musique
@@ -631,7 +632,6 @@ STR_GRAPH_LAST_24_MONTHS                                        :{TINY_FONT}{BLA
 STR_GRAPH_LAST_24_QUARTERS                                      :{TINY_FONT}{BLACK}6 ans (trimestriel)
 STR_GRAPH_LAST_24_YEARS                                         :{TINY_FONT}{BLACK}24 ans (annuel)
 
-STR_GRAPH_TOGGLE_RANGE                                          :Basculer le graphique pour les données de cette échelle
 STR_GRAPH_SELECT_SCALE                                          :Modifier l'échelle horizontale du graphique
 
 STR_GRAPH_CARGO_PAYMENT_RATES_CAPTION                           :{WHITE}Valeur des marchandises
@@ -652,8 +652,9 @@ STR_GRAPH_INDUSTRY_RANGE_DELIVERED                              :Livré
 STR_GRAPH_INDUSTRY_RANGE_WAITING                                :En attente
 
 STR_GRAPH_TOWN_CARGO_CAPTION                                    :{WHITE}{TOWN} - Historique des cargaisons
-STR_GRAPH_TOWN_RANGE_PRODUCED                                   :Production
+STR_GRAPH_TOWN_RANGE_PRODUCED                                   :Produit
 STR_GRAPH_TOWN_RANGE_TRANSPORTED                                :Transporté
+STR_GRAPH_TOWN_RANGE_DELIVERED                                  :Livré
 
 STR_GRAPH_PERFORMANCE_DETAIL_TOOLTIP                            :{BLACK}Afficher le détail de l'évaluation de la performance
 
@@ -1210,9 +1211,9 @@ STR_RIVERS_MODERATE                                             :Modérément
 STR_RIVERS_LOT                                                  :Beaucoup
 
 ###length 3
-STR_DISASTER_NONE                                               :Aucune
-STR_DISASTER_REDUCED                                            :Réduites
-STR_DISASTER_NORMAL                                             :Normales
+STR_BREAKDOWNS_NONE                                             :Aucune
+STR_BREAKDOWNS_REDUCED                                          :Réduites
+STR_BREAKDOWNS_NORMAL                                           :Normales
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1,5
@@ -1352,8 +1353,13 @@ STR_CONFIG_SETTING_CONSTRUCTION_COSTS_HIGH                      :Élevé
 STR_CONFIG_SETTING_RECESSIONS                                   :Récessions{NBSP}: {STRING}
 STR_CONFIG_SETTING_RECESSIONS_HELPTEXT                          :Si activé, des récessions peuvent se produire périodiquement. Pendant une récession, toute la production baisse de façon significative (elle retourne à son niveau antérieur à la fin de la récession).
 
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE                           :Autoriser les trains à faire demi-tour pour inverser la direction{NBSP}: {STRING}
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_HELPTEXT                  :Choisir où les trains peuvent faire demi-tour pour inverser la direction. Avec "Partout" ils pourront faire demi-tour n'importe où. Avec "Uniquement en fin de ligne" ils ne feront pas demi-tour dans les stations si il est possible d'avancer. Avec "Jamais" ils ne pourront pas faire demi-tour et ils avancerons en marche arrière si besoin, mais à vitesse réduite si le véhicule de queue n'a pas de cabine.
 
 ###length 3
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_ALL                       :Partout
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_END_OF_LINE_ONLY          :Uniquement en fin de ligne
+STR_CONFIG_SETTING_TRAIN_FLIP_REVERSE_NONE                      :Jamais
 
 STR_CONFIG_SETTING_DISASTERS                                    :Catastrophes{NBSP}: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :Activer/Désactiver les catastrophes qui peuvent occasionnellement bloquer ou détruire des véhicules ou des infrastructures
@@ -1557,6 +1563,12 @@ STR_CONFIG_SETTING_TOWN_CARGO_SCALE_HELPTEXT                    :Modifier la pro
 STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE                         :Échelle de production de marchandise des industries{NBSP}: {STRING}
 STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE_HELPTEXT                :Modifier la production de marchandise des industries de ce pourcentage
 STR_CONFIG_SETTING_CARGO_SCALE_VALUE                            :{NUM}%
+
+STR_CONFIG_SETTING_CARGO_AGING_RATE                             :Échelle d'évolution de la valeur des marchandises{NBSP}: {STRING}
+STR_CONFIG_SETTING_CARGO_AGING_RATE_HELPTEXT                    :Ajuste comment la valeur d'une marchandise chargée dans un véhicule diminue avec le temps
+STR_CONFIG_SETTING_CARGO_AGING_RATE_VALUE                       :{NUM}%
+###setting-zero-is-special
+STR_CONFIG_SETTING_CARGO_AGING_RATE_ZERO                        :Pas de baisse
 
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Renouveler automatiquement les véhicules vieillissants{NBSP}: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :Si activé, un véhicule approchant de la fin de sa durée de vie sera automatiquement remplacé quand les conditions du renouvellement seront remplies
@@ -1793,12 +1805,7 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :Afficher les te
 STR_CONFIG_SETTING_QUICKGOTO                                    :Création rapide des ordres de véhicule{NBSP}: {STRING}
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :Présélectionner le curseur "aller vers" lors de l'ouverture de la fenêtre d'ordres
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Type de rail par défaut (après nouvelle partie/chargement){NBSP}: {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Type de rail à utiliser au début ou au chargement d'une partie. "premier disponible" sélectionne le type de voies le plus ancien, "dernier disponible" sélectionne le type de voies le plus récent, et "le plus utilisé" sélectionne le type qui est actuellement le plus utilisé
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :Premier disponible
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :Dernier disponible
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :Le plus utilisé
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :Afficher les réservations de chemin sur les voies{NBSP}: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :Donne une couleur différente aux voies réservées afin d'aider à résoudre les problèmes de trains refusant de s'engager dans des tronçons encadrés par des signaux de passage
@@ -1905,6 +1912,8 @@ STR_CONFIG_SETTING_STATION_LENGTH_LOADING_PENALTY_HELPTEXT      :Quand activé, 
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS                             :Activer la vitesse limite des wagons{NBSP}: {STRING}
 STR_CONFIG_SETTING_WAGONSPEEDLIMITS_HELPTEXT                    :Lorsqu'il est activé, utiliser la vitesse limite des wagons pour déterminer la vitesse maximum d'un train
 
+STR_CONFIG_SETTING_AIRCRAFT_RANGE                               :Limiter la distance franchissable des aéronefs{NBSP}: {STRING}
+STR_CONFIG_SETTING_AIRCRAFT_RANGE_HELPTEXT                      :Lorsqu'il est activé, les NewGRFs peuvent limiter la distance franchissable des aéronefs
 
 STR_CONFIG_SETTING_DISABLE_ELRAILS                              :Désactiver les rails électriques{NBSP}: {STRING}
 STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :Activer ce paramètre désactive le besoin d'avoir des voies électrifiées pour faire rouler des engins électriques
@@ -3084,6 +3093,8 @@ STR_TERRAFORM_TOOLTIP_PLACE_ROCKY_AREAS_ON_LANDSCAPE            :{BLACK}Placer d
 STR_TERRAFORM_TOOLTIP_DEFINE_DESERT_AREA                        :{BLACK}Définir une zone désertique.{}Ctrl-clic pour retirer une zone désertique
 STR_TERRAFORM_TOOLTIP_INCREASE_SIZE_OF_LAND_AREA                :{BLACK}Augmenter la superficie du terrain à modifier
 STR_TERRAFORM_TOOLTIP_DECREASE_SIZE_OF_LAND_AREA                :{BLACK}Diminuer la superficie du terrain à modifier
+STR_TERRAFORM_TOOLTIP_LOWER_A_CORNER_OF_LAND                    :{BLACK}Abaisser le terrain.{}Si la taille est 1x1, glisser abaisse le premier coin sélectionné et nivelle la zone sélectionnée à cette nouvelle hauteur.{}Ctrl pour sélectionner en diagonale.{}Shift pour afficher seulement le coût estimé.
+STR_TERRAFORM_TOOLTIP_RAISE_A_CORNER_OF_LAND                    :{BLACK}Élever le terrain.{}Si la taille est 1x1, glisser élève le premier coin sélectionné et nivelle la zone sélectionnée à cette nouvelle hauteur.{}Ctrl pour sélectionner en diagonale.{}Shift pour afficher seulement le coût estimé.
 STR_TERRAFORM_TOOLTIP_GENERATE_RANDOM_LAND                      :{BLACK}Créer un monde aléatoire
 STR_TERRAFORM_SE_NEW_WORLD                                      :{BLACK}Nouveau scénario
 STR_TERRAFORM_RESET_LANDSCAPE                                   :{BLACK}Réinitialiser le terrain
@@ -3820,6 +3831,7 @@ STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Cliquer sur l'objectif pour centrer la vue principale sur l'industrie, la ville ou la case. Ctrl-clic pour ouvrir une nouvelle vue sur l'industrie, la ville ou la case.
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :{BLACK}Question
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :{BLACK}Informations
 STR_GOAL_QUESTION_CAPTION_WARNING                               :{BLACK}Attention
@@ -4576,8 +4588,8 @@ STR_VEHICLE_DETAILS_ROAD_VEHICLE_RENAME                         :{BLACK}Renommer
 STR_VEHICLE_DETAILS_SHIP_RENAME                                 :{BLACK}Rebaptiser le navire
 STR_VEHICLE_DETAILS_AIRCRAFT_RENAME                             :{BLACK}Renommer l'aéronef
 
-STR_VEHICLE_INFO_AGE                                            :{COMMA} an{P "" nées} ({COMMA})
-STR_VEHICLE_INFO_AGE_RED                                        :{RED}{COMMA} an{P "" nées} ({COMMA})
+STR_VEHICLE_INFO_AGE                                            :{COMMA} an{P "" nées} (durée de vie{NBSP}: {COMMA} an{P "" nées})
+STR_VEHICLE_INFO_AGE_RED                                        :{RED}{COMMA} an{P "" nées} (durée de vie{NBSP}: {COMMA} an{P "" nées})
 STR_VEHICLE_INFO_AGE_RUNNING_COST_YR                            :{BLACK}Âge{NBSP}: {LTBLUE}{STRING}{BLACK}   Coûts d'entretien{NBSP}: {LTBLUE}{CURRENCY_LONG}/an{BLACK}
 STR_VEHICLE_INFO_AGE_RUNNING_COST_PERIOD                        :{BLACK}Âge{NBSP}: {LTBLUE}{STRING}{BLACK}   Coûts d'entretien{NBSP}: {LTBLUE}{CURRENCY_LONG}/période
 
@@ -4591,6 +4603,7 @@ STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR                     :{BLACK}Profit c
 STR_VEHICLE_INFO_PROFIT_THIS_YEAR_LAST_YEAR_MIN_PERFORMANCE     :{BLACK}Profit cette année{NBSP}: {LTBLUE}{CURRENCY_LONG} (année précédente{NBSP}: {CURRENCY_LONG}) {BLACK}Performance min.{NBSP}: {LTBLUE}{POWER_TO_WEIGHT}
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD                 :{BLACK}Profit cette période{NBSP}: {LTBLUE}{CURRENCY_LONG} (période précédente{NBSP}: {CURRENCY_LONG})
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD_MIN_PERFORMANCE :{BLACK}Profit cette période{NBSP}: {LTBLUE}{CURRENCY_LONG} (période précédente{NBSP}: {CURRENCY_LONG}) {BLACK}Performance min.{NBSP}: {LTBLUE}{POWER_TO_WEIGHT}
+STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}Fiabilité{NBSP}: {LTBLUE}{COMMA}{NBSP}% (max: {COMMA}%) {BLACK} − Pannes depuis le dernier entretien{NBSP}: {LTBLUE}{COMMA}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE}{BLACK} − Construit en{NBSP}: {LTBLUE}{NUM}{BLACK} − Valeur{NBSP}: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Capacité{NBSP}: {LTBLUE}Aucune{STRING}
@@ -4739,6 +4752,7 @@ STR_ORDER_CONDITIONAL_REQUIRES_SERVICE                          :Entretien néce
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :Toujours
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :Durée de vie restante (années)
 STR_ORDER_CONDITIONAL_MAX_RELIABILITY                           :Fiabilité maximum
+STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :Marche arrière
 ###next-name-looks-similar
 
 STR_ORDER_CONDITIONAL_COMPARATOR_TOOLTIP                        :{BLACK}Comment comparer les données du véhicule à la valeur donnée
@@ -4758,6 +4772,7 @@ STR_ORDERS_SKIP_BUTTON                                          :{BLACK}Suivant
 STR_ORDERS_SKIP_TOOLTIP                                         :{BLACK}Sauter l'ordre courant et passer au suivant. Ctrl-clic pour sauter à l'ordre sélectionné.
 
 STR_ORDERS_DELETE_BUTTON                                        :{BLACK}Supprimer
+STR_ORDERS_DELETE_ALL_BUTTON                                    :{BLACK}Supprimer tout
 STR_ORDERS_DELETE_TOOLTIP                                       :{BLACK}Supprimer l'ordre sélectionné
 STR_ORDERS_DELETE_ALL_TOOLTIP                                   :{BLACK}Supprimer tous les ordres
 STR_ORDERS_STOP_SHARING_BUTTON                                  :{BLACK}Arrêter le partage
@@ -5170,8 +5185,8 @@ STR_ERROR_CAN_ONLY_BE_BUILT_BELOW_SNOW_LINE                     :peut seulement 
 
 STR_ERROR_PROSPECTING_WAS_UNLUCKY                               :la prospection a échoué par manque de chance; essayez à nouveau
 STR_ERROR_NO_SUITABLE_PLACES_FOR_PROSPECTING                    :il n'y avait pas d'emplacements appropriés pour la prospection de cette industrie
-STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES                     :il n'y avait pas d'emplacements appropriés pour les industries '{STRING}'
-STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES_EXPLANATION         :modifier les paramètres de la génération de la carte pour obtenir une meilleure carte
+STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES                     :Il n'y avait pas d'emplacements appropriés pour les industries '{STRING}'
+STR_ERROR_NO_SUITABLE_PLACES_FOR_INDUSTRIES_EXPLANATION         :Modifier les paramètres de la génération de la carte pour obtenir une meilleure carte
 
 # Station construction related errors
 STR_ERROR_CAN_T_BUILD_RAILROAD_STATION                          :Impossible de construire la gare ici...
@@ -5257,6 +5272,7 @@ STR_ERROR_CAN_T_MOVE_VEHICLE                                    :Impossible de d
 STR_ERROR_REAR_ENGINE_FOLLOW_FRONT                              :l'engin de queue suivra toujours sa contre-partie avant
 STR_ERROR_UNABLE_TO_FIND_ROUTE_TO                               :impossible de trouver une route jusqu'au dépôt local
 STR_ERROR_UNABLE_TO_FIND_LOCAL_DEPOT                            :impossible de trouver un dépôt local
+STR_ERROR_UNABLE_TO_FIND_LOCAL_HANGAR                           :impossible de trouver un hangar local
 
 STR_ERROR_DEPOT_WRONG_DEPOT_TYPE                                :dépôt incompatible
 
