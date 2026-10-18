@@ -13,7 +13,6 @@
 #include "news_func.h"
 #include "newgrf_engine.h"
 #include "newgrf_sound.h"
-#include "error_func.h"
 #include "strings_func.h"
 #include "command_func.h"
 #include "window_func.h"
@@ -28,6 +27,7 @@
 #include "company_func.h"
 #include "effectvehicle_func.h"
 #include "station_base.h"
+#include "station_func.h"
 #include "engine_base.h"
 #include "core/random_func.hpp"
 #include "core/backup_type.hpp"
@@ -155,8 +155,8 @@ static StationID FindNearestHangar(const Aircraft *v)
 
 		/* Check if our last and next destinations can be reached from the depot airport. */
 		if (max_range != 0) {
-			uint last_dist = (last_dest != nullptr && last_dest->airport.tile != INVALID_TILE) ? DistanceSquare(st->airport.tile, last_dest->airport.tile) : 0;
-			uint next_dist = (next_dest != nullptr && next_dest->airport.tile != INVALID_TILE) ? DistanceSquare(st->airport.tile, next_dest->airport.tile) : 0;
+			uint last_dist = (last_dest != nullptr && !last_dest->airport.IsEmpty()) ? DistanceSquare(st->airport.tile, last_dest->airport.tile) : 0;
+			uint next_dist = (next_dest != nullptr && !next_dest->airport.IsEmpty()) ? DistanceSquare(st->airport.tile, next_dest->airport.tile) : 0;
 			if (last_dist > max_range || next_dist > max_range) continue;
 		}
 
@@ -587,7 +587,7 @@ void HandleAircraftEnterHangar(Aircraft *v)
 
 static void PlayAircraftSound(const Vehicle *v)
 {
-	if (!PlayVehicleSound(v, VSE_START)) {
+	if (!PlayVehicleSound(v, VehicleSoundEvent::Start)) {
 		SndPlayVehicleFx(AircraftVehInfo(v->engine_type)->sfx, v);
 	}
 }
@@ -835,7 +835,7 @@ static uint8_t AircraftGetEntryPoint(const Aircraft *v, const AirportFTAClass *a
 	const Station *st = Station::GetIfValid(v->targetairport);
 	if (st != nullptr) {
 		/* Make sure we don't go to INVALID_TILE if the airport has been removed. */
-		tile = (st->airport.tile != INVALID_TILE) ? st->airport.tile : st->xy;
+		tile = !st->airport.IsEmpty() ? st->airport.tile : st->xy;
 	}
 
 	int delta_x = v->x_pos - TileX(tile) * TILE_SIZE;
@@ -872,7 +872,7 @@ static bool AircraftController(Aircraft *v)
 	Direction rotation = Direction::N;
 	uint size_x = 1, size_y = 1;
 	if (st != nullptr) {
-		if (st->airport.tile != INVALID_TILE) {
+		if (!st->airport.IsEmpty()) {
 			tile = st->airport.tile;
 			rotation = st->airport.rotation;
 			size_x = st->airport.w;
@@ -885,7 +885,7 @@ static bool AircraftController(Aircraft *v)
 	const AirportFTAClass *afc = tile == INVALID_TILE ? GetAirport(AT_DUMMY) : st->airport.GetFTA();
 
 	/* prevent going to INVALID_TILE if airport is deleted. */
-	if (st == nullptr || st->airport.tile == INVALID_TILE) {
+	if (st == nullptr || st->airport.IsEmpty()) {
 		/* Jump into our "holding pattern" state machine if possible */
 		if (v->pos >= afc->nofelements) {
 			v->pos = v->previous_pos = AircraftGetEntryPoint(v, afc, Direction::N);
@@ -914,7 +914,7 @@ static bool AircraftController(Aircraft *v)
 		if (u->cur_speed > 32) {
 			v->cur_speed = 0;
 			if (--u->cur_speed == 32) {
-				if (!PlayVehicleSound(v, VSE_START)) {
+				if (!PlayVehicleSound(v, VehicleSoundEvent::Start)) {
 					SoundID sfx = AircraftVehInfo(v->engine_type)->sfx;
 					/* For compatibility with old NewGRF we ignore the sfx property, unless a NewGRF-defined sound is used.
 					 * The baseset has only one helicopter sound, so this only limits using plane or cow sounds. */
@@ -1144,7 +1144,7 @@ static bool AircraftController(Aircraft *v)
 				continue;
 			}
 
-			if (st->airport.tile == INVALID_TILE) {
+			if (st->airport.IsEmpty()) {
 				/* Airport has been removed, abort the landing procedure */
 				v->state = FLYING;
 				UpdateAircraftCache(v);
@@ -1328,6 +1328,7 @@ void Aircraft::MarkDirty()
 	if (this->subtype == AIR_HELICOPTER) {
 		GetRotorImage(this, EngineImageType::OnMap, &this->Next()->Next()->sprite_cache.sprite_seq);
 	}
+	UpdateAircraftCache(this);
 }
 
 
@@ -1448,7 +1449,7 @@ static void AircraftLandAirplane(Aircraft *v)
 
 	TriggerAirportTileAnimation(st, vt, AirportAnimationTrigger::AirplaneTouchdown);
 
-	if (!PlayVehicleSound(v, VSE_TOUCHDOWN)) {
+	if (!PlayVehicleSound(v, VehicleSoundEvent::Touchdown)) {
 		SndPlayVehicleFx(SND_17_SKID_PLANE, v);
 	}
 }
@@ -1822,7 +1823,7 @@ static bool AirportMove(Aircraft *v, const AirportFTAClass *apc)
 {
 	/* error handling */
 	if (v->pos >= apc->nofelements) {
-		Debug(misc, 0, "[Ap] position {} is not valid for current airport. Max position is {}", v->pos, apc->nofelements - 1);
+		Debug(Facility::Misc, Severity::Critical, "[Ap] position {} is not valid for current airport. Max position is {}", v->pos, apc->nofelements - 1);
 		assert(v->pos < apc->nofelements);
 	}
 
@@ -1861,7 +1862,7 @@ static bool AirportMove(Aircraft *v, const AirportFTAClass *apc)
 		current = current->next.get();
 	} while (current != nullptr);
 
-	Debug(misc, 0, "[Ap] cannot move further on Airport! (pos {} state {}) for vehicle {}", v->pos, v->state, v->index);
+	Debug(Facility::Misc, Severity::Critical, "[Ap] cannot move further on Airport! (pos {} state {}) for vehicle {}", v->pos, v->state, v->index);
 	NOT_REACHED();
 }
 
@@ -2129,7 +2130,7 @@ static bool AircraftEventHandler(Aircraft *v, int loop)
 		Station *cur_st = Station::GetIfValid(v->targetairport);
 		Station *next_st = v->current_order.IsType(OT_GOTO_STATION) || v->current_order.IsType(OT_GOTO_DEPOT) ? Station::GetIfValid(v->current_order.GetDestination().ToStationID()) : nullptr;
 
-		if (cur_st != nullptr && cur_st->airport.tile != INVALID_TILE && next_st != nullptr && next_st->airport.tile != INVALID_TILE) {
+		if (cur_st != nullptr && !cur_st->airport.IsEmpty() && next_st != nullptr && !next_st->airport.IsEmpty()) {
 			uint dist = DistanceSquare(cur_st->airport.tile, next_st->airport.tile);
 			AircraftHandleDestTooFar(v, dist > v->acache.cached_max_range_sqr);
 		}
@@ -2176,7 +2177,7 @@ Station *GetTargetAirportIfValid(const Aircraft *v)
 	Station *st = Station::GetIfValid(v->targetairport);
 	if (st == nullptr) return nullptr;
 
-	return st->airport.tile == INVALID_TILE ? nullptr : st;
+	return st->airport.IsEmpty() ? nullptr : st;
 }
 
 /**
@@ -2187,7 +2188,7 @@ void UpdateAirplanesOnNewStation(const Station *st)
 {
 	/* only 1 station is updated per function call, so it is enough to get entry_point once */
 	const AirportFTAClass *ap = st->airport.GetFTA();
-	Direction rotation = st->airport.tile == INVALID_TILE ? Direction::N : st->airport.rotation;
+	Direction rotation = st->airport.IsEmpty() ? Direction::N : st->airport.rotation;
 
 	for (Aircraft *v : Aircraft::Iterate()) {
 		if (!v->IsNormalAircraft() || v->targetairport != st->index) continue;

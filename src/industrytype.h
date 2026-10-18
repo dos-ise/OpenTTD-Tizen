@@ -158,23 +158,54 @@ struct IndustrySpec {
 struct IndustryTileSpec {
 	std::array<CargoType, INDUSTRY_NUM_INPUTS> accepts_cargo; ///< Cargo accepted by this tile
 	std::array<int8_t, INDUSTRY_NUM_INPUTS> acceptance; ///< Level of acceptance per cargo type (signed, may be negative!)
-	Slope slopes_refused;                 ///< slope pattern on which this tile cannot be built
-	uint8_t anim_production;                 ///< Animation frame to start when goods are produced
-	uint8_t anim_next;                       ///< Next frame in an animation
+	Slope slopes_refused; ///< slope pattern on which this tile cannot be built
+	IndustryGfx anim_production; ///< Animation frame to start when goods are produced
+	IndustryGfx anim_next; ///< Next frame in an animation
 	/**
 	 * When true, the tile has to be drawn using the animation
 	 * state instead of the construction stage
 	 */
 	bool anim_state;
 	/* Newgrf data */
-	IndustryTileCallbackMasks callback_mask;                  ///< Bitmask of industry tile callbacks that have to be called
-	AnimationInfo<IndustryAnimationTriggers> animation; ///< Information about the animation (is it looping, how many loops etc)
-	IndustryTileSpecialFlags special_flags; ///< Bitmask of extra flags used by the tile
-	bool enabled;                         ///< entity still available (by default true).newgrf can disable it, though
-	SubstituteGRFFileProps grf_prop; ///< properties related to the grf file
-	std::vector<BadgeID> badges;
+	IndustryTileCallbackMasks callback_mask{}; ///< Bitmask of industry tile callbacks that have to be called.
+	AnimationInfo<IndustryAnimationTriggers> animation{}; ///< Information about the animation (is it looping, how many loops etc).
+	IndustryTileSpecialFlags special_flags{}; ///< Bitmask of extra flags used by the tile.
+	SubstituteGRFFileProps grf_prop{INVALID_INDUSTRYTILE}; ///< properties related to the grf file
+	std::vector<BadgeID> badges{}; ///< Badge list.
 
 	std::array<std::variant<CargoLabel, MixedCargoType>, INDUSTRY_ORIGINAL_NUM_INPUTS> accepts_cargo_label; ///< Cargo labels of accepted cargo for default industry tiles.
+
+	IndustryTileSpec() = default;
+
+	/**
+	 * Creates IndustryTileSpec from the properties of an industry tile.
+	 * @param ca1 Acceptance of first cargo.
+	 * @param c1 First type of cargo accepted for this tile.
+	 * @param ca2 Acceptance of second cargo.
+	 * @param c2 Second cargo.
+	 * @param ca3 Acceptance of third cargo.
+	 * @param c3 Third cargo. Those three are in an array.
+	 * @param sl Slope refused upon choosing a place to build.
+	 * @param a1 Animation frame on production.
+	 * @param a2 Next frame of animation.
+	 * @param a3 Chooses between animation or construction stage.
+	 */
+	constexpr IndustryTileSpec(int8_t ca1, std::variant<CargoLabel, MixedCargoType> c1, int8_t ca2, std::variant<CargoLabel, MixedCargoType> c2, int8_t ca3, std::variant<CargoLabel, MixedCargoType> c3, Slope sl, IndustryGfx a1, IndustryGfx a2, bool a3) :
+		accepts_cargo{INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO},
+		acceptance{ca1, ca2, ca3}, slopes_refused(sl), anim_production(a1), anim_next(a2), anim_state(a3), accepts_cargo_label{c1, c2, c3}
+	{}
+
+	/**
+	 * Creates IndustryTileSpec with some default values.
+	 * @param cargo_acceptance1 Acceptance of first cargo.
+	 * @param cargo1 First type of cargo accepted for this tile.
+	 * @param cargo_acceptance2 Acceptance of second cargo.
+	 * @param cargo2 Second cargo.
+	 * @param is_construction Chooses between animation or construction stage.
+	 */
+	constexpr IndustryTileSpec(int8_t cargo_acceptance1, std::variant<CargoLabel, MixedCargoType> cargo1, int8_t cargo_acceptance2, std::variant<CargoLabel, MixedCargoType> cargo2, bool is_construction) :
+		IndustryTileSpec(cargo_acceptance1, cargo1, cargo_acceptance2, cargo2, 0, CT_INVALID, SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, is_construction)
+	{}
 };
 
 /* industry_cmd.cpp*/
@@ -197,18 +228,14 @@ extern std::array<IndustryType, NUM_INDUSTRYTYPES> _sorted_industry_types;
  */
 inline IndustryGfx GetTranslatedIndustryTileID(IndustryGfx gfx)
 {
-	/* the 0xFF should be GFX_WATERTILE_SPECIALCHECK but for reasons of include mess,
-	 * we'll simplify the writing.
-	 * Basically, the first test is required since the GFX_WATERTILE_SPECIALCHECK value
+	/* Basically, the first test is required since the GFX_WATERTILE_SPECIALCHECK value
 	 * will never be assigned as a tile index and is only required in order to do some
 	 * tests while building the industry (as in WATER REQUIRED */
-	if (gfx != 0xFF) {
-		assert(gfx < NUM_INDUSTRYTILES);
-		const IndustryTileSpec *it = &_industry_tile_specs[gfx];
-		return it->grf_prop.override_id == INVALID_INDUSTRYTILE ? gfx : it->grf_prop.override_id;
-	} else {
-		return gfx;
-	}
+	if (gfx == GFX_WATERTILE_SPECIALCHECK) return gfx;
+
+	assert(gfx < NUM_INDUSTRYTILES);
+	const IndustryTileSpec *it = &_industry_tile_specs[gfx];
+	return it->grf_prop.override_id == INVALID_INDUSTRYTILE ? gfx : it->grf_prop.override_id;
 }
 
 #endif /* INDUSTRYTYPE_H */

@@ -38,6 +38,8 @@
 #include "subsidy_base.h"
 #include "subsidy_func.h"
 #include "station_base.h"
+#include "station_func.h"
+#include "vehicle_gui.h"
 #include "waypoint_base.h"
 #include "economy_base.h"
 #include "core/pool_func.hpp"
@@ -1191,7 +1193,7 @@ CargoPayment::~CargoPayment()
 	this->front->profit_this_year += (this->visual_profit + this->visual_transfer) << 8;
 
 	const Vehicle *moving_front = this->front->GetMovingFront();
-	if (this->route_profit != 0 && IsLocalCompany() && !PlayVehicleSound(this->front, VSE_LOAD_UNLOAD)) {
+	if (this->route_profit != 0 && IsLocalCompany() && !PlayVehicleSound(this->front, VehicleSoundEvent::LoadUnload)) {
 		SndPlayVehicleFx(SND_14_CASHTILL, this->front);
 	}
 

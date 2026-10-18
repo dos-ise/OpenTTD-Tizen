@@ -115,7 +115,7 @@ uint16_t OverrideManagerBase::AddEntityID(uint16_t grf_local_id, GrfID grfid, ui
 	for (id = this->max_offset; id < this->max_entities; id++) {
 		EntityIDMapping *map = &this->mappings[id];
 
-		if (CheckValidNewID(id) && map->entity_id == 0 && map->grfid.Empty()) {
+		if (map->entity_id == 0 && map->grfid.Empty()) {
 			map->entity_id     = grf_local_id;
 			map->grfid         = grfid;
 			map->substitute_id = substitute_id;
@@ -156,7 +156,7 @@ void HouseOverrideManager::SetEntitySpec(HouseSpec &&hs)
 	HouseID house_id = this->AddEntityID(hs.grf_prop.local_id, hs.grf_prop.grfid, hs.grf_prop.subst_id);
 
 	if (house_id == this->invalid_id) {
-		GrfMsg(1, "House.SetEntitySpec: Too many houses allocated. Ignoring.");
+		GrfMsg(Severity::Error, "House.SetEntitySpec: Too many houses allocated. Ignoring.");
 		return;
 	}
 
@@ -254,7 +254,7 @@ void IndustryOverrideManager::SetEntitySpec(IndustrySpec &&inds)
 	}
 
 	if (ind_id == this->invalid_id) {
-		GrfMsg(1, "Industry.SetEntitySpec: Too many industries allocated. Ignoring.");
+		GrfMsg(Severity::Error, "Industry.SetEntitySpec: Too many industries allocated. Ignoring.");
 		return;
 	}
 
@@ -269,7 +269,7 @@ void IndustryTileOverrideManager::SetEntitySpec(IndustryTileSpec &&its)
 	IndustryGfx indt_id = this->AddEntityID(its.grf_prop.local_id, its.grf_prop.grfid, its.grf_prop.subst_id);
 
 	if (indt_id == this->invalid_id) {
-		GrfMsg(1, "IndustryTile.SetEntitySpec: Too many industry tiles allocated. Ignoring.");
+		GrfMsg(Severity::Error, "IndustryTile.SetEntitySpec: Too many industry tiles allocated. Ignoring.");
 		return;
 	}
 
@@ -282,7 +282,6 @@ void IndustryTileOverrideManager::SetEntitySpec(IndustryTileSpec &&its)
 		if (this->entity_overrides[i] != _industry_tile_specs[indt_id].grf_prop.local_id || this->grfid_overrides[i] != _industry_tile_specs[indt_id].grf_prop.grfid) continue;
 
 		overridden_its->grf_prop.override_id = indt_id;
-		overridden_its->enabled = false;
 		this->entity_overrides[i] = this->invalid_id;
 		this->grfid_overrides[i] = {};
 	}
@@ -308,7 +307,7 @@ void ObjectOverrideManager::SetEntitySpec(ObjectSpec &&spec)
 	}
 
 	if (type == this->invalid_id) {
-		GrfMsg(1, "Object.SetEntitySpec: Too many objects allocated. Ignoring.");
+		GrfMsg(Severity::Error, "Object.SetEntitySpec: Too many objects allocated. Ignoring.");
 		return;
 	}
 
@@ -419,7 +418,7 @@ TileIndex GetNearbyTile(uint8_t parameter, TileIndex tile, bool signed_offsets, 
 }
 
 /**
- * Common part of station var 0x67, house var 0x62, indtile var 0x60, industry var 0x62.
+ * Common part of station var 0x67, house var 0x62, indtile var 0x60, industry var 0x62, town var 0x60.
  *
  * @param tile the tile of interest.
  * @param grf_version8 True, if we are dealing with a new NewGRF which uses GRF version >= 8.
@@ -520,9 +519,9 @@ void ErrorUnknownCallbackResult(GrfID grfid, uint16_t cbid, uint16_t cb_res)
 	}
 
 	/* debug output */
-	Debug(grf, 0, "{}", StrMakeValid(GetString(STR_NEWGRF_BUGGY, grfconfig->GetName())));
+	Debug(Facility::Grf, Severity::Critical, "{}", StrMakeValid(GetString(STR_NEWGRF_BUGGY, grfconfig->GetName())));
 
-	Debug(grf, 0, "{}", StrMakeValid(GetString(STR_NEWGRF_BUGGY_UNKNOWN_CALLBACK_RESULT, std::monostate{}, cbid, cb_res)));
+	Debug(Facility::Grf, Severity::Critical, "{}", StrMakeValid(GetString(STR_NEWGRF_BUGGY_UNKNOWN_CALLBACK_RESULT, std::monostate{}, cbid, cb_res)));
 }
 
 /**

@@ -10,13 +10,13 @@
 #include "stdafx.h"
 #include "debug.h"
 #include "station_base.h"
+#include "station_func.h"
 #include "waypoint_base.h"
 #include "roadstop_base.h"
 #include "newgrf_badge.h"
 #include "newgrf_cargo.h"
 #include "newgrf_station.h"
 #include "newgrf_spritegroup.h"
-#include "newgrf_sound.h"
 #include "newgrf_railtype.h"
 #include "town.h"
 #include "newgrf_town.h"
@@ -24,6 +24,7 @@
 #include "tunnelbridge_map.h"
 #include "newgrf_animation_base.h"
 #include "timer/timer_game_calendar.h"
+#include "tile_cmd.h"
 
 #include "table/strings.h"
 
@@ -431,7 +432,7 @@ uint32_t Station::GetNewGRFVariable(const ResolverObject &object, uint8_t variab
 		}
 
 		case 0x8A: return this->had_vehicle_of_type.base();
-		case 0xF1: return (this->airport.tile != INVALID_TILE) ? this->airport.GetSpec()->ttd_airport_type : ATP_TTDP_LARGE;
+		case 0xF1: return !this->airport.IsEmpty() ? this->airport.GetSpec()->ttd_airport_type : ATP_TTDP_LARGE;
 		case 0xF2: return (this->truck_stops != nullptr) ? this->truck_stops->status.base() : 0;
 		case 0xF3: return (this->bus_stops != nullptr)   ? this->bus_stops->status.base()   : 0;
 		case 0xF6: return this->airport.blocks.base();
@@ -477,13 +478,13 @@ uint32_t Station::GetNewGRFVariable(const ResolverObject &object, uint8_t variab
 		}
 	}
 
-	Debug(grf, 1, "Unhandled station variable 0x{:X}", variable);
+	object.UnhandledVariable(variable);
 
 	available = false;
 	return UINT_MAX;
 }
 
-uint32_t Waypoint::GetNewGRFVariable(const ResolverObject &, uint8_t variable, [[maybe_unused]] uint8_t parameter, bool &available) const
+uint32_t Waypoint::GetNewGRFVariable(const ResolverObject &ro, uint8_t variable, [[maybe_unused]] uint8_t parameter, bool &available) const
 {
 	switch (variable) {
 		case 0x48: return 0; // Accepted cargo types
@@ -509,7 +510,7 @@ uint32_t Waypoint::GetNewGRFVariable(const ResolverObject &, uint8_t variable, [
 		}
 	}
 
-	Debug(grf, 1, "Unhandled station variable 0x{:X}", variable);
+	ro.UnhandledVariable(variable);
 
 	available = false;
 	return UINT_MAX;
