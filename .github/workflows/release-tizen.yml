@@ -1,0 +1,80 @@
+name: Release (Tizen)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 14.0.0). Leave empty for a timestamped pre-release.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release Tizen widget
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set release version
+      id: release
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+      shell: bash
+      run: |
+        if [ -n "$INPUT_VERSION" ]; then
+          if [[ ! "$INPUT_VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
+            echo "::error::Invalid version '$INPUT_VERSION'. Use numeric form like 14.0 or 14.0.0."
+            exit 1
+          fi
+          VERSION="$INPUT_VERSION"
+          TAG="v${VERSION}"
+          PRERELEASE=false
+        else
+          VERSION="$(date -u +'%Y.%m%d.%H%M')"
+          BRANCH="${GITHUB_REF_NAME//\//-}"
+          TAG="v${VERSION}-${BRANCH}"
+          PRERELEASE=true
+        fi
+
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+        echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+        echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
+
+    - name: Set Tizen widget version
+      env:
+        VERSION: ${{ steps.release.outputs.version }}
+      shell: bash
+      run: |
+        sed -i -E "s/(<widget[^>]* version=\")[^\"]*(\")/\1${VERSION}\2/" os/tizen/res/config.xml
+        grep -F "version=\"${VERSION}\"" os/tizen/res/config.xml
+
+    - name: Build Tizen widget
+      run: docker build --file os/tizen/Dockerfile --tag openttd-tizen-release .
+
+    - name: Extract Tizen widget
+      run: |
+        docker create --name openttd-tizen-release openttd-tizen-release
+        docker cp openttd-tizen-release:/home/openttd/OpenTTD.wgt ./OpenTTD.wgt
+        docker rm openttd-tizen-release
+
+    - name: Create GitHub release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        PRERELEASE: ${{ steps.release.outputs.prerelease }}
+      run: |
+        if [ "$PRERELEASE" = "true" ]; then
+          gh release create "$RELEASE_TAG" ./OpenTTD.wgt \
+            --title "$RELEASE_TAG" \
+            --generate-notes \
+            --prerelease
+        else
+          gh release create "$RELEASE_TAG" ./OpenTTD.wgt \
+            --title "$RELEASE_TAG" \
+            --generate-notes
+        fi

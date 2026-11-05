@@ -1,3 +1,9 @@
+## Tizen package releases
+
+### 15.3 (2026-11-05)
+
+- Release: OpenTTD for Samsung Tizen, with the widget metadata and WGT package version set to 15.3.
+
 ## 16.x
 
 ### 16.0-RC1 (2026-10-31)

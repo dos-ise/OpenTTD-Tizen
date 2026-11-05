@@ -24,6 +24,10 @@ This will:
 
 The first build takes a while (downloading toolchains, compiling). Subsequent builds use Docker's cache and are much faster.
 
+## GitHub Releases
+
+The **Release (Tizen)** workflow can be started manually from the GitHub Actions tab. Enter a numeric version such as `14.0.0` for a release, or leave it empty to create a timestamped pre-release. The selected version is written to `os/tizen/res/config.xml` before the widget is built, so the `.wgt` metadata and release tag use the same version.
+
 ---
 
 ## Installation
