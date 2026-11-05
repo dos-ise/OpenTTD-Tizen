@@ -60,10 +60,6 @@ struct IConsoleLine {
 			time(0)
 	{
 	}
-
-	~IConsoleLine()
-	{
-	}
 };
 
 /** The console backlog buffer. Item index 0 is the newest line. */
@@ -303,8 +299,8 @@ struct IConsoleWindow : Window
 
 			default: {
 				HandleKeyPressResult handle_result = _iconsole_cmdline.HandleKeyPress(key, keycode);
-				if (handle_result != HKPR_NOT_HANDLED) {
-					if (handle_result == HKPR_EDITING) {
+				if (handle_result != HandleKeyPressResult::NotHandled) {
+					if (handle_result == HandleKeyPressResult::Editing) {
 						_iconsole_tab_completion.Reset();
 					}
 					IConsoleWindow::scroll = 0;

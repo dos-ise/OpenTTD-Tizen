@@ -1,5 +1,35 @@
 ## 16.x
 
+### 16.0-RC1 (2026-10-31)
+
+- Change: Update OpenTTD TTF fonts to v0.9 (#16106)
+- Fix #16114: Inconsistent rail station coverage area hightlight behaviour (#16117)
+- Fix: Uncommanded movement step after an end of line reverse could lead to path reservation problems or train crashes (#16112)
+- Fix: Make autoroad hotspot even (#16101)
+
+### 16.0-beta5 (2026-10-24)
+
+- Add: [Script] API for managing depots (#16080)
+- Add: [NewGRF] Variables to access town production and transport by cargo ID (#15195)
+- Change: Use full language isocode when searching fonts on all platforms (#16079)
+- Change: Extend Guru X2 helicopter life (#16068)
+- Change: [NewGRF] Implement airport tile 0xFF clearance check (#16058)
+- Change: [NewGRF] Improve logging of unhandled variables (#16046)
+- Change: Add FontCache debug output to help diagnose missing glyphs (#16043)
+- Change: Redesign industry/cargo chain window, with small-mode and navigation history (#16019, #16044, #16048)
+- Fix #16097: Station catchment not updated when station sign is moved (#16098)
+- Fix #16093: Sort comparator in GenerateCompanyColour did not meet invariants (#16100)
+- Fix: [Script] Use scope notation in API changelogs (#16099)
+- Fix: Reset town bribe counter when company is removed or changes owner (#16091)
+- Fix: Fallback font choice should have all glyphs not only missing glyphs (#16065)
+- Fix: Don't show error when double-clicking depot or waypoint order (#16062)
+- Fix #16053: Crash due to undefined behaviour when leaving screensaver mode (#16060)
+- Fix #10044: [MacOS] Mouse cursor hiding (#16042)
+- Fix: Widget sizes may be incorrect after font change due to language change (#16040)
+- Fix: [Script] Grammar errors in the API specification (#16032)
+- Fix: Terrain average height setting only applies to TerraGenesis (#16026)
+- Fix #11127: [NewGRF] Use correct value for dual-headed engine purchase capacity (#15906)
+
 ### 16.0-beta4 (2026-09-20)
 
 - Fix #16018: Don't desync when terraforming (#16021)
